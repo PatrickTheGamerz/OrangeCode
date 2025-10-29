@@ -42,8 +42,8 @@
 
     .workspace {
       display: grid;
-      grid-template-rows: 32px 32px auto 24px; /* allow content to extend */
-      min-height: 100vh;       /* full viewport, but scrollable beyond */
+      grid-template-rows: 32px auto 1fr 24px;
+      min-height: 100vh;
     }
 
     /* Title bar */
@@ -68,13 +68,15 @@
       cursor: pointer;
       border-radius: 4px;
       line-height: 24px;
+      min-width: 90px; /* consistent-ish width */
+      text-align: center;
     }
     .tb-btn:hover { background: var(--hover); }
     .brand { margin-left: auto; font-size: 12px; color: var(--muted); }
 
-    /* File menu with hover submenus — dynamically positioned under File button */
+    /* File menu — positioned under File button */
     .file-menu {
-      position: fixed;         /* absolute to viewport, we’ll place under File button in JS */
+      position: fixed;
       background: var(--panel);
       border: 1px solid var(--border);
       border-radius: 6px;
@@ -118,19 +120,20 @@
 
     .divider { height: 1px; background: var(--border); margin: 6px 0; }
 
-    /* Secondary toolbar (aligned under Title bar) */
+    /* Secondary toolbar — perfectly aligned on same Y under Titlebar */
     .toolbar {
       background: var(--panel);
       border-bottom: 1px solid var(--border);
-      display: grid;
-      grid-template-columns: auto auto auto auto auto auto auto 1fr auto auto auto auto auto auto;
-      gap: 8px;
+      display: flex;
       align-items: center;
-      padding: 0 8px;
+      gap: 8px;
+      padding: 4px 8px;
       height: 32px;
       position: sticky;
       top: 32px;              /* directly under Titlebar */
       z-index: 90;
+      overflow-x: auto;       /* prevent overflow pushing layout */
+      white-space: nowrap;
     }
     .btn {
       font-size: 12px;
@@ -141,6 +144,9 @@
       border: 1px solid var(--border);
       cursor: pointer;
       line-height: 24px;
+      min-width: 120px;       /* consistent button width */
+      text-align: center;
+      flex: 0 0 auto;
     }
     .btn:hover { background: var(--hover); }
     .btn.disabled { opacity: 0.4; cursor: default; }
@@ -152,23 +158,27 @@
       border-radius: 4px;
       padding: 2px 6px;
       cursor: pointer;
+      min-width: 140px;       /* consistent select width */
+      flex: 0 0 auto;
     }
     .filename {
       font-size: 12px;
       color: var(--muted);
       user-select: none;
+      min-width: 160px;
+      flex: 0 0 auto;
     }
 
     /* Main area: resizable sidebar + editor */
     .main {
       display: grid;
-      grid-template-columns: 300px 1fr; /* sidebar default 300px */
+      grid-template-columns: 300px 1fr;
       min-height: 0;
     }
     .sidebar {
       background: var(--sidebar);
       border-right: 1px solid var(--border);
-      resize: horizontal;     /* freely resizable */
+      resize: horizontal;
       overflow: auto;
       min-width: 160px;
       max-width: 720px;
@@ -242,8 +252,8 @@
 
     .editor-surface {
       display: grid;
-      grid-template-rows: 40px auto auto; /* toolbar, code, output */
-      min-height: 400px;       /* ensure some height, but page scrolls */
+      grid-template-rows: 40px auto auto;
+      min-height: 400px;
       background: var(--editor-bg);
     }
     .editor-toolbar {
@@ -263,8 +273,7 @@
     .code-wrap {
       position: relative;
       min-height: 240px;
-      max-height: none;
-      overflow: visible;       /* allow page scroll */
+      overflow: visible;       /* page scroll carries everything */
     }
     .highlight-layer {
       position: absolute;
@@ -275,7 +284,8 @@
       font-family: "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace;
       font-size: 13px;
       white-space: pre;
-      color: transparent;      /* base transparent; colored tokens show via spans */
+      background: transparent; /* ensure no white flash */
+      color: transparent;
     }
     .highlight-layer .tok-default { color: #aab1b7; }
     .highlight-layer .tok-key { color: var(--blue); }
@@ -285,14 +295,14 @@
     .highlight-layer .tok-number { color: var(--orange); }
     .highlight-layer .tok-comment { color: var(--muted); font-style: italic; }
     .highlight-layer .tok-namespace { color: var(--blue); }
-    .highlight-layer .tok-using { color: var(--blue); }
     .highlight-layer .tok-attr { color: var(--orange); }
     .highlight-layer .tok-error { color: var(--red); text-decoration: wavy underline; }
+    .highlight-layer .tok-using-wrong { color: var(--red); } /* "using" red as requested */
 
-    /* Editable layer sits on top */
+    /* Editable layer */
     .code-area {
       position: relative;
-      overflow: auto;          /* internal scroll if needed, but page can scroll too */
+      overflow: auto;
       padding: 12px 16px;
       line-height: 1.5;
       font-family: "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace;
@@ -319,13 +329,13 @@
       z-index: 2;
     }
 
-    /* Output terminal — freely resizable up or down */
+    /* Output terminal — dark, never white */
     .output-container {
       display: grid;
-      grid-template-rows: 28px auto 32px; /* header, body, input */
+      grid-template-rows: 28px auto 32px;
       border-top: 1px solid var(--border);
       background: var(--terminal-bg);
-      resize: vertical;     /* can be dragged up or down */
+      resize: vertical;
       overflow: auto;
       min-height: 200px;
       max-height: 70vh;
@@ -339,12 +349,15 @@
       align-items: center;
       gap: 8px;
       user-select: none;
+      background: var(--terminal-bg);
     }
     .output-body {
       padding: 8px;
       overflow: auto;
       font-family: Menlo, Consolas, monospace;
       font-size: 12px;
+      background: var(--terminal-bg); /* force dark background */
+      color: var(--text);
     }
     .output-body .line.err { color: var(--red); }
     .output-body .line.warn { color: var(--orange); }
@@ -356,6 +369,7 @@
       border-top: 1px solid var(--border);
       padding: 4px 8px;
       align-items: center;
+      background: var(--terminal-bg); /* force dark */
     }
     .prompt { color: var(--accent); text-align: center; user-select: none; }
     .term-field {
@@ -392,7 +406,7 @@
       color: var(--muted);
       user-select: none;
       position: sticky;
-      bottom: 0;              /* keep visible on scroll */
+      bottom: 0;
       z-index: 50;
     }
     .statusbar .cell { cursor: default; }
@@ -631,7 +645,6 @@
 
     const cursorCell = document.getElementById('cursorCell');
 
-    const output = document.getElementById('output');
     const terminalBody = document.getElementById('terminalBody');
     const termInput = document.getElementById('termInput');
     const termRun = document.getElementById('termRun');
@@ -705,7 +718,7 @@
       'PYTHON': '.py'
     };
 
-    // Default language usings/imports for convenience (non-NuGet basics)
+    // Default language usings/imports (basic, non-package)
     const defaultImports = {
       'CS': [
         'using System;',
@@ -719,7 +732,7 @@
         'import java.io.*;'
       ],
       'CPP': [
-        '#include <bits/stdc++.h>',
+        '#include <iostream>',
         'using namespace std;'
       ],
       'PYTHON': [],
@@ -767,18 +780,17 @@ if __name__ == "__main__":
 `
     };
 
-    // Simple syntax highlighter
+    // Simple syntax highlighter — "using" red
     function highlight(lang, text) {
-      // Escape HTML
       const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       const E = esc(text);
 
-      // Common token patterns
       const patterns = {
         CS: [
+          { re: /(^|\n)\s*(using\s+[A-Za-z0-9_.]+;)/g, cls: 'tok-using-wrong' }, /* force red for 'using' */
           { re: /\/\/[^\n]*/g, cls: 'tok-comment' },
           { re: /"(?:\\.|[^"\\])*"/g, cls: 'tok-string' },
-          { re: /\b(using|namespace|class|interface|struct|public|private|protected|internal|static|async|await|void|int|string|var|new|return)\b/g, cls: 'tok-key' },
+          { re: /\b(namespace|class|interface|struct|public|private|protected|internal|static|async|await|void|int|string|var|new|return)\b/g, cls: 'tok-key' },
           { re: /\b(Console|Enumerable|Task|Guid|CancellationToken|IAsyncEnumerable)\b/g, cls: 'tok-type' },
           { re: /\b(Main|WriteLine|RunAsync|RunAllAsync|ExecuteAsync|Reverse|Dequeue|Enqueue)\b/g, cls: 'tok-func' },
           { re: /\b\d+(\.\d+)?\b/g, cls: 'tok-number' }
@@ -814,8 +826,6 @@ if __name__ == "__main__":
 
       const langKey = currentFile.language || 'CS';
       const rules = patterns[langKey] || [];
-
-      // Tokenize by applying rules iteratively
       let html = E;
       for (const { re, cls } of rules) {
         html = html.replace(re, (m) => `<span class="${cls}">${m}</span>`);
@@ -847,9 +857,9 @@ if __name__ == "__main__":
       ghostHint.style.display = 'block';
     }
 
-    function acceptGhost(prefix) {
+    function acceptGhost() {
       if (ghostHint.style.display === 'none') return false;
-      document.execCommand('insertText', false, ghostHint.textContent); // append remainder
+      document.execCommand('insertText', false, ghostHint.textContent);
       ghostHint.style.display = 'none';
       return true;
     }
@@ -864,13 +874,8 @@ if __name__ == "__main__":
       if (!lastWordMatch) return;
       const word = lastWordMatch[1];
       if (word === 'console') {
-        // Replace the last occurrence before caret
         const start = caret - word.length;
-        const sel = window.getSelection();
-        const range = sel.getRangeAt(0);
-        range.setStart(codeArea.firstChild || codeArea, 0); // naive
-        const current = codeArea.textContent;
-        const newText = current.slice(0, start) + 'Console' + current.slice(caret);
+        const newText = text.slice(0, start) + 'Console' + text.slice(caret);
         codeArea.textContent = newText;
         placeCaret(codeArea, start + 'Console'.length);
       }
@@ -882,7 +887,7 @@ if __name__ == "__main__":
       statusTail.textContent = msg;
     }
 
-    // Utility: render explorer + tabs from files map
+    // Render explorer + tabs
     function renderWorkspace() {
       explorer.innerHTML = '';
       tabs.innerHTML = '';
@@ -913,7 +918,7 @@ if __name__ == "__main__":
       syncLayersScroll();
     }
 
-    // Open file into editor
+    // Open file
     function openFile(key) {
       const f = files.get(key);
       if (!f) return;
@@ -924,7 +929,7 @@ if __name__ == "__main__":
       diagnoseIfPossible();
     }
 
-    // Keep cursor cell updated (basic)
+    // Cursor + content updates
     codeArea.addEventListener('keyup', updateCursor);
     codeArea.addEventListener('click', updateCursor);
     codeArea.addEventListener('scroll', syncLayersScroll);
@@ -940,7 +945,7 @@ if __name__ == "__main__":
       cursorCell.textContent = 'Ln ' + line + ', Col ' + col;
       currentFile.content = codeArea.textContent;
       files.set(currentFile.name + (currentFile.ext || ''), { ...currentFile });
-      enableUndoRedo(); // mark actions
+      enableUndoRedo();
       refreshHighlight();
       autoCapitalizeConsole();
       liveAutocomplete();
@@ -958,7 +963,6 @@ if __name__ == "__main__":
       el.focus();
       const selection = window.getSelection();
       const range = document.createRange();
-      // naive: set in first child text node
       let node = el.firstChild;
       if (!node) {
         node = document.createTextNode('');
@@ -978,15 +982,15 @@ if __name__ == "__main__":
       const idx = getCaretIndex(el);
       const pre = el.textContent.slice(0, idx);
       const lines = pre.split('\n');
-      const lh = 19.5; // approximate line-height in px
+      const lh = 19.5;
       const y = lines.length * lh - lh + el.getBoundingClientRect().top + window.scrollY + 12;
       const last = lines[lines.length - 1] || '';
-      const charW = 7.8; // approximate character width
+      const charW = 7.8;
       const x = last.length * charW + el.getBoundingClientRect().left + window.scrollX + 16;
       return { x, y };
     }
 
-    // Undo/Redo (very naive stack)
+    // Undo/Redo (naive)
     const undoStack = [];
     const redoStack = [];
     function pushUndo() {
@@ -1020,7 +1024,7 @@ if __name__ == "__main__":
       liveAutocomplete();
     });
 
-    // Sidebar resize impact: observe width and update grid column
+    // Sidebar resize -> grid column
     const sidebar = document.getElementById('sidebar');
     const mainGrid = document.getElementById('mainGrid');
     const resizeObserver = new ResizeObserver(entries => {
@@ -1031,7 +1035,7 @@ if __name__ == "__main__":
     });
     resizeObserver.observe(sidebar);
 
-    // File menu toggling — position directly under the File button, same Y
+    // File menu positioning under File button
     function positionFileMenu() {
       const rect = btnFile.getBoundingClientRect();
       fileMenu.style.left = (rect.left + window.scrollX) + 'px';
@@ -1068,7 +1072,7 @@ if __name__ == "__main__":
       openFile(tab.dataset.file);
     });
 
-    // New File modal workflow (language locked after creation)
+    // New File modal
     function showNewFileModal() {
       nfName.value = '';
       nfLang.value = '';
@@ -1147,7 +1151,6 @@ if __name__ == "__main__":
       return name + ext;
     }
 
-    // Save / Save As / Save All
     function saveCurrent(asFolder = false) {
       const key = currentFilename();
       currentFile.content = codeArea.textContent;
@@ -1172,7 +1175,7 @@ if __name__ == "__main__":
     fmSaveProgramAs.addEventListener('click', () => saveCurrent(true));
     fmSaveAll.addEventListener('click', saveAll);
 
-    // Open File (upload), Open Folder (limited fallback)
+    // Open File (upload), Open Folder
     async function openLocalFile() {
       const input = document.createElement('input');
       input.type = 'file';
@@ -1181,7 +1184,6 @@ if __name__ == "__main__":
         if (!file) return;
         const reader = new FileReader();
         reader.onload = () => {
-          // infer name and ext
           const nameParts = file.name.split('.');
           const ext = nameParts.length > 1 ? '.' + nameParts.pop() : '';
           const name = nameParts.join('.') || 'Untitled';
@@ -1241,27 +1243,17 @@ if __name__ == "__main__":
     fmOpenFile.addEventListener('click', openLocalFile);
     fmOpenFolder.addEventListener('click', openLocalFolder);
 
-    // New Project / Repository / From Existing (mock behaviors)
+    // Mock actions
     fmNewProject.addEventListener('click', () => setStatus('New Project (mock) created'));
     fmNewRepository.addEventListener('click', () => setStatus('New Repository (mock) initialized'));
     fmNewFromExisting.addEventListener('click', () => setStatus('Import project from existing sources (mock)'));
-
-    // Add New/Existing Project (mock)
     fmAddNewProj.addEventListener('click', () => setStatus('Added New Project (mock)'));
     fmAddExistingProj.addEventListener('click', () => setStatus('Added Existing Project (mock)'));
-
-    // Close / Close Solution (mock)
     fmClose.addEventListener('click', () => setStatus('Closed current window (mock)'));
     fmCloseSolution.addEventListener('click', () => setStatus('Closed solution (mock)'));
-
-    // Clone Repository (mock)
     fmCloneRepo.addEventListener('click', () => setStatus('Clone Repository (mock)'));
-
-    // Open Window same as toolbar
     fmOpenWindow.addEventListener('click', () => setStatus('Opening new window (mock)'));
     btnOpenWindow.addEventListener('click', () => setStatus('Opening new window (mock)'));
-
-    // Page Settings, Recent lists (mock)
     fmPageSettings.addEventListener('click', () => setStatus('Page Settings (mock)'));
     fmRecentFiles.addEventListener('click', () => setStatus('Recent Files (mock)'));
     fmRecentSolutions.addEventListener('click', () => setStatus('Recent Projects and Solutions (mock)'));
@@ -1278,7 +1270,7 @@ if __name__ == "__main__":
       setStatus('Quick info displayed (mock)');
     });
 
-    // Comment / Uncomment selected lines (basic)
+    // Comment / Uncomment
     function commentSelection() {
       const text = codeArea.textContent;
       const commented = text.split('\n').map(line => '// ' + line).join('\n');
@@ -1318,12 +1310,12 @@ if __name__ == "__main__":
       printLine(text, '');
     }
 
-    // Diagnostics (mock, focused on CS scenarios)
+    // Diagnostics (mock, focused on CS)
     function diagnoseCSharp(source) {
       const lines = source.split('\n');
       const diags = [];
 
-      // Check for lowercase "console" usage
+      // lowercase "console"
       lines.forEach((l, i) => {
         if (/\bconsole\b/.test(l)) {
           diags.push({
@@ -1336,7 +1328,7 @@ if __name__ == "__main__":
         }
       });
 
-      // Check for identifiers ending with a number (like console2)
+      // console2
       lines.forEach((l, i) => {
         const m = l.match(/\bconsole2\b/i);
         if (m) {
@@ -1350,13 +1342,13 @@ if __name__ == "__main__":
         }
       });
 
-      // Info: Suggest LibraryImportAttribute for mouse_event API mention
+      // dllimport / mouse_event tip
       lines.forEach((l, i) => {
         if (/\bDllImport\b/.test(l) || /\bmouse_event\b/.test(l)) {
           diags.push({
             level: 'Info',
             code: 'NETSDK',
-            desc: "Mark the 'mouse_event' method with the 'LibraryImportAttribute' instead of the 'DllImportAttribute' to generate P/Invoke stub code at compile time.",
+            desc: "Mark the 'mouse_event' method with 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke stub code at compile time.",
             file: currentFilename(),
             line: i + 1
           });
@@ -1382,7 +1374,7 @@ if __name__ == "__main__":
       }
     }
 
-    // Run actions (mock)
+    // Terminal
     function runCommand(cmd) {
       printToTerminal(`$ ${cmd}`);
       if (cmd === 'node -v') printLine('v18.19.0', 'info');
@@ -1416,12 +1408,7 @@ if __name__ == "__main__":
       setStatus('Run without debugging');
     });
 
-    // File menu main actions hooking
-    fmOpenFile.addEventListener('click', openLocalFile);
-    fmOpenProject.addEventListener('click', () => setStatus('Open Project (mock)'));
-    fmOpenFolder.addEventListener('click', openLocalFolder);
-
-    // Explorer extra buttons
+    // Modal and explorer hooks
     document.getElementById('sdNew').addEventListener('click', showNewFileModal);
     document.getElementById('sdRefresh').addEventListener('click', () => setStatus('Explorer refreshed'));
 
@@ -1446,7 +1433,7 @@ if __name__ == "__main__":
       }
     });
 
-    // Initialize UI
+    // Initialize
     renderWorkspace();
     setStatus('Ready');
     refreshHighlight();

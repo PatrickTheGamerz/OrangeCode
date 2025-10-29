@@ -11,59 +11,73 @@
     --sidebar: #252526;
     --border: #3c3c3c;
     --accent: #0e639c;
+    --accent-2: #388bfd;
     --text: #cccccc;
-    --muted: #8a8a8a;
+    --muted: #9aa0a6;
     --hover: #2a2a2a;
     --active: #094771;
     --tab-bg: #2d2d2d;
     --tab-active: #1f1f1f;
     --status: #0b0b0b;
     --badge: #37373d;
+    --shadow: rgba(0,0,0,0.7);
     --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     --sans: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Noto Sans", "Helvetica Neue", Arial, "Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
   }
   * { box-sizing: border-box; }
   html, body { height: 100%; }
-  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); }
+  body { margin: 0; background: radial-gradient(1200px 800px at 10% 0%, #202226, var(--bg)) fixed; color: var(--text); font-family: var(--sans); }
 
-  /* Layout */
+  /* Root layout */
   .root { display: grid; grid-template-rows: 32px auto 24px; height: 100vh; }
-  .main { display: grid; grid-template-columns: 48px 260px auto; height: 100%; }
 
   /* Title Bar */
   .titlebar {
-    display: flex; align-items: center; gap: 12px;
-    background: var(--panel); border-bottom: 1px solid var(--border);
-    padding: 0 8px; font-size: 12px;
+    display: flex; align-items: center; gap: 8px;
+    background: linear-gradient(180deg, #2c2c2f 0%, var(--panel) 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 0 10px; font-size: 12px;
   }
+  .titlebar .menu { display: flex; gap: 4px; }
   .titlebar .menu button {
     background: transparent; border: none; color: var(--text);
-    padding: 6px 8px; cursor: pointer; border-radius: 4px;
+    padding: 6px 8px; cursor: pointer; border-radius: 6px;
   }
   .titlebar .menu button:hover { background: var(--hover); }
+  .brand { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+  .brand .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px #0a3a5d33; }
+
+  /* Main */
+  .main {
+    display: grid; grid-template-columns: 48px 280px auto; height: 100%;
+    background: #171717;
+  }
 
   /* Activity Bar */
   .activitybar {
     width: 48px; background: #202020; border-right: 1px solid var(--border);
     display: flex; flex-direction: column; align-items: center;
-    padding: 8px 0; gap: 8px;
+    padding: 8px 0; gap: 6px;
   }
   .activitybar .icon {
-    width: 32px; height: 32px; border-radius: 6px;
+    width: 36px; height: 36px; border-radius: 8px;
     display: grid; place-items: center; color: var(--muted); cursor: pointer;
+    transition: transform 90ms ease, background 120ms ease, color 120ms ease;
   }
-  .activitybar .icon:hover { background: var(--hover); color: var(--text); }
-  .activitybar .icon.active { background: var(--active); color: #fff; }
+  .activitybar .icon:hover { background: var(--hover); color: var(--text); transform: translateY(-1px); }
+  .activitybar .icon.active { background: var(--active); color: #fff; box-shadow: inset 0 0 0 1px #0e639c66; }
 
   /* Sidebar */
   .sidebar {
     background: var(--sidebar); border-right: 1px solid var(--border);
-    display: flex; flex-direction: column; min-width: 160px;
+    display: flex; flex-direction: column; min-width: 180px;
   }
-  .sidebar .section-header {
+  .section-header {
     font-size: 11px; letter-spacing: 0.5px; text-transform: uppercase;
     color: var(--muted); padding: 10px 12px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px;
   }
+  .section-header .badge { background: var(--badge); color: var(--text); font-size: 10px; padding: 2px 6px; border-radius: 10px; }
   .search {
     display: flex; align-items: center; gap: 8px;
     padding: 6px 8px; border-bottom: 1px solid var(--border);
@@ -71,21 +85,22 @@
   }
   .search input {
     flex: 1; background: #1f1f1f; border: 1px solid var(--border);
-    color: var(--text); border-radius: 6px; padding: 6px 8px;
+    color: var(--text); border-radius: 8px; padding: 8px 10px; font-size: 12px;
   }
   .tree { overflow: auto; padding: 6px; }
   .node {
     display: flex; align-items: center; gap: 6px;
-    padding: 4px 6px; border-radius: 4px; cursor: pointer; white-space: nowrap;
+    padding: 6px 8px; border-radius: 6px; cursor: pointer; white-space: nowrap;
+    transition: background 100ms ease, color 100ms ease;
   }
   .node:hover { background: var(--hover); }
-  .node.active { background: var(--active); }
+  .node.active { background: #093a61; box-shadow: inset 0 0 0 1px #0e639c55; }
   .twisty { width: 12px; text-align: center; color: var(--muted); }
   .file { color: var(--text); }
   .dir { color: var(--muted); }
 
   /* Editor */
-  .editor { display: grid; grid-template-rows: 32px auto; background: #1a1a1a; }
+  .editor { display: grid; grid-template-rows: 32px auto; background: #151515; }
   .tabs {
     display: flex; align-items: center; overflow: auto;
     background: var(--tab-bg); border-bottom: 1px solid var(--border);
@@ -94,9 +109,12 @@
     display: flex; align-items: center; gap: 8px;
     padding: 6px 12px; cursor: pointer; color: var(--muted);
     border-right: 1px solid var(--border); user-select: none;
+    transition: background 100ms ease, color 100ms ease;
   }
   .tab:hover { background: var(--hover); color: var(--text); }
   .tab.active { background: var(--tab-active); color: var(--text); border-bottom: 2px solid var(--accent); }
+  .tab .dot { width: 8px; height: 8px; border-radius: 50%; background: #888; opacity: 0.2; }
+  .tab.active .dot { background: var(--accent); opacity: 1; }
   .tab .close { color: var(--muted); }
   .tab .close:hover { color: var(--text); }
 
@@ -104,14 +122,17 @@
   .editor-pane {
     position: absolute; inset: 0; overflow: auto;
     padding: 12px 16px 48px 16px; font-family: var(--mono);
-    font-size: 13px; line-height: 1.5; color: #d4d4d4;
+    font-size: 13px; line-height: 1.6; color: #d4d4d4;
     counter-reset: line; white-space: pre; outline: none;
   }
-  .line { display: block; position: relative; padding-left: 48px; }
+  .line { display: block; position: relative; padding-left: 52px; }
   .line::before {
     counter-increment: line; content: counter(line);
-    position: absolute; left: 0; width: 36px; text-align: right; color: var(--muted);
+    position: absolute; left: 0; width: 40px; text-align: right; color: var(--muted);
   }
+  .selection { position: absolute; pointer-events: none; background: #0e639c40; border-left: 2px solid #0e639c; }
+
+  /* Token colors */
   .tok-key { color: #569cd6; }
   .tok-fn { color: #dcdcaa; }
   .tok-str { color: #ce9178; }
@@ -127,6 +148,8 @@
   }
   .item { padding: 0 6px; border-radius: 4px; }
   .item.active { background: var(--badge); color: var(--text); }
+  .spacer { flex: 1; }
+  .kbd { font-family: var(--mono); background: var(--badge); padding: 2px 6px; border-radius: 4px; }
 
   /* Command Palette */
   .palette {
@@ -135,15 +158,15 @@
   }
   .palette.open { display: grid; }
   .box {
-    margin-top: 12vh; width: min(720px, 92vw); background: var(--panel);
-    border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
-    box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+    margin-top: 12vh; width: min(780px, 92vw); background: var(--panel);
+    border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+    box-shadow: 0 16px 50px var(--shadow);
   }
   .input {
     width: 100%; padding: 12px 14px; background: #1f1f1f; border: none; outline: none;
     color: var(--text); font-family: var(--sans); font-size: 14px; border-bottom: 1px solid var(--border);
   }
-  .list { max-height: 40vh; overflow: auto; }
+  .list { max-height: 42vh; overflow: auto; }
   .cmd {
     display: flex; justify-content: space-between; align-items: center;
     padding: 10px 14px; cursor: pointer; font-size: 13px;
@@ -151,32 +174,36 @@
   .cmd:hover, .cmd.active { background: var(--hover); }
   .hint { color: var(--muted); font-family: var(--mono); }
 
-  .spacer { flex: 1; }
-  .kbd { font-family: var(--mono); background: var(--badge); padding: 2px 6px; border-radius: 4px; }
+  /* Responsive collapse (small screens) */
+  @media (max-width: 900px) {
+    .main { grid-template-columns: 48px 0 1fr; }
+    .sidebar { display: none; }
+  }
 </style>
 </head>
 <body>
 <div class="root">
 
   <!-- Title Bar -->
-  <div class="titlebar">
-    <div class="menu">
-      <button id="btnFile">File</button>
-      <button id="btnEdit">Edit</button>
-      <button id="btnView">View</button>
-      <button id="btnGo">Go</button>
-      <button id="btnRun">Run</button>
+  <div class="titlebar" role="banner" aria-label="Title bar">
+    <div class="menu" role="menubar" aria-label="Menu">
+      <button id="btnFile" aria-haspopup="true">File</button>
+      <button id="btnEdit" aria-haspopup="true">Edit</button>
+      <button id="btnView" aria-haspopup="true">View</button>
+      <button id="btnGo" aria-haspopup="true">Go</button>
+      <button id="btnRun" aria-haspopup="true">Run</button>
     </div>
     <div class="spacer"></div>
-    <div style="font-size:12px; color: var(--muted);">
-      VS Code‑like Web • Press <span class="kbd">Ctrl+P</span> for Command Palette
+    <div class="brand">
+      <span class="dot"></span>
+      <span>VS Code‑like Web • Press <span class="kbd">Ctrl+P</span> for Command Palette</span>
     </div>
   </div>
 
   <!-- Main -->
   <div class="main">
     <!-- Activity Bar -->
-    <aside class="activitybar">
+    <aside class="activitybar" role="navigation" aria-label="Activity bar">
       <div class="icon active" title="Explorer" id="iconExplorer">🗂️</div>
       <div class="icon" title="Search" id="iconSearch">🔎</div>
       <div class="icon" title="Source Control">🔧</div>
@@ -185,20 +212,20 @@
     </aside>
 
     <!-- Sidebar -->
-    <aside class="sidebar" id="sidebar">
-      <div class="section-header">Explorer</div>
+    <aside class="sidebar" id="sidebar" aria-label="Sidebar">
+      <div class="section-header">Explorer <span class="badge" id="fileCount">0</span></div>
       <div class="search">
-        <input id="fileFilter" placeholder="Filter files..." />
+        <input id="fileFilter" placeholder="Filter files..." aria-label="Filter files" />
         <span class="kbd">Ctrl+P</span>
       </div>
-      <div id="tree" class="tree"></div>
+      <div id="tree" class="tree" role="tree"></div>
     </aside>
 
     <!-- Editor -->
-    <section class="editor">
-      <div id="tabs" class="tabs"></div>
+    <section class="editor" aria-label="Editor area">
+      <div id="tabs" class="tabs" role="tablist" aria-label="Open tabs"></div>
       <div class="surface">
-        <div id="pane" class="editor-pane" tabindex="0" aria-label="Editor" role="textbox"></div>
+        <div id="pane" class="editor-pane" tabindex="0" aria-label="Editor" role="textbox" aria-multiline="true"></div>
 
         <!-- Command Palette -->
         <div id="palette" class="palette" aria-modal="true">
@@ -212,7 +239,7 @@
   </div>
 
   <!-- Status Bar -->
-  <footer class="statusbar">
+  <footer class="statusbar" role="contentinfo" aria-label="Status bar">
     <div class="item active">UTF-8</div>
     <div class="item">LF</div>
     <div id="lang" class="item">Plain Text</div>
@@ -230,7 +257,7 @@ const files = [
 # VS Code-like Web Editor
 
 - Explorer with file tree
-- Tabs, faux line numbers
+- Tabs with faux line numbers
 - Command Palette: Ctrl+P
 - Minimal syntax coloring
 
@@ -289,9 +316,11 @@ const paletteInputEl = document.getElementById("paletteInput");
 const paletteListEl = document.getElementById("paletteList");
 const fileFilterEl = document.getElementById("fileFilter");
 const sidebarEl = document.getElementById("sidebar");
+const activityEl = document.querySelector(".activitybar");
 const mainEl = document.querySelector(".main");
 const langEl = document.getElementById("lang");
 const cursorEl = document.getElementById("cursor");
+const fileCountEl = document.getElementById("fileCount");
 
 /* ---------- State ---------- */
 const state = {
@@ -299,6 +328,7 @@ const state = {
   activePath: null,
   expandedDirs: new Set(["", "src", "src/math"]),
   paletteIndex: 0,
+  selection: null, // {top,left,width,height} for visual selection highlight
 };
 
 /* ---------- Build file tree ---------- */
@@ -307,6 +337,7 @@ function buildTree() {
   treeEl.innerHTML = "";
   renderDir(model, "");
   highlightActiveInTree();
+  fileCountEl.textContent = String(files.length);
 }
 
 function nest(paths) {
@@ -331,6 +362,7 @@ function renderDir(dir, base, pad = 0) {
     node.className = "node";
     node.dataset.path = full;
     node.style.paddingLeft = pad + "px";
+    node.role = "treeitem";
 
     if (child === null) {
       node.innerHTML = `<span class="twisty"> </span><span class="file">📄 ${name}</span>`;
@@ -356,7 +388,9 @@ function renderTabs() {
   state.openTabs.forEach(path => {
     const el = document.createElement("div");
     el.className = "tab" + (state.activePath === path ? " active" : "");
-    el.innerHTML = `<span>${basename(path)}</span><span class="spacer"></span><span class="close">✕</span>`;
+    el.setAttribute("role", "tab");
+    el.setAttribute("aria-selected", state.activePath === path ? "true" : "false");
+    el.innerHTML = `<span class="dot"></span><span>${basename(path)}</span><span class="spacer"></span><span class="close" title="Close">✕</span>`;
     el.addEventListener("click", (e) => {
       if (e.target.classList.contains("close")) closeTab(path);
       else activate(path);
@@ -402,6 +436,7 @@ function renderEditor() {
   paneEl.innerHTML = html;
   paneEl.scrollTop = 0;
   updateCursor(1,1);
+  clearSelectionVisual();
 }
 
 /* ---------- Command Palette ---------- */
@@ -417,12 +452,14 @@ function togglePalette(open) {
 }
 
 function paletteItems(query = "") {
-  const q = query.toLowerCase();
+  const q = query.toLowerCase().trim();
   const base = [
-    ...files.map(f => ({ kind: "file", label: f.path, hint: "Open File" })),
+    ...files.map(f => ({ kind: "file", label: f.path, hint: "Open file" })),
     { kind: "cmd", label: "View: Toggle Sidebar", action: toggleSidebar, hint: "View" },
     { kind: "cmd", label: "File: New Untitled", action: newUntitled, hint: "File" },
     { kind: "cmd", label: "File: Close Active", action: () => closeTab(state.activePath), hint: "File" },
+    { kind: "cmd", label: "Go: Next Tab", action: () => cycleTab(1), hint: "Go" },
+    { kind: "cmd", label: "Go: Previous Tab", action: () => cycleTab(-1), hint: "Go" },
   ];
   return base.filter(it => it.label.toLowerCase().includes(q));
 }
@@ -457,12 +494,12 @@ function toggleSidebar() {
   if (hidden) {
     sidebarEl.dataset.hidden = "false";
     sidebarEl.style.display = "flex";
-    document.querySelector(".activitybar").style.display = "flex";
-    mainEl.style.gridTemplateColumns = "48px 260px auto";
+    activityEl.style.display = "flex";
+    mainEl.style.gridTemplateColumns = "48px 280px auto";
   } else {
     sidebarEl.dataset.hidden = "true";
     sidebarEl.style.display = "none";
-    document.querySelector(".activitybar").style.display = "none";
+    activityEl.style.display = "none";
     mainEl.style.gridTemplateColumns = "0 0 1fr";
   }
 }
@@ -470,14 +507,14 @@ function toggleSidebar() {
 /* ---------- New File ---------- */
 function newUntitled() {
   let n = 1;
-  while (files.some(f => f.path === `Untitled-${n}.txt`)) n++;
-  const path = `Untitled-${n}.txt`;
+  while (files.some(f => f.path === \`Untitled-\${n}.txt\`)) n++;
+  const path = \`Untitled-\${n}.txt\`;
   files.push({ path, type: "text/plain", content: "" });
   buildTree();
   openFile(path);
 }
 
-/* ---------- Filtering (shows parents when children match) ---------- */
+/* ---------- Filtering ---------- */
 function applyFilter(q) {
   const query = (q || "").toLowerCase();
   const nodes = [...treeEl.querySelectorAll(".node")];
@@ -486,7 +523,6 @@ function applyFilter(q) {
   const paths = nodes.map(n => n.dataset.path);
   const matchSet = new Set(paths.filter(p => p.toLowerCase().includes(query)));
 
-  // Also include ancestors of matches
   for (const p of [...matchSet]) {
     const parts = p.split("/");
     for (let i = 1; i < parts.length; i++) {
@@ -498,7 +534,7 @@ function applyFilter(q) {
   });
 }
 
-/* ---------- Tokenizer (escape first, then color) ---------- */
+/* ---------- Tokenizer ---------- */
 function tokenize(text, type) {
   const esc = (s) => s.replace(/[&<>]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;" }[c]));
   let out = esc(text);
@@ -546,17 +582,38 @@ function highlightActiveInTree() {
   treeEl.querySelectorAll(".node").forEach(n => n.classList.toggle("active", n.dataset.path === state.activePath));
 }
 
-/* ---------- Cursor indicator (approx) ---------- */
+/* ---------- Cursor indicator ---------- */
 function updateCursor(ln, col) {
-  cursorEl.textContent = `Ln ${ln}, Col ${col}`;
+  cursorEl.textContent = \`Ln \${ln}, Col \${col}\`;
 }
-paneEl.addEventListener("click", (e) => {
-  const lines = [...paneEl.querySelectorAll(".line")];
-  const y = e.clientY - paneEl.getBoundingClientRect().top + paneEl.scrollTop;
-  const lh = parseFloat(getComputedStyle(paneEl).lineHeight) || 19.5;
-  const ln = Math.max(1, Math.min(lines.length, Math.floor(y / lh)));
-  updateCursor(ln, 1);
-});
+
+/* ---------- Selection visual ---------- */
+function clearSelectionVisual() {
+  const old = paneEl.querySelector(".selection");
+  if (old) old.remove();
+}
+function drawLineSelection(lineIdx) {
+  clearSelectionVisual();
+  const lineEl = paneEl.querySelectorAll(".line")[lineIdx - 1];
+  if (!lineEl) return;
+  const paneRect = paneEl.getBoundingClientRect();
+  const rect = lineEl.getBoundingClientRect();
+  const sel = document.createElement("div");
+  sel.className = "selection";
+  sel.style.top = (rect.top - paneRect.top + paneEl.scrollTop) + "px";
+  sel.style.left = "0";
+  sel.style.width = "100%";
+  sel.style.height = (rect.height) + "px";
+  paneEl.appendChild(sel);
+}
+
+/* ---------- Tab cycling ---------- */
+function cycleTab(delta) {
+  const i = state.openTabs.indexOf(state.activePath);
+  if (i < 0) return;
+  const next = (i + delta + state.openTabs.length) % state.openTabs.length;
+  activate(state.openTabs[next]);
+}
 
 /* ---------- Events ---------- */
 document.addEventListener("keydown", (e) => {
@@ -565,12 +622,17 @@ document.addEventListener("keydown", (e) => {
   const isEscape = e.key === "Escape";
   const isUp = e.key === "ArrowUp";
   const isDown = e.key === "ArrowDown";
+  const isCtrlTab = (e.ctrlKey || e.metaKey) && e.key === "Tab";
+  const isCtrlShiftTab = (e.ctrlKey || e.metaKey) && e.shiftKey && e.key === "Tab";
 
   if (isCtrlP) {
     e.preventDefault();
     togglePalette(true);
     return;
   }
+  if (isCtrlTab) { e.preventDefault(); cycleTab(1); return; }
+  if (isCtrlShiftTab) { e.preventDefault(); cycleTab(-1); return; }
+
   if (paletteEl.classList.contains("open")) {
     if (isEscape) { togglePalette(false); return; }
     if (isDown) { e.preventDefault(); focusPaletteItem(state.paletteIndex + 1); return; }
@@ -590,7 +652,6 @@ paletteEl.addEventListener("click", (e) => {
 fileFilterEl.addEventListener("input", (e) => applyFilter(e.target.value));
 
 document.getElementById("iconExplorer").addEventListener("click", () => {
-  // focus explorer and ensure visible
   if (sidebarEl.dataset.hidden === "true") toggleSidebar();
   fileFilterEl.focus();
 });
@@ -599,10 +660,22 @@ document.getElementById("iconSearch").addEventListener("click", () => {
   fileFilterEl.focus();
 });
 
+/* Click in editor to move cursor indicator and draw selection line */
+paneEl.addEventListener("click", (e) => {
+  const lines = [...paneEl.querySelectorAll(".line")];
+  const y = e.clientY - paneEl.getBoundingClientRect().top + paneEl.scrollTop;
+  const lh = parseFloat(getComputedStyle(paneEl).lineHeight) || 19.5;
+  const ln = Math.max(1, Math.min(lines.length, Math.floor(y / lh)));
+  updateCursor(ln, 1);
+  drawLineSelection(ln);
+});
+
 /* ---------- Init ---------- */
 sidebarEl.dataset.hidden = "false";
 buildTree();
 openFile("README.md");
+applyFilter("");
+
 </script>
 </body>
 </html>

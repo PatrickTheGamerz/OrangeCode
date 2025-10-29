@@ -251,7 +251,7 @@ const files = [
 - Command Palette: Ctrl+P
 - Minimal syntax coloring
 
-Try opening src/app.ts or index.html from the Explorer or the Palette.
+Try opening index.html from the Explorer or the Palette.
 `) },
   { path: "index.html", type: "text/html", content: code(`
 <!DOCTYPE html>
@@ -265,35 +265,6 @@ Try opening src/app.ts or index.html from the Explorer or the Palette.
     <script>console.log('ready');</script>
   </body>
 </html>
-`) },
-  { path: "src/app.ts", type: "text/typescript", content: code(`
-// App entry
-type User = {
-  id: number
-  name: string
-}
-
-function greet(u: User): string {
-  return \`Hello, \${u.name}!\`
-}
-
-console.log(greet({ id: 1, name: "Roksana" }))
-`) },
-  { path: "src/math/util.ts", type: "text/typescript", content: code(`
-// Utilities
-export const clamp = (v: number, min: number, max: number) =>
-  Math.min(Math.max(v, min), max)
-
-export function sum(nums: number[]): number {
-  let s = 0
-  for (const n of nums) s += n
-  return s
-}
-`) },
-  { path: "styles/main.css", type: "text/css", content: code(`
-:root { --primary: #0e639c; }
-body { font-family: system-ui; color: #ddd; }
-h1 { color: var(--primary); }
 `) },
 ];
 
@@ -316,7 +287,7 @@ const fileCountEl = document.getElementById("fileCount");
 const state = {
   openTabs: [],
   activePath: null,
-  expandedDirs: new Set(["", "src", "src/math"]),
+  expandedDirs: new Set([""]),
   paletteIndex: 0,
 };
 

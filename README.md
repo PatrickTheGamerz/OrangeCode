@@ -14,11 +14,11 @@
       --muted: #9da3a6;
       --hover: #2a2a2a;
       --accent: #0e639c;
-      --active: #094771;
       --editor-bg: #1e1e1e;
       --terminal-bg: #111111;
       --status-bg: #0b0b0b;
       --danger: #c15555;
+
       --green: #89d185;
       --yellow: #ffd479;
       --blue: #85c1ff;
@@ -28,25 +28,22 @@
       --ghost: #9da3a6;
     }
     * { box-sizing: border-box; }
-    html, body { min-height: 100%; margin: 0; }
+    html, body { height: 100%; margin: 0; }
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: ui-sans-serif, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
-      overflow: auto;           /* scrollable page */
-      user-select: none;        /* make UI non-copiable by default */
+      font-family: ui-sans-serif, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, sans-serif;
+      overflow: auto;
+      user-select: none;
     }
-
-    /* Only the code editor should be copyable/editable */
-    .code-area, .code-area * { user-select: text; }
 
     .workspace {
       display: grid;
       grid-template-rows: 32px auto 1fr 24px;
-      min-height: 100vh;
+      height: 100vh;
     }
 
-    /* Title bar */
+    /* Titlebar */
     .titlebar {
       height: 32px;
       background: var(--panel);
@@ -62,19 +59,16 @@
     .tb-btn {
       font-size: 12px;
       padding: 4px 8px;
-      border: 1px solid transparent;
       background: transparent;
       color: var(--text);
       cursor: pointer;
+      border: 1px solid transparent;
       border-radius: 4px;
-      line-height: 24px;
-      min-width: 90px; /* consistent-ish width */
-      text-align: center;
     }
     .tb-btn:hover { background: var(--hover); }
     .brand { margin-left: auto; font-size: 12px; color: var(--muted); }
 
-    /* File menu — positioned under File button */
+    /* File menu – positioned perfectly under File button */
     .file-menu {
       position: fixed;
       background: var(--panel);
@@ -88,109 +82,67 @@
       box-shadow: 0 10px 40px rgba(0,0,0,0.35);
     }
     .file-menu .item {
-      position: relative;
       padding: 6px 12px;
       font-size: 13px;
       color: var(--text);
       cursor: pointer;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
     }
     .file-menu .item:hover { background: var(--hover); }
-    .file-menu .item.has-sub::after {
-      content: "▸";
-      color: var(--muted);
-      margin-left: 8px;
-    }
-    .submenu {
-      position: absolute;
-      left: 100%;
-      top: 0;
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      min-width: 240px;
-      display: none;
-      flex-direction: column;
-      padding: 6px 0;
-      z-index: 1100;
-    }
-    .item.has-sub:hover .submenu { display: flex; }
-
     .divider { height: 1px; background: var(--border); margin: 6px 0; }
 
-    /* Secondary toolbar — perfectly aligned on same Y under Titlebar */
+    /* Toolbar – fits without scrolling, wraps neatly, tooltips on hover */
     .toolbar {
       background: var(--panel);
       border-bottom: 1px solid var(--border);
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
-      gap: 8px;
+      gap: 4px;
       padding: 4px 8px;
-      height: 32px;
       position: sticky;
-      top: 32px;              /* directly under Titlebar */
+      top: 32px;
       z-index: 90;
-      overflow-x: auto;       /* prevent overflow pushing layout */
-      white-space: nowrap;
     }
-    .btn {
-      font-size: 12px;
-      padding: 4px 8px;
+    .btn, .select {
+      font-size: 11px;
+      padding: 3px 6px;
       border-radius: 4px;
       color: var(--text);
       background: transparent;
       border: 1px solid var(--border);
       cursor: pointer;
-      line-height: 24px;
-      min-width: 120px;       /* consistent button width */
-      text-align: center;
       flex: 0 0 auto;
     }
     .btn:hover { background: var(--hover); }
     .btn.disabled { opacity: 0.4; cursor: default; }
     .select {
-      height: 26px;
       background: #1b1b1b;
-      color: var(--text);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      padding: 2px 6px;
-      cursor: pointer;
-      min-width: 140px;       /* consistent select width */
-      flex: 0 0 auto;
+      min-width: 96px;
     }
-    .filename {
-      font-size: 12px;
-      color: var(--muted);
-      user-select: none;
-      min-width: 160px;
-      flex: 0 0 auto;
-    }
+    .filename { font-size: 12px; color: var(--muted); }
 
-    /* Main area: resizable sidebar + editor */
+    /* Main area */
     .main {
       display: grid;
-      grid-template-columns: 300px 1fr;
+      grid-template-columns: 240px 1fr;
       min-height: 0;
     }
     .sidebar {
       background: var(--sidebar);
       border-right: 1px solid var(--border);
-      resize: horizontal;
       overflow: auto;
-      min-width: 160px;
-      max-width: 720px;
+      min-width: 180px;
+      max-width: 520px;
+      resize: horizontal;
     }
     .sidebar-header {
-      padding: 8px 10px;
+      padding: 6px 8px;
       font-size: 12px;
       color: var(--muted);
       border-bottom: 1px solid var(--border);
       display: flex;
-      align-items: center;
       justify-content: space-between;
+      align-items: center;
     }
     .sd-actions { display: flex; gap: 6px; }
     .sd-btn {
@@ -204,117 +156,92 @@
     }
     .sd-btn:hover { background: var(--hover); }
     .sidebar-content { padding: 6px 0; }
-    .tree-item {
-      padding: 6px 12px;
-      font-size: 13px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
+    .tree-item { padding: 6px 12px; font-size: 13px; cursor: pointer; }
     .tree-item:hover { background: var(--hover); }
     .tree-item.active { background: #1f1f1f; }
 
     /* Editor */
-    .editor {
-      display: grid;
-      grid-template-rows: 36px auto;
-      min-height: 0;
-    }
+    .editor { display: grid; grid-template-rows: auto 1fr; min-height: 0; }
     .tabs {
       background: var(--panel);
       border-bottom: 1px solid var(--border);
       display: flex;
-      align-items: center;
       gap: 6px;
-      padding: 0 6px;
-      position: sticky;
-      top: 64px;              /* below titlebar and toolbar */
-      z-index: 80;
+      padding: 4px 6px;
+      align-items: center;
     }
     .tab {
       background: #2d2d2d;
       color: var(--text);
       border: 1px solid var(--border);
       border-bottom: none;
-      height: 28px;
-      margin-top: 6px;
-      padding: 0 10px;
+      padding: 0 8px;
+      height: 24px;
       display: flex;
       align-items: center;
-      gap: 8px;
-      font-size: 12px;
+      border-top-left-radius: 4px;
+      border-top-right-radius: 4px;
+      font-size: 11px;
       cursor: pointer;
-      border-top-left-radius: 6px;
-      border-top-right-radius: 6px;
     }
     .tab.active { background: #1f1f1f; color: #fff; }
 
     .editor-surface {
       display: grid;
-      grid-template-rows: 40px auto auto;
-      min-height: 400px;
+      grid-template-rows: 28px 1fr auto;
       background: var(--editor-bg);
+      min-height: 0;
     }
     .editor-toolbar {
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 6px 8px;
+      padding: 4px 8px;
       border-bottom: 1px solid var(--border);
       background: var(--panel);
-      position: sticky;
-      top: 100px;              /* below tabs */
-      z-index: 70;
     }
-    .info { font-size: 12px; color: var(--muted); user-select: none; }
+    .info { font-size: 11px; color: var(--muted); user-select: none; }
 
-    /* Code area wrapper with syntax highlight layer + editable layer */
-    .code-wrap {
-      position: relative;
-      min-height: 240px;
-      overflow: visible;       /* page scroll carries everything */
-    }
+    /* Code area – no white flash, clear text, synced highlight */
+    .code-wrap { position: relative; min-height: 240px; }
     .highlight-layer {
       position: absolute;
       inset: 0;
-      pointer-events: none;
-      padding: 12px 16px;
+      padding: 10px 14px;
       line-height: 1.5;
       font-family: "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace;
       font-size: 13px;
       white-space: pre;
-      background: transparent; /* ensure no white flash */
+      background: var(--editor-bg);
       color: transparent;
+      pointer-events: none;
+      overflow: hidden;
     }
-    .highlight-layer .tok-default { color: #aab1b7; }
+    /* token colors */
+    .highlight-layer .tok-comment { color: var(--muted); font-style: italic; }
+    .highlight-layer .tok-string { color: var(--green); }
+    .highlight-layer .tok-number { color: var(--orange); }
     .highlight-layer .tok-key { color: var(--blue); }
     .highlight-layer .tok-type { color: var(--yellow); }
     .highlight-layer .tok-func { color: var(--purple); }
-    .highlight-layer .tok-string { color: var(--green); }
-    .highlight-layer .tok-number { color: var(--orange); }
-    .highlight-layer .tok-comment { color: var(--muted); font-style: italic; }
-    .highlight-layer .tok-namespace { color: var(--blue); }
-    .highlight-layer .tok-attr { color: var(--orange); }
-    .highlight-layer .tok-error { color: var(--red); text-decoration: wavy underline; }
-    .highlight-layer .tok-using-wrong { color: var(--red); } /* "using" red as requested */
+    .highlight-layer .tok-using-wrong { color: var(--red); }
 
-    /* Editable layer */
     .code-area {
       position: relative;
-      overflow: auto;
-      padding: 12px 16px;
+      padding: 10px 14px;
       line-height: 1.5;
       font-family: "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace;
       font-size: 13px;
       white-space: pre;
       outline: none;
-      background: transparent;
+      background: var(--editor-bg);
       color: var(--text);
+      min-height: 240px;
+      overflow: auto;
     }
     .code-area[contenteditable="true"] { caret-color: #cfe8ff; }
 
-    /* Ghost autocomplete hint */
+    /* Ghost autocomplete hint (gray, overlay near caret) */
     .ghost-hint {
       position: absolute;
       background: transparent;
@@ -324,52 +251,46 @@
       font-size: 13px;
       line-height: 1.5;
       white-space: pre;
-      padding-left: 16px;
-      padding-top: 12px;
       z-index: 2;
     }
 
-    /* Output terminal — dark, never white */
+    /* Output terminal – forced dark */
     .output-container {
       display: grid;
-      grid-template-rows: 28px auto 32px;
+      grid-template-rows: 24px 1fr 28px;
       border-top: 1px solid var(--border);
       background: var(--terminal-bg);
-      resize: vertical;
-      overflow: auto;
-      min-height: 200px;
-      max-height: 70vh;
+      min-height: 160px;
     }
     .output-header {
-      padding: 4px 8px;
-      font-size: 12px;
+      padding: 2px 8px;
+      font-size: 11px;
       color: var(--muted);
       border-bottom: 1px solid var(--border);
+      background: var(--terminal-bg);
       display: flex;
       align-items: center;
       gap: 8px;
-      user-select: none;
-      background: var(--terminal-bg);
     }
     .output-body {
-      padding: 8px;
-      overflow: auto;
+      padding: 6px 8px;
       font-family: Menlo, Consolas, monospace;
       font-size: 12px;
-      background: var(--terminal-bg); /* force dark background */
+      background: var(--terminal-bg);
       color: var(--text);
+      overflow: auto;
     }
     .output-body .line.err { color: var(--red); }
     .output-body .line.warn { color: var(--orange); }
     .output-body .line.info { color: var(--blue); }
     .output-input {
       display: grid;
-      grid-template-columns: 36px 1fr 90px;
+      grid-template-columns: 32px 1fr 84px;
       gap: 6px;
       border-top: 1px solid var(--border);
       padding: 4px 8px;
       align-items: center;
-      background: var(--terminal-bg); /* force dark */
+      background: var(--terminal-bg);
     }
     .prompt { color: var(--accent); text-align: center; user-select: none; }
     .term-field {
@@ -388,12 +309,11 @@
       border-radius: 4px;
       padding: 6px 8px;
       cursor: pointer;
-      font-size: 12px;
-      user-select: none;
+      font-size: 11px;
     }
     .term-run:hover { filter: brightness(1.1); }
 
-    /* Status bar */
+    /* Statusbar */
     .statusbar {
       height: 24px;
       background: var(--status-bg);
@@ -410,10 +330,8 @@
       z-index: 50;
     }
     .statusbar .cell { cursor: default; }
-    .statusbar .cell.interactive { cursor: pointer; }
-    .statusbar .cell.interactive:hover { color: #e0e0e0; }
 
-    /* Modal for New File (language + name) */
+    /* Modal: New File */
     .modal-backdrop {
       position: fixed;
       inset: 0;
@@ -432,12 +350,7 @@
       display: grid;
       gap: 8px;
     }
-    .modal h3 {
-      margin: 0 0 8px 0;
-      font-size: 14px;
-      color: var(--text);
-      user-select: none;
-    }
+    .modal h3 { margin: 0 0 8px 0; font-size: 14px; color: var(--text); user-select: none; }
     .modal-row {
       display: grid;
       grid-template-columns: 120px 1fr;
@@ -452,12 +365,32 @@
       border-radius: 4px;
       padding: 0 8px;
     }
-    .modal-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-    }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
     .danger { border-color: var(--danger); color: #f7d4d4; }
+    .tooltip {
+      position: relative;
+    }
+    .tooltip[data-tip]::after {
+      content: attr(data-tip);
+      position: absolute;
+      bottom: -26px;
+      left: 0;
+      background: #111;
+      color: #ddd;
+      padding: 4px 6px;
+      border-radius: 4px;
+      border: 1px solid #333;
+      font-size: 11px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(4px);
+      transition: opacity 120ms ease, transform 120ms ease;
+    }
+    .tooltip:hover::after {
+      opacity: 1;
+      transform: translateY(0);
+    }
   </style>
 </head>
 <body>
@@ -468,73 +401,46 @@
       <span class="brand" id="brandText">Mini Studio — Program</span>
     </div>
 
-    <!-- Secondary toolbar -->
-    <div class="toolbar">
-      <button class="btn" id="btnNewFile">📝 New File</button>
-      <button class="btn" id="btnOpenFile">📂 Open File</button>
-      <button class="btn" id="btnSaveFile">💾 Save</button>
-      <button class="btn" id="btnSaveAll">💾 Save All</button>
-      <button class="btn disabled" id="btnUndo">↩ Undo</button>
-      <button class="btn disabled" id="btnRedo">↪ Redo</button>
-      <select class="select" id="buildSelect">
+    <!-- Secondary toolbar (wraps, no scroll needed) -->
+    <div class="toolbar" id="toolbar">
+      <button class="btn tooltip" data-tip="Create new file" id="btnNewFile">📝 New</button>
+      <button class="btn tooltip" data-tip="Open local file" id="btnOpenFile">📂 Open</button>
+      <button class="btn tooltip" data-tip="Save current file" id="btnSaveFile">💾 Save</button>
+      <button class="btn tooltip" data-tip="Save all files" id="btnSaveAll">💾 Save All</button>
+      <button class="btn disabled tooltip" data-tip="Undo last change" id="btnUndo">↩ Undo</button>
+      <button class="btn disabled tooltip" data-tip="Redo last undo" id="btnRedo">↪ Redo</button>
+      <select class="select tooltip" data-tip="Build configuration" id="buildSelect">
         <option>Debug</option>
         <option>Release</option>
       </select>
       <span class="filename" id="fileDisplay">Program</span>
-      <button class="btn" id="btnRun">▶ Run</button>
-      <select class="select" id="runTarget">
+      <button class="btn tooltip" data-tip="Run" id="btnRun">▶ Run</button>
+      <select class="select tooltip" data-tip="Run target" id="runTarget">
         <option id="optFileName">Program</option>
         <option>WSL</option>
         <option>Debugging Properties (Program)</option>
         <option>Configure Starter Projects</option>
       </select>
-      <button class="btn" id="btnRunNoDebug">⏯ Run Without Debugging</button>
-      <button class="btn" id="btnOpenWindow">🗔 Open Window</button>
-      <button class="btn" id="btnSpell">🔤 Switch spell-check</button>
-      <button class="btn" id="btnQuickInfo">💡 Quick info</button>
-      <button class="btn" id="btnCommentLines">// Comment lines</button>
-      <button class="btn" id="btnUncommentLines">␡ Uncomment lines</button>
-      <button class="btn" id="btnSwitchTab">↹ Switch tab</button>
+      <button class="btn tooltip" data-tip="Run without debugging" id="btnRunNoDebug">⏯ No Debug</button>
+      <button class="btn tooltip" data-tip="Open new window (mock)" id="btnOpenWindow">🗔 Window</button>
+      <button class="btn tooltip" data-tip="Toggle spell-check (mock)" id="btnSpell">🔤 Spell</button>
+      <button class="btn tooltip" data-tip="Show quick info (mock)" id="btnQuickInfo">💡 Info</button>
+      <button class="btn tooltip" data-tip="Comment lines" id="btnCommentLines">// Comment</button>
+      <button class="btn tooltip" data-tip="Uncomment lines" id="btnUncommentLines">␡ Uncomment</button>
+      <button class="btn tooltip" data-tip="Switch tab" id="btnSwitchTab">↹ Switch</button>
     </div>
 
     <!-- File menu -->
     <div class="file-menu" id="fileMenu">
-      <div class="item has-sub" id="fmNew">New
-        <div class="submenu">
-          <div class="item" id="fmNewProject">Project</div>
-          <div class="item" id="fmNewRepository">Repository</div>
-          <div class="item" id="fmNewFile">File</div>
-          <div class="item" id="fmNewFromExisting">Project from existing sources</div>
-        </div>
-      </div>
-      <div class="item has-sub" id="fmOpen">Open
-        <div class="submenu">
-          <div class="item" id="fmOpenProject">Project</div>
-          <div class="item" id="fmOpenFolder">Folder</div>
-          <div class="item" id="fmOpenFile">File</div>
-        </div>
-      </div>
-      <div class="item" id="fmCloneRepo">Clone Repository</div>
-      <div class="item" id="fmOpenWindow">Open Window</div>
-      <div class="divider"></div>
-      <div class="item has-sub" id="fmAdd">Add
-        <div class="submenu">
-          <div class="item" id="fmAddNewProj">New Project</div>
-          <div class="item" id="fmAddExistingProj">Existing Project</div>
-        </div>
-      </div>
-      <div class="divider"></div>
-      <div class="item" id="fmClose">Close</div>
-      <div class="item" id="fmCloseSolution">Close Solution</div>
+      <div class="item" id="fmNewFile">New File</div>
+      <div class="item" id="fmOpenFile">Open File</div>
+      <div class="item" id="fmOpenFolder">Open Folder</div>
       <div class="divider"></div>
       <div class="item" id="fmSaveProgram">Save</div>
       <div class="item" id="fmSaveProgramAs">Save As…</div>
       <div class="item" id="fmSaveAll">Save All</div>
       <div class="divider"></div>
-      <div class="item" id="fmPageSettings">Page Settings</div>
-      <div class="divider"></div>
-      <div class="item" id="fmRecentFiles">Recently Used Files</div>
-      <div class="item" id="fmRecentSolutions">Recently Used Projects and Solutions</div>
+      <div class="item" id="fmOpenWindow">Open Window</div>
     </div>
 
     <!-- Main area -->
@@ -562,7 +468,7 @@
         <div class="editor-surface">
           <div class="editor-toolbar">
             <span class="info" id="encodingInfo">UTF-8 | LF</span>
-            <span class="info" id="languageLockInfo">Language: <em id="languageName">None</em> (locked after creation)</span>
+            <span class="info" id="languageLockInfo">Language: <em id="languageName">None</em> (locked)</span>
             <span class="info" style="margin-left:auto;" id="statusMsg">Ready</span>
           </div>
 
@@ -570,7 +476,7 @@
             <pre aria-hidden="true" class="highlight-layer" id="highlightLayer"></pre>
             <div class="ghost-hint" id="ghostHint" style="display:none;"></div>
             <div class="code-area" id="codeArea" contenteditable="true">
-// Type ANYTHING here. To start, create a New File and select a language.
+// Type ANYTHING here. Create a New File to select language.
 // This area is the ONLY copyable/editable part of the UI.
             </div>
           </div>
@@ -668,27 +574,6 @@
     const btnUncommentLines = document.getElementById('btnUncommentLines');
     const btnSwitchTab = document.getElementById('btnSwitchTab');
 
-    // File menu items
-    const fmNewFile = document.getElementById('fmNewFile');
-    const fmOpenFile = document.getElementById('fmOpenFile');
-    const fmSaveProgram = document.getElementById('fmSaveProgram');
-    const fmSaveProgramAs = document.getElementById('fmSaveProgramAs');
-    const fmSaveAll = document.getElementById('fmSaveAll');
-    const fmClose = document.getElementById('fmClose');
-    const fmCloseSolution = document.getElementById('fmCloseSolution');
-    const fmOpenProject = document.getElementById('fmOpenProject');
-    const fmOpenFolder = document.getElementById('fmOpenFolder');
-    const fmNewProject = document.getElementById('fmNewProject');
-    const fmNewRepository = document.getElementById('fmNewRepository');
-    const fmNewFromExisting = document.getElementById('fmNewFromExisting');
-    const fmCloneRepo = document.getElementById('fmCloneRepo');
-    const fmOpenWindow = document.getElementById('fmOpenWindow');
-    const fmAddNewProj = document.getElementById('fmAddNewProj');
-    const fmAddExistingProj = document.getElementById('fmAddExistingProj');
-    const fmPageSettings = document.getElementById('fmPageSettings');
-    const fmRecentFiles = document.getElementById('fmRecentFiles');
-    const fmRecentSolutions = document.getElementById('fmRecentSolutions');
-
     // Modal elements
     const newFileModal = document.getElementById('newFileModal');
     const nfName = document.getElementById('nfName');
@@ -706,10 +591,10 @@
       content: codeArea.textContent,
       lockedLanguage: false
     };
-    const files = new Map(); // key: filename.ext, value: {name, language, ext, content, lockedLanguage}
+    const files = new Map();
     files.set('Program', { ...currentFile });
 
-    // Language extensions
+    // Lang extensions
     const langExt = {
       'JAVA': '.java',
       'CPP': '.cpp',
@@ -718,7 +603,7 @@
       'PYTHON': '.py'
     };
 
-    // Default language usings/imports (basic, non-package)
+    // Default imports/usings (basic, non-package)
     const defaultImports = {
       'CS': [
         'using System;',
@@ -739,7 +624,7 @@
       'HTML': []
     };
 
-    // Language templates
+    // Templates
     const templates = {
       'JAVA': `public class Program {
   public static void main(String[] args) {
@@ -780,19 +665,19 @@ if __name__ == "__main__":
 `
     };
 
-    // Simple syntax highlighter — "using" red
+    // Syntax highlight ("using" forced red in C#)
     function highlight(lang, text) {
       const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       const E = esc(text);
 
       const patterns = {
         CS: [
-          { re: /(^|\n)\s*(using\s+[A-Za-z0-9_.]+;)/g, cls: 'tok-using-wrong' }, /* force red for 'using' */
+          { re: /(^|\n)\s*(using\s+[A-Za-z0-9_.]+;)/g, cls: 'tok-using-wrong' },
           { re: /\/\/[^\n]*/g, cls: 'tok-comment' },
           { re: /"(?:\\.|[^"\\])*"/g, cls: 'tok-string' },
           { re: /\b(namespace|class|interface|struct|public|private|protected|internal|static|async|await|void|int|string|var|new|return)\b/g, cls: 'tok-key' },
           { re: /\b(Console|Enumerable|Task|Guid|CancellationToken|IAsyncEnumerable)\b/g, cls: 'tok-type' },
-          { re: /\b(Main|WriteLine|RunAsync|RunAllAsync|ExecuteAsync|Reverse|Dequeue|Enqueue)\b/g, cls: 'tok-func' },
+          { re: /\b(Main|WriteLine|ReadLine|RunAsync|RunAllAsync|ExecuteAsync|Reverse|Dequeue|Enqueue)\b/g, cls: 'tok-func' },
           { re: /\b\d+(\.\d+)?\b/g, cls: 'tok-number' }
         ],
         JAVA: [
@@ -824,7 +709,7 @@ if __name__ == "__main__":
         ]
       };
 
-      const langKey = currentFile.language || 'CS';
+      const langKey = lang || currentFile.language || 'CS';
       const rules = patterns[langKey] || [];
       let html = E;
       for (const { re, cls } of rules) {
@@ -833,7 +718,7 @@ if __name__ == "__main__":
       return html;
     }
 
-    // Autocomplete basics
+    // Autocomplete words
     const autoWords = {
       CS: ['Console', 'WriteLine', 'ReadLine', 'Enumerable', 'Task', 'Guid', 'CancellationToken', 'IAsyncEnumerable'],
       JAVA: ['System', 'out', 'println', 'String', 'List', 'Map'],
@@ -846,17 +731,13 @@ if __name__ == "__main__":
       const langKey = currentFile.language || 'CS';
       const list = autoWords[langKey] || [];
       const found = list.find(w => w.toLowerCase().startsWith(prefix.toLowerCase()) && w.toLowerCase() !== prefix.toLowerCase());
-      if (!found) {
-        ghostHint.style.display = 'none';
-        return;
-      }
+      if (!found) { ghostHint.style.display = 'none'; return; }
       const { x, y } = caretPixel(codeArea);
       ghostHint.style.left = x + 'px';
       ghostHint.style.top = y + 'px';
       ghostHint.textContent = found.slice(prefix.length);
       ghostHint.style.display = 'block';
     }
-
     function acceptGhost() {
       if (ghostHint.style.display === 'none') return false;
       document.execCommand('insertText', false, ghostHint.textContent);
@@ -864,15 +745,15 @@ if __name__ == "__main__":
       return true;
     }
 
-    // Capitalization fix: console -> Console (CS only)
+    // Auto-capitalize console -> Console (C#)
     function autoCapitalizeConsole() {
       if (currentFile.language !== 'CS') return;
       const text = codeArea.textContent;
       const caret = getCaretIndex(codeArea);
       const before = text.slice(0, caret);
-      const lastWordMatch = before.match(/([A-Za-z_][A-Za-z_0-9]*)$/);
-      if (!lastWordMatch) return;
-      const word = lastWordMatch[1];
+      const m = before.match(/([A-Za-z_][A-Za-z_0-9]*)$/);
+      if (!m) return;
+      const word = m[1];
       if (word === 'console') {
         const start = caret - word.length;
         const newText = text.slice(0, start) + 'Console' + text.slice(caret);
@@ -881,13 +762,10 @@ if __name__ == "__main__":
       }
     }
 
-    // Utility: status
-    function setStatus(msg) {
-      statusMsg.textContent = msg;
-      statusTail.textContent = msg;
-    }
+    // Status
+    function setStatus(msg) { statusMsg.textContent = msg; statusTail.textContent = msg; }
 
-    // Render explorer + tabs
+    // Render workspace (explorer + tabs)
     function renderWorkspace() {
       explorer.innerHTML = '';
       tabs.innerHTML = '';
@@ -913,9 +791,10 @@ if __name__ == "__main__":
     }
 
     function refreshHighlight() {
-      const html = highlight(currentFile.language, codeArea.textContent);
-      highlightLayer.innerHTML = html;
-      syncLayersScroll();
+      highlightLayer.innerHTML = highlight(currentFile.language, codeArea.textContent);
+      // Keep layers visually aligned; highlight sits under editable
+      highlightLayer.scrollTop = codeArea.scrollTop;
+      highlightLayer.scrollLeft = codeArea.scrollLeft;
     }
 
     // Open file
@@ -929,10 +808,13 @@ if __name__ == "__main__":
       diagnoseIfPossible();
     }
 
-    // Cursor + content updates
+    // Cursor / content updates
     codeArea.addEventListener('keyup', updateCursor);
     codeArea.addEventListener('click', updateCursor);
-    codeArea.addEventListener('scroll', syncLayersScroll);
+    codeArea.addEventListener('scroll', () => {
+      highlightLayer.scrollTop = codeArea.scrollTop;
+      highlightLayer.scrollLeft = codeArea.scrollLeft;
+    });
     function updateCursor() {
       const sel = window.getSelection();
       let line = 1, col = 1;
@@ -974,29 +856,22 @@ if __name__ == "__main__":
       selection.addRange(range);
       updateCursor();
     }
-    function syncLayersScroll() {
-      highlightLayer.scrollTop = codeArea.scrollTop;
-      highlightLayer.scrollLeft = codeArea.scrollLeft;
-    }
     function caretPixel(el) {
       const idx = getCaretIndex(el);
       const pre = el.textContent.slice(0, idx);
       const lines = pre.split('\n');
       const lh = 19.5;
-      const y = lines.length * lh - lh + el.getBoundingClientRect().top + window.scrollY + 12;
+      const y = lines.length * lh - lh + el.getBoundingClientRect().top + window.scrollY + 10;
       const last = lines[lines.length - 1] || '';
       const charW = 7.8;
-      const x = last.length * charW + el.getBoundingClientRect().left + window.scrollX + 16;
+      const x = last.length * charW + el.getBoundingClientRect().left + window.scrollX + 14;
       return { x, y };
     }
 
     // Undo/Redo (naive)
     const undoStack = [];
     const redoStack = [];
-    function pushUndo() {
-      undoStack.push(codeArea.textContent);
-      btnUndo.classList.remove('disabled');
-    }
+    function pushUndo() { undoStack.push(codeArea.textContent); btnUndo.classList.remove('disabled'); }
     function enableUndoRedo() {
       if (undoStack.length > 0) btnUndo.classList.remove('disabled');
       if (redoStack.length > 0) btnRedo.classList.remove('disabled');
@@ -1024,7 +899,7 @@ if __name__ == "__main__":
       liveAutocomplete();
     });
 
-    // Sidebar resize -> grid column
+    // Sidebar resize -> grid column adjustment
     const sidebar = document.getElementById('sidebar');
     const mainGrid = document.getElementById('mainGrid');
     const resizeObserver = new ResizeObserver(entries => {
@@ -1051,12 +926,8 @@ if __name__ == "__main__":
         fileMenu.style.display = 'none';
       }
     });
-    window.addEventListener('scroll', () => {
-      if (fileMenu.style.display === 'flex') positionFileMenu();
-    });
-    window.addEventListener('resize', () => {
-      if (fileMenu.style.display === 'flex') positionFileMenu();
-    });
+    window.addEventListener('scroll', () => { if (fileMenu.style.display === 'flex') positionFileMenu(); });
+    window.addEventListener('resize', () => { if (fileMenu.style.display === 'flex') positionFileMenu(); });
 
     // Explorer click
     explorer.addEventListener('click', (e) => {
@@ -1080,17 +951,12 @@ if __name__ == "__main__":
       newFileModal.style.display = 'flex';
       nfName.focus();
     }
-    function hideNewFileModal() {
-      newFileModal.style.display = 'none';
-    }
+    function hideNewFileModal() { newFileModal.style.display = 'none'; }
     nfCancel.addEventListener('click', hideNewFileModal);
     nfCreate.addEventListener('click', () => {
       const name = (nfName.value || '').trim();
       const lang = nfLang.value;
-      if (!name || !lang) {
-        nfError.style.display = 'block';
-        return;
-      }
+      if (!name || !lang) { nfError.style.display = 'block'; return; }
       const ext = langExt[lang] || '';
       const fullName = name + ext;
 
@@ -1105,13 +971,12 @@ if __name__ == "__main__":
       renderWorkspace();
       setStatus('Created ' + fullName + ' (language locked)');
       hideNewFileModal();
-      document.getElementById('optFileName').textContent = fullName;
+      optFileName.textContent = fullName;
       diagnoseIfPossible();
     });
 
-    // Hook up menu and toolbar to modal
     btnNewFile.addEventListener('click', showNewFileModal);
-    fmNewFile.addEventListener('click', showNewFileModal);
+    document.getElementById('sdNew').addEventListener('click', showNewFileModal);
 
     // Save logic
     function saveToDisk(filename, text) {
@@ -1123,7 +988,6 @@ if __name__ == "__main__":
       a.click();
       document.body.removeChild(a);
     }
-
     async function chooseFolderAndSave(filename, text) {
       if ('showDirectoryPicker' in window) {
         try {
@@ -1144,38 +1008,40 @@ if __name__ == "__main__":
         setStatus('Saved (download) ' + filename);
       }
     }
-
     function currentFilename() {
       const name = currentFile.name || 'Program';
       const ext = currentFile.ext || '';
       return name + ext;
     }
-
     function saveCurrent(asFolder = false) {
       const key = currentFilename();
       currentFile.content = codeArea.textContent;
       files.set(key, { ...currentFile });
-      if (asFolder) {
-        chooseFolderAndSave(key, currentFile.content);
-      } else {
-        saveToDisk(key, currentFile.content);
-        setStatus('Saved ' + key);
-      }
+      if (asFolder) chooseFolderAndSave(key, currentFile.content);
+      else { saveToDisk(key, currentFile.content); setStatus('Saved ' + key); }
     }
     function saveAll() {
-      for (const [key, f] of files.entries()) {
-        saveToDisk(key, f.content || '');
-      }
+      for (const [key, f] of files.entries()) saveToDisk(key, f.content || '');
       setStatus('Saved all files');
     }
-
     btnSaveFile.addEventListener('click', () => saveCurrent(false));
     btnSaveAll.addEventListener('click', saveAll);
+
+    // File menu actions
+    const fmNewFile = document.getElementById('fmNewFile');
+    const fmOpenFile = document.getElementById('fmOpenFile');
+    const fmOpenFolder = document.getElementById('fmOpenFolder');
+    const fmSaveProgram = document.getElementById('fmSaveProgram');
+    const fmSaveProgramAs = document.getElementById('fmSaveProgramAs');
+    const fmSaveAll = document.getElementById('fmSaveAll');
+    const fmOpenWindow = document.getElementById('fmOpenWindow');
+
+    fmNewFile.addEventListener('click', showNewFileModal);
     fmSaveProgram.addEventListener('click', () => saveCurrent(false));
     fmSaveProgramAs.addEventListener('click', () => saveCurrent(true));
     fmSaveAll.addEventListener('click', saveAll);
 
-    // Open File (upload), Open Folder
+    // Open file/folder
     async function openLocalFile() {
       const input = document.createElement('input');
       input.type = 'file';
@@ -1205,7 +1071,6 @@ if __name__ == "__main__":
       };
       input.click();
     }
-
     async function openLocalFolder() {
       if ('showDirectoryPicker' in window) {
         try {
@@ -1238,37 +1103,15 @@ if __name__ == "__main__":
         setStatus('Folder open not supported; use Open File.');
       }
     }
-
     btnOpenFile.addEventListener('click', openLocalFile);
     fmOpenFile.addEventListener('click', openLocalFile);
     fmOpenFolder.addEventListener('click', openLocalFolder);
 
-    // Mock actions
-    fmNewProject.addEventListener('click', () => setStatus('New Project (mock) created'));
-    fmNewRepository.addEventListener('click', () => setStatus('New Repository (mock) initialized'));
-    fmNewFromExisting.addEventListener('click', () => setStatus('Import project from existing sources (mock)'));
-    fmAddNewProj.addEventListener('click', () => setStatus('Added New Project (mock)'));
-    fmAddExistingProj.addEventListener('click', () => setStatus('Added Existing Project (mock)'));
-    fmClose.addEventListener('click', () => setStatus('Closed current window (mock)'));
-    fmCloseSolution.addEventListener('click', () => setStatus('Closed solution (mock)'));
-    fmCloneRepo.addEventListener('click', () => setStatus('Clone Repository (mock)'));
-    fmOpenWindow.addEventListener('click', () => setStatus('Opening new window (mock)'));
+    // Misc toolbar actions (mock)
     btnOpenWindow.addEventListener('click', () => setStatus('Opening new window (mock)'));
-    fmPageSettings.addEventListener('click', () => setStatus('Page Settings (mock)'));
-    fmRecentFiles.addEventListener('click', () => setStatus('Recent Files (mock)'));
-    fmRecentSolutions.addEventListener('click', () => setStatus('Recent Projects and Solutions (mock)'));
-
-    // Spell-check toggle (mock)
-    let spellOn = false;
-    btnSpell.addEventListener('click', () => {
-      spellOn = !spellOn;
-      setStatus('Spell-check ' + (spellOn ? 'enabled' : 'disabled'));
-    });
-
-    // Quick info (mock)
-    btnQuickInfo.addEventListener('click', () => {
-      setStatus('Quick info displayed (mock)');
-    });
+    fmOpenWindow.addEventListener('click', () => setStatus('Opening new window (mock)'));
+    btnSpell.addEventListener('click', () => setStatus('Spell-check ' + ((this.spellOn = !this.spellOn) ? 'enabled' : 'disabled')));
+    btnQuickInfo.addEventListener('click', () => setStatus('Quick info displayed (mock)'));
 
     // Comment / Uncomment
     function commentSelection() {
@@ -1288,7 +1131,7 @@ if __name__ == "__main__":
     btnCommentLines.addEventListener('click', commentSelection);
     btnUncommentLines.addEventListener('click', uncommentSelection);
 
-    // Switch tab (mock)
+    // Switch tab
     btnSwitchTab.addEventListener('click', () => {
       const keys = Array.from(files.keys());
       if (keys.length < 2) return;
@@ -1306,16 +1149,12 @@ if __name__ == "__main__":
       terminalBody.appendChild(div);
       terminalBody.scrollTop = terminalBody.scrollHeight;
     }
-    function printToTerminal(text) {
-      printLine(text, '');
-    }
+    function printToTerminal(text) { printLine(text, ''); }
 
-    // Diagnostics (mock, focused on CS)
+    // Diagnostics (mock, C# focus)
     function diagnoseCSharp(source) {
       const lines = source.split('\n');
       const diags = [];
-
-      // lowercase "console"
       lines.forEach((l, i) => {
         if (/\bconsole\b/.test(l)) {
           diags.push({
@@ -1326,12 +1165,7 @@ if __name__ == "__main__":
             line: i + 1
           });
         }
-      });
-
-      // console2
-      lines.forEach((l, i) => {
-        const m = l.match(/\bconsole2\b/i);
-        if (m) {
+        if (/\bconsole2\b/i.test(l)) {
           diags.push({
             level: 'Error (active)',
             code: 'CS0246',
@@ -1340,24 +1174,18 @@ if __name__ == "__main__":
             line: i + 1
           });
         }
-      });
-
-      // dllimport / mouse_event tip
-      lines.forEach((l, i) => {
         if (/\bDllImport\b/.test(l) || /\bmouse_event\b/.test(l)) {
           diags.push({
             level: 'Info',
             code: 'NETSDK',
-            desc: "Mark the 'mouse_event' method with 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke stub code at compile time.",
+            desc: "Mark 'mouse_event' with 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke stub code at compile time.",
             file: currentFilename(),
             line: i + 1
           });
         }
       });
-
       return diags;
     }
-
     function showDiagnostics(diags) {
       if (!diags || diags.length === 0) return;
       printLine('Priority  Code    Description                                         File              Line  Status', 'info');
@@ -1366,7 +1194,6 @@ if __name__ == "__main__":
         printLine(row, d.level.includes('Error') ? 'err' : (d.level.includes('Warn') ? 'warn' : 'info'));
       });
     }
-
     function diagnoseIfPossible() {
       if (currentFile.language === 'CS') {
         const diags = diagnoseCSharp(codeArea.textContent || '');
@@ -1374,7 +1201,7 @@ if __name__ == "__main__":
       }
     }
 
-    // Terminal
+    // Terminal commands
     function runCommand(cmd) {
       printToTerminal(`$ ${cmd}`);
       if (cmd === 'node -v') printLine('v18.19.0', 'info');
@@ -1389,9 +1216,7 @@ if __name__ == "__main__":
       runCommand(cmd);
       termInput.value = '';
     });
-    termInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') termRun.click();
-    });
+    termInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') termRun.click(); });
 
     btnRun.addEventListener('click', () => {
       const target = runTarget.value;
@@ -1408,10 +1233,6 @@ if __name__ == "__main__":
       setStatus('Run without debugging');
     });
 
-    // Modal and explorer hooks
-    document.getElementById('sdNew').addEventListener('click', showNewFileModal);
-    document.getElementById('sdRefresh').addEventListener('click', () => setStatus('Explorer refreshed'));
-
     // Lightweight autocomplete lifecycle
     function liveAutocomplete() {
       const caret = getCaretIndex(codeArea);
@@ -1419,11 +1240,8 @@ if __name__ == "__main__":
       const before = text.slice(0, caret);
       const m = before.match(/([A-Za-z_][A-Za-z_0-9]*)$/);
       const prefix = m ? m[1] : '';
-      if (prefix && prefix.length >= 3) {
-        showGhostSuggestion(prefix);
-      } else {
-        ghostHint.style.display = 'none';
-      }
+      if (prefix && prefix.length >= 3) showGhostSuggestion(prefix);
+      else ghostHint.style.display = 'none';
     }
     codeArea.addEventListener('keydown', (e) => {
       if (e.key === 'Tab') {
@@ -1433,10 +1251,20 @@ if __name__ == "__main__":
       }
     });
 
+    // Position terminal, editor, toolbar: ensure everything visible (no layout spill)
+    function ensureLayoutStable() {
+      // shrink controls if window height is tight
+      const toolbar = document.getElementById('toolbar');
+      const tooTall = window.innerHeight < 560;
+      toolbar.style.gap = tooTall ? '2px' : '4px';
+    }
+    window.addEventListener('resize', ensureLayoutStable);
+
     // Initialize
     renderWorkspace();
     setStatus('Ready');
     refreshHighlight();
+    ensureLayoutStable();
   </script>
 </body>
 </html>

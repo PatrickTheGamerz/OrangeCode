@@ -1,590 +1,877 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>VS Code-like Web Editor</title>
-<style>
-  :root {
-    --bg: #1e1e1e;
-    --panel: #252526;
-    --sidebar: #252526;
-    --border: #3c3c3c;
-    --accent: #0e639c;
-    --text: #cccccc;
-    --muted: #8a8a8a;
-    --hover: #2a2a2a;
-    --active: #094771;
-    --tab-bg: #2d2d2d;
-    --tab-active: #1f1f1f;
-    --status: #0b0b0b;
-    --badge: #37373d;
-    --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    --sans: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Noto Sans", "Helvetica Neue", Arial;
-  }
-  * { box-sizing: border-box; }
-  html, body { height: 100%; }
-  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); }
+  <meta charset="UTF-8" />
+  <title>Mini Studio</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    /* ------------------------------
+       VS Code–style dark theme base
+       ------------------------------ */
+    :root {
+      --bg: #1e1e1e;
+      --panel: #252526;
+      --sidebar: #252526;
+      --hover: #2a2a2a;
+      --border: #3c3c3c;
+      --active: #094771;
+      --accent: #0e639c;
+      --text: #cccccc;
+      --muted: #9da3a6;
+      --danger: #d16b6b;
+      --success: #5ab880;
+      --warning: #e5c07b;
+      --tab-bg: #2d2d2d;
+      --tab-active-bg: #1f1f1f;
+      --editor-bg: #1e1e1e;
+      --terminal-bg: #111111;
+      --status-bg: #0b0b0b;
+      --shadow: rgba(0,0,0,0.35);
+      --focus-ring: #2878cc;
+      --selection: rgba(14, 99, 156, 0.35);
+      --scroll-thumb: #4b4b4b;
+      --scroll-track: #2a2a2a;
+      --badge-bg: #385a7b;
+      --badge-text: #cfe8ff;
+      --cmd-bg: #252526f2;
+    }
 
-  .root { display: grid; grid-template-rows: 32px auto 24px; height: 100vh; }
-  .main { display: grid; grid-template-columns: 48px 260px auto; height: 100%; }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+      overflow: hidden;
+    }
 
-  /* Make UI chrome unselectable */
-  .titlebar, .titlebar * ,
-  .activitybar, .activitybar * ,
-  .sidebar, .sidebar * ,
-  .tabs, .tabs * ,
-  .statusbar, .statusbar * {
-    user-select: none;
-  }
+    /* ------------------------------
+       Top title bar
+       ------------------------------ */
+    .titlebar {
+      height: 32px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      gap: 8px;
+      user-select: none;
+    }
+    .titlebar .app-name {
+      font-size: 12px;
+      color: var(--muted);
+      margin-right: auto;
+    }
+    .titlebar .tb-btn {
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      color: var(--text);
+      background: transparent;
+      border: 1px solid transparent;
+      cursor: pointer;
+    }
+    .titlebar .tb-btn:hover {
+      background: var(--hover);
+      border-color: var(--border);
+    }
 
-  /* Title Bar */
-  .titlebar {
-    display: flex; align-items: center; gap: 8px;
-    background: var(--panel);
-    border-bottom: 1px solid var(--border);
-    padding: 0 10px; font-size: 12px;
-  }
-  .titlebar .menu { display: flex; gap: 4px; }
-  .titlebar .menu button {
-    background: transparent; border: none; color: var(--text);
-    padding: 6px 8px; cursor: pointer; border-radius: 6px;
-  }
-  .titlebar .menu button:hover { background: var(--hover); }
-  .spacer { flex: 1; }
-  .kbd { font-family: var(--mono); background: var(--badge); padding: 2px 6px; border-radius: 4px; }
+    /* ------------------------------
+       Activity bar (icons)
+       ------------------------------ */
+    .activitybar {
+      width: 48px;
+      background: #202020;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 6px 0;
+      gap: 6px;
+    }
+    .activitybar .icon {
+      width: 100%;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .activitybar .icon:hover { background: var(--hover); color: var(--text); }
+    .activitybar .icon.active { background: var(--active); color: #cfe8ff; }
 
-  /* Activity Bar */
-  .activitybar {
-    width: 48px; background: #202020; border-right: 1px solid var(--border);
-    display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 0;
-  }
-  .activitybar .icon {
-    width: 36px; height: 36px; border-radius: 8px; display: grid; place-items: center;
-    color: var(--muted); cursor: pointer;
-  }
-  .activitybar .icon:hover { background: var(--hover); color: var(--text); }
-  .activitybar .icon.active { background: var(--active); color: #fff; }
+    /* ------------------------------
+       Main layout
+       ------------------------------ */
+    .workspace {
+      display: grid;
+      grid-template-rows: 32px 1fr 24px;
+      height: 100%;
+    }
+    .main {
+      display: grid;
+      grid-template-columns: 48px 280px 1fr;
+      grid-template-rows: 100%;
+      min-height: 0;
+    }
 
-  /* Sidebar */
-  .sidebar {
-    background: var(--sidebar); border-right: 1px solid var(--border);
-    display: flex; flex-direction: column; min-width: 160px;
-  }
-  .section-header {
-    font-size: 11px; text-transform: uppercase;
-    color: var(--muted); padding: 10px 12px; border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; gap: 8px;
-  }
-  .section-header .badge { background: var(--badge); color: var(--text); font-size: 10px; padding: 2px 6px; border-radius: 10px; }
-  .search {
-    display: flex; align-items: center; gap: 8px;
-    padding: 6px 8px; border-bottom: 1px solid var(--border);
-    background: var(--panel);
-  }
-  .search input {
-    flex: 1; background: #1f1f1f; border: 1px solid var(--border);
-    color: var(--text); border-radius: 8px; padding: 8px 10px; font-size: 12px;
-  }
-  .tree { overflow: auto; padding: 6px; }
-  .node {
-    display: flex; align-items: center; gap: 6px;
-    padding: 6px 8px; border-radius: 6px; cursor: pointer; white-space: nowrap;
-  }
-  .node:hover { background: var(--hover); }
-  .node.active { background: #093a61; }
-  .twisty { width: 12px; text-align: center; color: var(--muted); }
-  .file { color: var(--text); }
-  .dir { color: var(--muted); }
+    /* ------------------------------
+       Sidebar: Explorer
+       ------------------------------ */
+    .sidebar {
+      background: var(--sidebar);
+      border-right: 1px solid var(--border);
+      min-width: 160px;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .sidebar-header {
+      padding: 8px 10px;
+      font-size: 12px;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .sidebar-content {
+      overflow: auto;
+      padding: 6px 0;
+    }
+    .tree-item {
+      padding: 4px 10px 4px 24px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      position: relative;
+    }
+    .tree-item:hover { background: var(--hover); }
+    .tree-item.active { background: var(--tab-active-bg); }
+    .tree-item .twist {
+      position: absolute;
+      left: 8px;
+      color: var(--muted);
+    }
+    .tree-item .badge {
+      margin-left: auto;
+      background: var(--badge-bg);
+      color: var(--badge-text);
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 10px;
+    }
 
-  /* Editor */
-  .editor { display: grid; grid-template-rows: 32px auto; background: #151515; }
-  .tabs {
-    display: flex; align-items: center; overflow: auto;
-    background: var(--tab-bg); border-bottom: 1px solid var(--border);
-  }
-  .tab {
-    display: flex; align-items: center; gap: 8px;
-    padding: 6px 12px; cursor: pointer; color: var(--muted);
-    border-right: 1px solid var(--border);
-  }
-  .tab:hover { background: var(--hover); color: var(--text); }
-  .tab.active { background: var(--tab-active); color: var(--text); border-bottom: 2px solid var(--accent); }
-  .tab .close { color: var(--muted); }
-  .tab .close:hover { color: var(--text); }
+    /* ------------------------------
+       Editor area
+       ------------------------------ */
+    .editor {
+      display: grid;
+      grid-template-rows: 36px 1fr 160px;
+      min-height: 0;
+    }
 
-  .surface { position: relative; height: 100%; overflow: hidden; }
-  .editor-pane {
-    position: absolute; inset: 0; overflow: auto;
-    padding: 12px 16px 48px 16px; font-family: var(--mono);
-    font-size: 13px; line-height: 1.6; color: #d4d4d4;
-    counter-reset: line; white-space: pre; outline: none;
-  }
-  .line { display: block; position: relative; padding-left: 52px; }
-  .line::before {
-    counter-increment: line; content: counter(line);
-    position: absolute; left: 0; width: 40px; text-align: right; color: var(--muted);
-  }
+    /* Tabs */
+    .tabs {
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      padding: 0 6px;
+      overflow: hidden;
+    }
+    .tab {
+      background: var(--tab-bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-bottom: none;
+      height: 28px;
+      margin-top: 6px;
+      padding: 0 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      cursor: pointer;
+      border-top-left-radius: 6px;
+      border-top-right-radius: 6px;
+      box-shadow: 0 1px 0 var(--shadow) inset;
+    }
+    .tab.active {
+      background: var(--tab-active-bg);
+      border-color: var(--border);
+      color: #ffffff;
+    }
+    .tab .close {
+      opacity: 0.6;
+    }
+    .tab:hover .close { opacity: 1; }
 
-  /* Syntax colors */
-  .tok-key { color: #569cd6; }
-  .tok-fn  { color: #dcdcaa; }
-  .tok-str { color: #ce9178; }
-  .tok-num { color: #c586c0; }
-  .tok-type{ color: #6a9955; }
-  .tok-com { color: #6b6b6b; font-style: italic; }
+    /* Editor panels */
+    .editor-surface {
+      position: relative;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 1fr;
+      grid-template-rows: 32px 1fr;
+      background: var(--editor-bg);
+    }
+    .editor-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 8px;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel);
+    }
+    .btn {
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      color: var(--text);
+      background: transparent;
+      border: 1px solid var(--border);
+      cursor: pointer;
+    }
+    .btn:hover { background: var(--hover); }
+    .btn.primary {
+      border-color: var(--accent);
+      color: #cfe8ff;
+    }
+    .btn.primary:hover { background: var(--active); }
 
-  /* Status Bar */
-  .statusbar {
-    display: flex; align-items: center; gap: 12px;
-    background: var(--status); border-top: 1px solid var(--border);
-    padding: 0 12px; font-size: 12px; color: var(--muted);
-  }
-  .item { padding: 0 6px; border-radius: 4px; }
-  .item.active { background: var(--badge); color: var(--text); }
+    /* Code editor lookalike */
+    .code-area {
+      position: relative;
+      overflow: auto;
+      padding: 12px 16px;
+      line-height: 1.5;
+      font-family: "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace;
+      font-size: 13px;
+      counter-reset: ln;
+    }
+    .code-line {
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      gap: 16px;
+      white-space: pre;
+    }
+    .line-num {
+      color: #6b6b6b;
+      text-align: right;
+      padding-right: 8px;
+      user-select: none;
+    }
+    .code {
+      color: #d4d4d4;
+    }
+    .code .kw { color: #c586c0; }
+    .code .fn { color: #dcdcaa; }
+    .code .str { color: #ce9178; }
+    .code .num { color: #b5cea8; }
+    .code .cm { color: #6a9955; }
+    .code .obj { color: #9cdcfe; }
 
-  /* Command Palette */
-  .palette {
-    position: absolute; inset: 0; display: none; place-items: start center;
-    background: rgba(0,0,0,0.35);
-  }
-  .palette.open { display: grid; }
-  .box {
-    margin-top: 12vh; width: min(780px, 92vw); background: var(--panel);
-    border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
-  }
-  .input {
-    width: 100%; padding: 12px 14px; background: #1f1f1f; border: none; outline: none;
-    color: var(--text); font-family: var(--sans); font-size: 14px; border-bottom: 1px solid var(--border);
-  }
-  .list { max-height: 42vh; overflow: auto; }
-  .cmd {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 10px 14px; cursor: pointer; font-size: 13px;
-  }
-  .cmd:hover, .cmd.active { background: var(--hover); }
-  .hint { color: var(--muted); font-family: var(--mono); }
+    /* Selection mock */
+    .selection {
+      background: var(--selection);
+      border-radius: 2px;
+    }
 
-  /* Responsive collapse */
-  @media (max-width: 900px) {
-    .main { grid-template-columns: 48px 0 1fr; }
-    .sidebar { display: none; }
-  }
-</style>
+    /* ------------------------------
+       Bottom panel: Terminal
+       ------------------------------ */
+    .terminal {
+      background: var(--terminal-bg);
+      border-top: 1px solid var(--border);
+      display: grid;
+      grid-template-rows: 28px 1fr 28px;
+      min-height: 0;
+    }
+    .terminal-header {
+      padding: 4px 8px;
+      font-size: 12px;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .term-tabs {
+      display: flex;
+      gap: 4px;
+    }
+    .term-tab {
+      padding: 2px 6px;
+      border: 1px solid var(--border);
+      background: #191919;
+      color: var(--muted);
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .term-tab.active {
+      color: #e0e0e0;
+      background: #202020;
+      border-color: var(--accent);
+    }
+    .terminal-body {
+      padding: 8px;
+      overflow: auto;
+      font-family: Menlo, Consolas, monospace;
+      font-size: 12px;
+      color: #c7c7c7;
+    }
+    .terminal-input {
+      display: grid;
+      grid-template-columns: 32px 1fr 80px;
+      gap: 6px;
+      border-top: 1px solid var(--border);
+      padding: 4px 8px;
+      align-items: center;
+    }
+    .prompt {
+      color: var(--accent);
+      text-align: center;
+      user-select: none;
+    }
+    .term-field {
+      width: 100%;
+      background: #1a1a1a;
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 4px;
+      padding: 6px 8px;
+      outline: none;
+    }
+    .term-run {
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 6px 8px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .term-run:hover { filter: brightness(1.1); }
+
+    /* ------------------------------
+       Status bar
+       ------------------------------ */
+    .statusbar {
+      height: 24px;
+      background: var(--status-bg);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      gap: 14px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .statusbar .cell { cursor: default; }
+    .statusbar .cell.interactive { cursor: pointer; }
+    .statusbar .cell.interactive:hover { color: #e0e0e0; }
+
+    /* ------------------------------
+       Command palette
+       ------------------------------ */
+    .cmd-palette {
+      position: fixed;
+      left: 50%;
+      top: 12%;
+      transform: translateX(-50%);
+      width: min(680px, 92vw);
+      background: var(--cmd-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 12px 28px var(--shadow);
+      display: none;
+      overflow: hidden;
+      backdrop-filter: blur(6px);
+    }
+    .cmd-header {
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .cmd-input {
+      width: 100%;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-size: 14px;
+      padding: 10px;
+    }
+    .cmd-list {
+      max-height: 320px;
+      overflow: auto;
+      border-top: 1px solid var(--border);
+    }
+    .cmd-item {
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
+    .cmd-item:hover { background: var(--hover); }
+    .keyboard-hint {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    /* ------------------------------
+       Scrollbars (WebKit)
+       ------------------------------ */
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 6px; }
+    ::-webkit-scrollbar-track { background: var(--scroll-track); }
+    ::selection { background: var(--selection); }
+
+    /* ------------------------------
+       Resizers
+       ------------------------------ */
+    .resizer {
+      position: relative;
+    }
+    .resizer-col {
+      position: absolute;
+      right: -4px;
+      top: 0;
+      width: 8px;
+      height: 100%;
+      cursor: col-resize;
+    }
+    .resizer-row {
+      position: absolute;
+      left: 0;
+      bottom: -4px;
+      width: 100%;
+      height: 8px;
+      cursor: row-resize;
+    }
+
+    /* Focus ring helper */
+    .focusable:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+  </style>
 </head>
 <body>
-<div class="root">
-
-  <!-- Title Bar -->
-  <div class="titlebar">
-    <div class="menu">
-      <button id="btnFile">File</button>
-      <button id="btnEdit">Edit</button>
-      <button id="btnView">View</button>
-      <button id="btnGo">Go</button>
-      <button id="btnRun">Run</button>
+  <div class="workspace">
+    <!-- Title bar -->
+    <div class="titlebar">
+      <button class="tb-btn" id="btnFile">File</button>
+      <button class="tb-btn" id="btnEdit">Edit</button>
+      <button class="tb-btn" id="btnView">View</button>
+      <button class="tb-btn" id="btnRun">Run</button>
+      <span class="app-name">Mini Studio — Untitled (Workspace)</span>
+      <button class="tb-btn" id="btnPalette">⌘/Ctrl+Shift+P</button>
     </div>
-    <div class="spacer"></div>
-    <div style="font-size:12px; color: var(--muted);">
-      VS Code‑like Web • Press <span class="kbd">Ctrl+P</span> for Command Palette
-    </div>
-  </div>
 
-  <!-- Main -->
-  <div class="main">
-    <!-- Activity Bar -->
-    <aside class="activitybar">
-      <div class="icon active" title="Explorer" id="iconExplorer">🗂️</div>
-      <div class="icon" title="Search" id="iconSearch">🔎</div>
-      <div class="icon" title="Source Control">🔧</div>
-      <div class="icon" title="Run">▶️</div>
-      <div class="icon" title="Extensions">🧩</div>
-    </aside>
-
-    <!-- Sidebar -->
-    <aside class="sidebar" id="sidebar">
-      <div class="section-header">Explorer <span class="badge" id="fileCount">0</span></div>
-      <div class="search">
-        <input id="fileFilter" placeholder="Filter files..." />
-        <span class="kbd">Ctrl+P</span>
+    <!-- Main -->
+    <div class="main">
+      <!-- Activity bar -->
+      <div class="activitybar">
+        <div class="icon active" title="Explorer">🗂️</div>
+        <div class="icon" title="Search">🔎</div>
+        <div class="icon" title="Source Control">🔱</div>
+        <div class="icon" title="Run & Debug">🐞</div>
+        <div class="icon" title="Extensions">🧩</div>
       </div>
-      <div id="tree" class="tree"></div>
-    </aside>
 
-    <!-- Editor -->
-    <section class="editor">
-      <div id="tabs" class="tabs"></div>
-      <div class="surface">
-        <div id="pane" class="editor-pane" tabindex="0" aria-label="Editor" role="textbox"></div>
-
-        <!-- Command Palette -->
-        <div id="palette" class="palette" aria-modal="true">
-          <div class="box" role="dialog" aria-label="Command palette">
-            <input id="paletteInput" class="input" placeholder="Type a command or file name" />
-            <div id="paletteList" class="list"></div>
+      <!-- Sidebar (Explorer) -->
+      <aside class="sidebar resizer" id="sidebar">
+        <div class="sidebar-header">
+          <span>Explorer</span>
+          <div>
+            <button class="tb-btn" id="btnNewFile">New</button>
+            <button class="tb-btn" id="btnRefresh">Refresh</button>
           </div>
         </div>
-      </div>
-    </section>
+        <div class="sidebar-content" id="explorer">
+          <div class="tree-item">
+            <span class="twist">▸</span><strong>mini-studio</strong>
+          </div>
+          <div class="tree-item active" data-open="index.html">
+            <span class="twist">•</span><span>index.html</span>
+            <span class="badge">HTML</span>
+          </div>
+          <div class="tree-item" data-open="style.css">
+            <span class="twist">•</span><span>style.css</span>
+            <span class="badge">CSS</span>
+          </div>
+          <div class="tree-item" data-open="main.js">
+            <span class="twist">•</span><span>main.js</span>
+            <span class="badge">JS</span>
+          </div>
+          <div class="tree-item" data-open="README.md">
+            <span class="twist">•</span><span>README.md</span>
+            <span class="badge">MD</span>
+          </div>
+        </div>
+        <div class="resizer-col" id="sidebarResizer"></div>
+      </aside>
+
+      <!-- Editor -->
+      <section class="editor resizer" id="editor">
+        <!-- Tabs -->
+        <div class="tabs" id="tabs">
+          <div class="tab active" data-file="index.html">
+            <span>index.html</span>
+            <span class="close">✕</span>
+          </div>
+          <div class="tab" data-file="style.css">
+            <span>style.css</span>
+            <span class="close">✕</span>
+          </div>
+          <div class="tab" data-file="main.js">
+            <span>main.js</span>
+            <span class="close">✕</span>
+          </div>
+        </div>
+
+        <!-- Editor surface -->
+        <div class="editor-surface">
+          <div class="editor-toolbar">
+            <button class="btn primary" id="btnSave">Save</button>
+            <button class="btn" id="btnFormat">Format</button>
+            <button class="btn" id="btnToggleTerminal">Toggle Terminal</button>
+            <span style="margin-left:auto;color:var(--muted);">UTF-8 | LF | JavaScript</span>
+          </div>
+          <div class="code-area" id="codeArea" tabindex="0" class="focusable">
+            <!-- index.html content -->
+            <div class="code-view" data-file="index.html">
+              <div class="code-line"><span class="line-num">1</span><span class="code"><span class="cm">&lt;!-- Demo HTML --&gt;</span></span></div>
+              <div class="code-line"><span class="line-num">2</span><span class="code">&lt;<span class="kw">!DOCTYPE</span> html&gt;</span></div>
+              <div class="code-line"><span class="line-num">3</span><span class="code">&lt;<span class="kw">html</span> lang=<span class="str">"en"</span>&gt;</span></div>
+              <div class="code-line"><span class="line-num">4</span><span class="code">&nbsp;&nbsp;&lt;<span class="kw">head</span>&gt;</span></div>
+              <div class="code-line"><span class="line-num">5</span><span class="code">&nbsp;&nbsp;&nbsp;&nbsp;&lt;<span class="kw">meta</span> charset=<span class="str">"UTF-8"</span>&gt;</span></div>
+              <div class="code-line"><span class="line-num">6</span><span class="code">&nbsp;&nbsp;&nbsp;&nbsp;&lt;<span class="kw">title</span>&gt;Hello&lt;/<span class="kw">title</span>&gt;</span></div>
+              <div class="code-line"><span class="line-num">7</span><span class="code">&nbsp;&nbsp;&lt;/<span class="kw">head</span>&gt;</span></div>
+              <div class="code-line"><span class="line-num">8</span><span class="code">&nbsp;&nbsp;&lt;<span class="kw">body</span>&gt;Hi&lt;/<span class="kw">body</span>&gt;</span></div>
+              <div class="code-line"><span class="line-num">9</span><span class="code">&lt;/<span class="kw">html</span>&gt;</span></div>
+            </div>
+
+            <!-- style.css content -->
+            <div class="code-view" data-file="style.css" style="display:none;">
+              <div class="code-line"><span class="line-num">1</span><span class="code"><span class="cm">/* Demo CSS */</span></span></div>
+              <div class="code-line"><span class="line-num">2</span><span class="code"><span class="obj">body</span> { <span class="obj">background</span>: <span class="str">#202020</span>; <span class="obj">color</span>: <span class="str">#eee</span>; }</span></div>
+              <div class="code-line"><span class="line-num">3</span><span class="code"><span class="obj">button</span> { <span class="obj">border-radius</span>: <span class="num">6px</span>; }</span></div>
+            </div>
+
+            <!-- main.js content -->
+            <div class="code-view" data-file="main.js" style="display:none;">
+              <div class="code-line"><span class="line-num">1</span><span class="code"><span class="cm">// Demo JS</span></span></div>
+              <div class="code-line"><span class="line-num">2</span><span class="code"><span class="kw">const</span> msg <span class="kw">=</span> <span class="str">"Hello Studio"</span>;</span></div>
+              <div class="code-line"><span class="line-num">3</span><span class="code"><span class="fn">console</span>.<span class="fn">log</span>(msg);</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Resizer for terminal height -->
+        <div class="resizer-row" id="terminalResizer"></div>
+
+        <!-- Terminal -->
+        <div class="terminal" id="terminal">
+          <div class="terminal-header">
+            <div class="term-tabs">
+              <div class="term-tab active" data-term="bash">bash</div>
+              <div class="term-tab" data-term="node">node</div>
+            </div>
+            <span style="margin-left:auto;">Press Enter to run</span>
+          </div>
+          <div class="terminal-body" id="terminalBody">
+            <div>$ echo "welcome"</div>
+            <div>welcome</div>
+          </div>
+          <div class="terminal-input">
+            <div class="prompt">❯</div>
+            <input class="term-field" id="termInput" placeholder="Type a command, e.g., node -v" />
+            <button class="term-run" id="termRun">Run</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Status bar -->
+    <div class="statusbar">
+      <div class="cell">Ln 1, Col 1</div>
+      <div class="cell">Spaces: 2</div>
+      <div class="cell">UTF-8</div>
+      <div class="cell">LF</div>
+      <div class="cell interactive" id="toggleTheme">Dark+</div>
+      <div class="cell" style="margin-left:auto;">Mini Studio Ready</div>
+    </div>
   </div>
 
-  <!-- Status Bar -->
-  <footer class="statusbar">
-    <div class="item active">UTF-8</div>
-    <div class="item">LF</div>
-    <div id="lang" class="item">Plain Text</div>
-    <div class="item">Spaces: 2</div>
-    <div class="spacer"></div>
-    <div class="item">Go Live</div>
-    <div id="cursor" class="item">Ln 1, Col 1</div>
-  </footer>
-</div>
+  <!-- Command palette -->
+  <div class="cmd-palette" id="palette">
+    <div class="cmd-header">Command Palette — Type to filter</div>
+    <input class="cmd-input" id="paletteInput" placeholder="> e.g., Toggle Sidebar, Toggle Terminal, Save" />
+    <div class="cmd-list" id="paletteList"></div>
+  </div>
 
-<script>
-/* ---------- File model ---------- */
-const files = [
-  { path: "README.md", type: "text/markdown", content: md(`
-# VS Code-like Web Editor
+  <script>
+    // ------------------------------
+    // Basic state
+    // ------------------------------
+    const tabsEl = document.getElementById('tabs');
+    const codeArea = document.getElementById('codeArea');
+    const sidebar = document.getElementById('sidebar');
+    const terminal = document.getElementById('terminal');
+    const terminalBody = document.getElementById('terminalBody');
+    const termInput = document.getElementById('termInput');
+    const termRun = document.getElementById('termRun');
+    const palette = document.getElementById('palette');
+    const paletteInput = document.getElementById('paletteInput');
+    const paletteList = document.getElementById('paletteList');
+    const toggleTheme = document.getElementById('toggleTheme');
 
-- Explorer with file tree
-- Tabs, faux line numbers
-- Command Palette: Ctrl+P
-- Minimal syntax coloring
-
-Try opening index.html from the Explorer or the Palette.
-`) },
-  { path: "index.html", type: "text/html", content: code(`
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <title>Hello</title>
-  </head>
-  <body>
-    <h1>Hello, VS Code-like world!</h1>
-    <script>console.log('ready');</script>
-  </body>
-</html>
-`) },
-];
-
-/* ---------- DOM refs ---------- */
-const treeEl = document.getElementById("tree");
-const tabsEl = document.getElementById("tabs");
-const paneEl = document.getElementById("pane");
-const paletteEl = document.getElementById("palette");
-const paletteInputEl = document.getElementById("paletteInput");
-const paletteListEl = document.getElementById("paletteList");
-const fileFilterEl = document.getElementById("fileFilter");
-const sidebarEl = document.getElementById("sidebar");
-const activityEl = document.querySelector(".activitybar");
-const mainEl = document.querySelector(".main");
-const langEl = document.getElementById("lang");
-const cursorEl = document.getElementById("cursor");
-const fileCountEl = document.getElementById("fileCount");
-
-/* ---------- State ---------- */
-const state = {
-  openTabs: [],
-  activePath: null,
-  expandedDirs: new Set([""]),
-  paletteIndex: 0,
-};
-
-/* ---------- Build file tree ---------- */
-function buildTree() {
-  const model = nest(files.map(f => f.path));
-  treeEl.innerHTML = "";
-  renderDir(model, "");
-  highlightActiveInTree();
-  fileCountEl.textContent = String(files.length);
-}
-function nest(paths) {
-  const root = {};
-  for (const p of paths) {
-    const parts = p.split("/");
-    let cur = root;
-    for (let i = 0; i < parts.length; i++) {
-      const part = parts[i];
-      const isLeaf = i === parts.length - 1;
-      if (!cur[part]) cur[part] = isLeaf ? null : {};
-      if (!isLeaf) cur = cur[part];
+    // ------------------------------
+    // Tabs switching
+    // ------------------------------
+    function openFile(file) {
+      document.querySelectorAll('.tab').forEach(t => {
+        t.classList.toggle('active', t.dataset.file === file);
+      });
+      document.querySelectorAll('.code-view').forEach(v => {
+        v.style.display = (v.dataset.file === file) ? 'block' : 'none';
+      });
+      // Update statusbar line/col mock
+      setStatus('Mini Studio Ready');
     }
-  }
-  return root;
-}
-function renderDir(dir, base, pad = 0) {
-  Object.entries(dir).forEach(([name, child]) => {
-    const full = base ? base + "/" + name : name;
-    const node = document.createElement("div");
-    node.className = "node";
-    node.dataset.path = full;
-    node.style.paddingLeft = pad + "px";
 
-    if (child === null) {
-      node.innerHTML = `<span class="twisty"> </span><span class="file">📄 ${name}</span>`;
-      node.onclick = () => openFile(full);
-      treeEl.appendChild(node);
-    } else {
-      const expanded = state.expandedDirs.has(full);
-      node.innerHTML = `<span class="twisty">${expanded ? "▾" : "▸"}</span><span class="dir">📁 ${name}</span>`;
-      node.onclick = () => {
-        expanded ? state.expandedDirs.delete(full) : state.expandedDirs.add(full);
-        buildTree();
-        applyFilter(fileFilterEl.value);
-      };
-      treeEl.appendChild(node);
-      if (expanded) renderDir(child, full, pad + 18);
-    }
-  });
-}
-
-/* ---------- Tabs ---------- */
-function renderTabs() {
-  tabsEl.innerHTML = "";
-  state.openTabs.forEach(path => {
-    const el = document.createElement("div");
-    el.className = "tab" + (state.activePath === path ? " active" : "");
-    el.innerHTML = `<span>${basename(path)}</span><span class="spacer"></span><span class="close" title="Close">✕</span>`;
-    el.addEventListener("click", (e) => {
-      if (e.target.classList.contains("close")) closeTab(path);
-      else activate(path);
+    tabsEl.addEventListener('click', (e) => {
+      const tab = e.target.closest('.tab');
+      if (!tab) return;
+      if (e.target.classList.contains('close')) {
+        tab.remove();
+        const first = document.querySelector('.tab');
+        if (first) openFile(first.dataset.file);
+        return;
+      }
+      openFile(tab.dataset.file);
     });
-    tabsEl.appendChild(el);
-  });
-}
 
-/* ---------- Open/activate/close ---------- */
-function openFile(path) {
-  if (!state.openTabs.includes(path)) state.openTabs.push(path);
-  activate(path);
-  renderTabs();
-}
-function activate(path) {
-  state.activePath = path;
-  renderTabs();
-  renderEditor();
-  highlightActiveInTree();
-  const f = files.find(x => x.path === path);
-  langEl.textContent = languageLabel(f?.type || "text/plain");
-}
-function closeTab(path) {
-  const i = state.openTabs.indexOf(path);
-  if (i >= 0) state.openTabs.splice(i, 1);
-  if (state.activePath === path) {
-    state.activePath = state.openTabs[state.openTabs.length - 1] ?? null;
-  }
-  renderTabs();
-  renderEditor();
-}
-
-/* ---------- Editor render ---------- */
-function renderEditor() {
-  const file = files.find(f => f.path === state.activePath);
-  if (!file) { paneEl.innerHTML = ""; cursorEl.textContent = "Ln 1, Col 1"; return; }
-  const html = tokenize(file.content, file.type)
-    .split("\n")
-    .map(line => `<span class="line">${line || " "}</span>`)
-    .join("\n");
-  paneEl.innerHTML = html;
-  paneEl.scrollTop = 0;
-  updateCursor(1,1);
-}
-
-/* ---------- Command Palette ---------- */
-function togglePalette(open) {
-  paletteEl.classList.toggle("open", open);
-  if (open) {
-    paletteInputEl.value = "";
-    renderPaletteList("");
-    state.paletteIndex = 0;
-    focusPaletteItem(0);
-    paletteInputEl.focus();
-  }
-}
-function paletteItems(query = "") {
-  const q = query.toLowerCase().trim();
-  const base = [
-    ...files.map(f => ({ kind: "file", label: f.path, hint: "Open file" })),
-    { kind: "cmd", label: "View: Toggle Sidebar", action: toggleSidebar, hint: "View" },
-    { kind: "cmd", label: "File: New Untitled", action: newUntitled, hint: "File" },
-    { kind: "cmd", label: "File: Close Active", action: () => closeTab(state.activePath), hint: "File" },
-  ];
-  return base.filter(it => it.label.toLowerCase().includes(q));
-}
-function renderPaletteList(q) {
-  const items = paletteItems(q);
-  paletteListEl.innerHTML = "";
-  items.forEach((it, idx) => {
-    const el = document.createElement("div");
-    el.className = "cmd" + (idx === state.paletteIndex ? " active" : "");
-    el.innerHTML = `<span>${it.label}</span><span class="hint">${it.hint}</span>`;
-    el.addEventListener("click", () => {
-      if (it.kind === "file") openFile(it.label);
-      else it.action?.();
-      togglePalette(false);
+    document.getElementById('explorer').addEventListener('click', (e) => {
+      const item = e.target.closest('.tree-item');
+      if (!item) return;
+      const file = item.dataset.open;
+      if (file) {
+        openFile(file);
+        document.querySelectorAll('.tree-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+        const exists = [...document.querySelectorAll('.tab')].some(t => t.dataset.file === file);
+        if (!exists) {
+          const t = document.createElement('div');
+          t.className = 'tab';
+          t.dataset.file = file;
+          t.innerHTML = `<span>${file}</span><span class="close">✕</span>`;
+          tabsEl.appendChild(t);
+        }
+      }
     });
-    paletteListEl.appendChild(el);
-  });
-}
-function focusPaletteItem(i) {
-  state.paletteIndex = Math.max(0, Math.min(i, paletteListEl.children.length - 1));
-  [...paletteListEl.children].forEach((el, idx) => {
-    el.classList.toggle("active", idx === state.paletteIndex);
-    if (idx === state.paletteIndex) el.scrollIntoView({ block: "nearest" });
-  });
-}
 
-/* ---------- Sidebar toggle ---------- */
-function toggleSidebar() {
-  const hidden = sidebarEl.dataset.hidden === "true";
-  if (hidden) {
-    sidebarEl.dataset.hidden = "false";
-    sidebarEl.style.display = "flex";
-    activityEl.style.display = "flex";
-    mainEl.style.gridTemplateColumns = "48px 260px auto";
-  } else {
-    sidebarEl.dataset.hidden = "true";
-    sidebarEl.style.display = "none";
-    activityEl.style.display = "none";
-    mainEl.style.gridTemplateColumns = "0 0 1fr";
-  }
-}
-
-/* ---------- New File ---------- */
-function newUntitled() {
-  let n = 1;
-  while (files.some(f => f.path === `Untitled-${n}.txt`)) n++;
-  const path = `Untitled-${n}.txt`;
-  files.push({ path, type: "text/plain", content: "" });
-  buildTree();
-  openFile(path);
-}
-
-/* ---------- Filtering ---------- */
-function applyFilter(q) {
-  const query = (q || "").toLowerCase();
-  const nodes = [...treeEl.querySelectorAll(".node")];
-  if (!query) { nodes.forEach(n => n.style.display = ""); return; }
-
-  const paths = nodes.map(n => n.dataset.path);
-  const matchSet = new Set(paths.filter(p => p.toLowerCase().includes(query)));
-  // include ancestors
-  for (const p of [...matchSet]) {
-    const parts = p.split("/");
-    for (let i = 1; i < parts.length; i++) {
-      matchSet.add(parts.slice(0, i).join("/"));
+    // ------------------------------
+    // Terminal mock
+    // ------------------------------
+    function printToTerminal(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      terminalBody.appendChild(div);
+      terminalBody.scrollTop = terminalBody.scrollHeight;
     }
-  }
-  nodes.forEach(n => {
-    n.style.display = matchSet.has(n.dataset.path) ? "" : "none";
-  });
-}
-
-/* ---------- Tokenizer ---------- */
-function tokenize(text, type) {
-  const esc = (s) => s.replace(/[&<>]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;" }[c]));
-  let out = esc(text);
-
-  const tsLike = /typescript|javascript/.test(type);
-  const cssLike = /css/.test(type);
-  const htmlLike = /html/.test(type);
-  const mdLike = /markdown/.test(type);
-
-  if (tsLike) {
-    out = out
-      .replace(/\/\/.*$/gm, m => `<span class="tok-com">${m}</span>`)
-      .replace(/("(?:[^"\\]|\\.)*")|('(?:[^'\\]|\\.)*')|(`(?:[^`\\]|\\.)*`)/g, m => `<span class="tok-str">${m}</span>`)
-      .replace(/\b\d+(?:\.\d+)?\b/g, m => `<span class="tok-num">${m}</span>`)
-      .replace(/\b(type|function|const|let|var|export|return|if|else|for|while|class|new|extends|import|from|as)\b/g, m => `<span class="tok-key">${m}</span>`)
-      .replace(/\b(string|number|boolean|any|void|never|Array|Promise|Map|Set)\b/g, m => `<span class="tok-type">${m}</span>`)
-      .replace(/\b(console|Math|JSON|document|window)\b/g, m => `<span class="tok-fn">${m}</span>`);
-  } else if (cssLike) {
-    out = out
-      .replace(/\/\*[\s\S]*?\*\//g, m => `<span class="tok-com">${m}</span>`)
-      .replace(/:[\s]*([^;}{]+)/g, (m) => m.replace(/("[^"]*"|'[^']*')/g, s => `<span class="tok-str">${s}</span>`));
-  } else if (htmlLike) {
-    out = out.replace(/(&lt;\/?[a-zA-Z0-9\-]+(?:\s[^&]+)?&gt;)/g, m => `<span class="tok-key">${m}</span>`);
-  } else if (mdLike) {
-    out = out.replace(/^#{1,6}\s.*$/gm, m => `<span class="tok-key">${m}</span>`);
-  }
-  return out;
-}
-
-/* ---------- Helpers ---------- */
-function basename(p) { return p.split("/").pop(); }
-function md(s) { return s.trim(); }
-function code(s) { return s.replace(/^\n|\n$/g, ""); }
-function languageLabel(type) {
-  if (/typescript/.test(type)) return "TypeScript";
-  if (/javascript/.test(type)) return "JavaScript";
-  if (/html/.test(type)) return "HTML";
-  if (/css/.test(type)) return "CSS";
-  if (/markdown/.test(type)) return "Markdown";
-  return "Plain Text";
-}
-
-/* ---------- Active highlight ---------- */
-function highlightActiveInTree() {
-  treeEl.querySelectorAll(".node").forEach(n => n.classList.toggle("active", n.dataset.path === state.activePath));
-}
-
-/* ---------- Cursor indicator ---------- */
-function updateCursor(ln, col) {
-  cursorEl.textContent = `Ln ${ln}, Col ${col}`;
-}
-paneEl.addEventListener("click", (e) => {
-  const lines = [...paneEl.querySelectorAll(".line")];
-  const y = e.clientY - paneEl.getBoundingClientRect().top + paneEl.scrollTop;
-  const lh = parseFloat(getComputedStyle(paneEl).lineHeight) || 19.5;
-  const ln = Math.max(1, Math.min(lines.length, Math.floor(y / lh)));
-  updateCursor(ln, 1);
-});
-
-/* ---------- Events ---------- */
-document.addEventListener("keydown", (e) => {
-  const isCtrlP = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "p";
-  const isEnter = e.key === "Enter";
-  const isEscape = e.key === "Escape";
-  const isUp = e.key === "ArrowUp";
-  const isDown = e.key === "ArrowDown";
-
-  if (isCtrlP) {
-    e.preventDefault();
-    togglePalette(true);
-    return;
-  }
-  if (paletteEl.classList.contains("open")) {
-    if (isEscape) { togglePalette(false); return; }
-    if (isDown) { e.preventDefault(); focusPaletteItem(state.paletteIndex + 1); return; }
-    if (isUp) { e.preventDefault(); focusPaletteItem(state.paletteIndex - 1); return; }
-    if (isEnter) {
-      const activeItem = paletteListEl.children[state.paletteIndex];
-      activeItem?.click();
+    function runCommand(cmd) {
+      printToTerminal(`$ ${cmd}`);
+      // Primitive mock responses
+      if (cmd === 'node -v') printToTerminal('v18.19.0');
+      else if (cmd === 'help') printToTerminal('Commands: help, node -v, echo <text>');
+      else if (cmd.startsWith('echo ')) printToTerminal(cmd.slice(5));
+      else printToTerminal('Command not found.');
     }
-  }
-});
+    termRun.addEventListener('click', () => {
+      const cmd = termInput.value.trim();
+      if (!cmd) return;
+      runCommand(cmd);
+      termInput.value = '';
+    });
+    termInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        termRun.click();
+      }
+    });
 
-paletteInputEl.addEventListener("input", (e) => renderPaletteList(e.target.value));
-paletteEl.addEventListener("click", (e) => {
-  if (e.target === paletteEl) togglePalette(false);
-});
-fileFilterEl.addEventListener("input", (e) => applyFilter(e.target.value));
-document.getElementById("iconExplorer").addEventListener("click", () => {
-  if (sidebarEl.dataset.hidden === "true") toggleSidebar();
-  fileFilterEl.focus();
-});
-document.getElementById("iconSearch").addEventListener("click", () => {
-  if (sidebarEl.dataset.hidden === "true") toggleSidebar();
-  fileFilterEl.focus();
-});
+    // ------------------------------
+    // Command palette
+    // ------------------------------
+    const commands = [
+      { name: 'Save', action: () => setStatus('Saved ✔') },
+      { name: 'Format Document', action: () => setStatus('Formatted ✨') },
+      { name: 'Toggle Sidebar', action: toggleSidebar },
+      { name: 'Toggle Terminal', action: toggleTerminal },
+      { name: 'New File', action: () => setStatus('New file (mock)') },
+      { name: 'Refresh Explorer', action: () => setStatus('Explorer refreshed') },
+      { name: 'Change Theme: Dark+', action: () => setTheme('dark') },
+      { name: 'Change Theme: Light+', action: () => setTheme('light') },
+    ];
 
-/* ---------- Init ---------- */
-sidebarEl.dataset.hidden = "false";
-buildTree();
-openFile("README.md");
-applyFilter("");
+    function showPalette() {
+      palette.style.display = 'block';
+      paletteInput.value = '';
+      renderPaletteList('');
+      paletteInput.focus();
+    }
+    function hidePalette() {
+      palette.style.display = 'none';
+    }
+    function renderPaletteList(filter) {
+      paletteList.innerHTML = '';
+      const items = commands.filter(c => c.name.toLowerCase().includes(filter.toLowerCase()));
+      items.forEach(c => {
+        const el = document.createElement('div');
+        el.className = 'cmd-item';
+        el.innerHTML = `<span>${c.name}</span><span class="keyboard-hint">Enter</span>`;
+        el.addEventListener('click', () => { c.action(); hidePalette(); });
+        paletteList.appendChild(el);
+      });
+    }
+    paletteInput.addEventListener('input', (e) => renderPaletteList(e.target.value));
+    paletteInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') hidePalette();
+      if (e.key === 'Enter') {
+        const first = paletteList.querySelector('.cmd-item');
+        if (first) first.click();
+      }
+    });
+    document.getElementById('btnPalette').addEventListener('click', showPalette);
+    document.addEventListener('keydown', (e) => {
+      const mod = (navigator.platform.includes('Mac')) ? e.metaKey : e.ctrlKey;
+      if (mod && e.shiftKey && e.key.toLowerCase() === 'p') {
+        e.preventDefault();
+        showPalette();
+      }
+    });
 
-</script>
+    // ------------------------------
+    // Sidebar and terminal toggles
+    // ------------------------------
+    function toggleSidebar() {
+      const isHidden = sidebar.style.display === 'none';
+      sidebar.style.display = isHidden ? 'flex' : 'none';
+      document.querySelector('.main').style.gridTemplateColumns = isHidden ? '48px 280px 1fr' : '48px 0px 1fr';
+      setStatus(isHidden ? 'Sidebar shown' : 'Sidebar hidden');
+    }
+    function toggleTerminal() {
+      const isHidden = terminal.style.display === 'none';
+      terminal.style.display = isHidden ? 'grid' : 'none';
+      setStatus(isHidden ? 'Terminal shown' : 'Terminal hidden');
+    }
+    document.getElementById('btnToggleTerminal').addEventListener('click', toggleTerminal);
+
+    // ------------------------------
+    // Simple status updates
+    // ------------------------------
+    function setStatus(text) {
+      const cells = document.querySelectorAll('.statusbar .cell');
+      const last = cells[cells.length - 1];
+      last.textContent = text;
+    }
+    document.getElementById('btnSave').addEventListener('click', () => setStatus('Saved ✔'));
+    document.getElementById('btnFormat').addEventListener('click', () => setStatus('Formatted ✨'));
+    document.getElementById('btnNewFile').addEventListener('click', () => setStatus('New file (mock)'));
+    document.getElementById('btnRefresh').addEventListener('click', () => setStatus('Explorer refreshed'));
+
+    // ------------------------------
+    // Resizers (sidebar width, terminal height)
+    // ------------------------------
+    const sidebarResizer = document.getElementById('sidebarResizer');
+    const terminalResizer = document.getElementById('terminalResizer');
+    let isDraggingSidebar = false;
+    let isDraggingTerminal = false;
+    sidebarResizer.addEventListener('mousedown', () => { isDraggingSidebar = true; });
+    terminalResizer.addEventListener('mousedown', () => { isDraggingTerminal = true; });
+    window.addEventListener('mouseup', () => { isDraggingSidebar = false; isDraggingTerminal = false; });
+    window.addEventListener('mousemove', (e) => {
+      if (isDraggingSidebar) {
+        const min = 160, max = 480;
+        const newW = Math.min(max, Math.max(min, e.clientX - 48));
+        sidebar.style.width = newW + 'px';
+        document.querySelector('.main').style.gridTemplateColumns = `48px ${newW}px 1fr`;
+      }
+      if (isDraggingTerminal) {
+        const editorRect = document.getElementById('editor').getBoundingClientRect();
+        const minH = 80, maxH = 400;
+        const newH = Math.min(maxH, Math.max(minH, editorRect.bottom - e.clientY));
+        terminal.style.gridTemplateRows = `28px 1fr 28px`;
+        terminal.style.height = newH + 'px';
+      }
+    });
+
+    // ------------------------------
+    // Theme switch
+    // ------------------------------
+    function setTheme(kind) {
+      if (kind === 'light') {
+        document.documentElement.style.setProperty('--bg', '#f3f3f3');
+        document.documentElement.style.setProperty('--panel', '#eaeaea');
+        document.documentElement.style.setProperty('--sidebar', '#efefef');
+        document.documentElement.style.setProperty('--text', '#222');
+        document.documentElement.style.setProperty('--muted', '#555');
+        document.documentElement.style.setProperty('--border', '#d0d0d0');
+        document.documentElement.style.setProperty('--tab-bg', '#e0e0e0');
+        document.documentElement.style.setProperty('--tab-active-bg', '#ffffff');
+        document.documentElement.style.setProperty('--editor-bg', '#ffffff');
+        document.documentElement.style.setProperty('--terminal-bg', '#f7f7f7');
+        document.documentElement.style.setProperty('--status-bg', '#e0e0e0');
+        toggleTheme.textContent = 'Light+';
+      } else {
+        // back to dark
+        const reset = {
+          '--bg': '#1e1e1e',
+          '--panel': '#252526',
+          '--sidebar': '#252526',
+          '--text': '#cccccc',
+          '--muted': '#9da3a6',
+          '--border': '#3c3c3c',
+          '--tab-bg': '#2d2d2d',
+          '--tab-active-bg': '#1f1f1f',
+          '--editor-bg': '#1e1e1e',
+          '--terminal-bg': '#111111',
+          '--status-bg': '#0b0b0b'
+        };
+        Object.entries(reset).forEach(([k, v]) => document.documentElement.style.setProperty(k, v));
+        toggleTheme.textContent = 'Dark+';
+      }
+    }
+    toggleTheme.addEventListener('click', () => {
+      const isDark = toggleTheme.textContent.includes('Dark');
+      setTheme(isDark ? 'light' : 'dark');
+    });
+
+    // ------------------------------
+    // Titlebar buttons (mock)
+    // ------------------------------
+    document.getElementById('btnFile').addEventListener('click', showPalette);
+    document.getElementById('btnEdit').addEventListener('click', showPalette);
+    document.getElementById('btnView').addEventListener('click', showPalette);
+    document.getElementById('btnRun').addEventListener('click', () => {
+      setStatus('Running (mock)');
+      printToTerminal('$ npm run dev');
+      printToTerminal('Starting dev server...');
+      printToTerminal('Ready on http://localhost:5173');
+    });
+
+    // Initialize
+    openFile('index.html');
+  </script>
 </body>
 </html>

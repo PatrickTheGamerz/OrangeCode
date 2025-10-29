@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Mini Studio — Working Build</title>
+  <title>Mini Studio — Fixed Working Build</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root {
@@ -50,9 +50,10 @@
     /* Only the editor text is copyable/editable */
     .code-area, .code-area * { user-select: text; }
 
+    /* App chrome */
     .workspace {
       display: grid;
-      grid-template-rows: 40px auto 1fr 28px;
+      grid-template-rows: 40px 42px auto 28px;
       min-height: 100vh;
     }
 
@@ -83,7 +84,7 @@
 
     /* File menu exactly under File */
     .file-menu {
-      position: absolute;
+      position: fixed;
       left: 12px; /* aligns with titlebar padding */
       top: 40px; /* directly under titlebar */
       background: var(--panel-2);
@@ -262,7 +263,7 @@
       border-bottom: 1px solid var(--border);
       background: var(--panel-2);
       position: sticky;
-      top: calc(40px + 40px + 0px); /* title+toolbar (sticky), tabs are inside card */
+      top: calc(40px + 42px + 0px); /* title+toolbar (sticky) */
       z-index: 10;
       border-top: 1px solid var(--border);
     }
@@ -375,6 +376,49 @@
       z-index: 1000;
     }
     .statusbar .cell { cursor: default; }
+
+    /* Modal: New File */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+    .modal {
+      width: 460px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      display: grid;
+      gap: 8px;
+      box-shadow: 0 12px 28px rgba(0,0,0,0.35);
+    }
+    .modal h3 {
+      margin: 0 0 8px 0;
+      font-size: 14px;
+      color: var(--text);
+      user-select: none;
+    }
+    .modal-row {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 8px;
+      align-items: center;
+    }
+    .modal input, .modal select {
+      height: 30px;
+      background: #1b1b1b;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0 8px;
+    }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
+    .danger { color: var(--error); }
   </style>
 </head>
 <body>
@@ -385,10 +429,11 @@
       <span class="brand" id="brandText">Mini Studio — Program</span>
     </div>
 
-    <!-- Toolbar -->
+    <!-- Toolbar (under File, single row, all buttons aligned) -->
     <div class="toolbar">
       <button class="btn" id="btnNewFile">📝 New File</button>
       <button class="btn" id="btnOpenFile">📂 Open File</button>
+      <button class="btn" id="btnOpenFolder">📁 Open Folder</button>
       <button class="btn" id="btnSaveFile">💾 Save</button>
       <button class="btn" id="btnSaveAll">💾 Save All</button>
       <button class="btn disabled" id="btnUndo">↩ Undo</button>
@@ -414,7 +459,7 @@
       <button class="btn" id="btnSwitchTab">↹ Switch tab</button>
     </div>
 
-    <!-- File menu -->
+    <!-- File menu (hover submenus, under File) -->
     <div class="file-menu" id="fileMenu">
       <div class="item has-sub">New
         <div class="submenu">
@@ -513,7 +558,7 @@ welcome</div>
     </div>
   </div>
 
-  <!-- New File Modal -->
+  <!-- New File Modal (at window center, not bottom) -->
   <div class="modal-backdrop" id="newFileModal">
     <div class="modal">
       <h3>Create new file</h3>
@@ -563,6 +608,7 @@ welcome</div>
 
     const btnNewFile = document.getElementById('btnNewFile');
     const btnOpenFile = document.getElementById('btnOpenFile');
+    const btnOpenFolder = document.getElementById('btnOpenFolder');
     const btnSaveFile = document.getElementById('btnSaveFile');
     const btnSaveAll = document.getElementById('btnSaveAll');
     const btnUndo = document.getElementById('btnUndo');
@@ -892,6 +938,7 @@ if __name__ == "__main__":
       } else { setStatus('Folder open not supported; use Open File.'); }
     }
     btnOpenFile.addEventListener('click', openLocalFile);
+    btnOpenFolder.addEventListener('click', openLocalFolder);
     fmOpenFile.addEventListener('click', openLocalFile);
     fmOpenFolder.addEventListener('click', openLocalFolder);
 
@@ -1045,14 +1092,10 @@ if __name__ == "__main__":
       placeCaret(codeArea, idx);
     }
 
-    /* Input events — make buttons work */
+    /* Input events */
     codeArea.addEventListener('input', () => { pushUndo(); autoCaseFix(); applyHighlightSafe(); triggerGhost(); });
     codeArea.addEventListener('keyup', () => { updateCursor(); triggerGhost(); });
     codeArea.addEventListener('click', () => { updateCursor(); triggerGhost(); });
-
-    /* Hook menu & toolbar duplicates */
-    btnOpenFile.addEventListener('click', openLocalFile);
-    btnSaveFile.addEventListener('click', () => saveCurrent(false));
 
     /* Initialize */
     renderWorkspace(); setStatus('Ready'); applyHighlightSafe();

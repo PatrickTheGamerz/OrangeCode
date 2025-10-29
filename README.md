@@ -19,15 +19,22 @@
       --terminal-bg: #111111;
       --status-bg: #0b0b0b;
       --danger: #c15555;
+      --green: #89d185;
+      --yellow: #ffd479;
+      --blue: #85c1ff;
+      --purple: #c792ea;
+      --orange: #f78c6c;
+      --red: #ff6b6b;
+      --ghost: #9da3a6;
     }
     * { box-sizing: border-box; }
-    html, body { height: 100%; margin: 0; }
+    html, body { min-height: 100%; margin: 0; }
     body {
       background: var(--bg);
       color: var(--text);
       font-family: ui-sans-serif, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
-      overflow: hidden;
-      user-select: none; /* make UI non-copiable by default */
+      overflow: auto;           /* scrollable page */
+      user-select: none;        /* make UI non-copiable by default */
     }
 
     /* Only the code editor should be copyable/editable */
@@ -35,8 +42,8 @@
 
     .workspace {
       display: grid;
-      grid-template-rows: 32px 32px 1fr 24px;
-      height: 100%;
+      grid-template-rows: 32px 32px auto 24px; /* allow content to extend */
+      min-height: 100vh;       /* full viewport, but scrollable beyond */
     }
 
     /* Title bar */
@@ -48,6 +55,9 @@
       align-items: center;
       gap: 8px;
       padding: 0 8px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
     .tb-btn {
       font-size: 12px;
@@ -57,15 +67,14 @@
       color: var(--text);
       cursor: pointer;
       border-radius: 4px;
+      line-height: 24px;
     }
     .tb-btn:hover { background: var(--hover); }
     .brand { margin-left: auto; font-size: 12px; color: var(--muted); }
 
-    /* File menu with hover submenus */
+    /* File menu with hover submenus — dynamically positioned under File button */
     .file-menu {
-      position: absolute;
-      top: 32px;
-      left: 8px;
+      position: fixed;         /* absolute to viewport, we’ll place under File button in JS */
       background: var(--panel);
       border: 1px solid var(--border);
       border-radius: 6px;
@@ -74,6 +83,7 @@
       flex-direction: column;
       padding: 6px 0;
       z-index: 1000;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.35);
     }
     .file-menu .item {
       position: relative;
@@ -108,7 +118,7 @@
 
     .divider { height: 1px; background: var(--border); margin: 6px 0; }
 
-    /* Secondary toolbar (Run, Save, etc.) */
+    /* Secondary toolbar (aligned under Title bar) */
     .toolbar {
       background: var(--panel);
       border-bottom: 1px solid var(--border);
@@ -118,6 +128,9 @@
       align-items: center;
       padding: 0 8px;
       height: 32px;
+      position: sticky;
+      top: 32px;              /* directly under Titlebar */
+      z-index: 90;
     }
     .btn {
       font-size: 12px;
@@ -127,6 +140,7 @@
       background: transparent;
       border: 1px solid var(--border);
       cursor: pointer;
+      line-height: 24px;
     }
     .btn:hover { background: var(--hover); }
     .btn.disabled { opacity: 0.4; cursor: default; }
@@ -194,7 +208,7 @@
     /* Editor */
     .editor {
       display: grid;
-      grid-template-rows: 36px 1fr;
+      grid-template-rows: 36px auto;
       min-height: 0;
     }
     .tabs {
@@ -204,6 +218,9 @@
       align-items: center;
       gap: 6px;
       padding: 0 6px;
+      position: sticky;
+      top: 64px;              /* below titlebar and toolbar */
+      z-index: 80;
     }
     .tab {
       background: #2d2d2d;
@@ -225,8 +242,8 @@
 
     .editor-surface {
       display: grid;
-      grid-template-rows: 40px 1fr auto; /* toolbar, code, output */
-      min-height: 0;
+      grid-template-rows: 40px auto auto; /* toolbar, code, output */
+      min-height: 400px;       /* ensure some height, but page scrolls */
       background: var(--editor-bg);
     }
     .editor-toolbar {
@@ -236,31 +253,81 @@
       padding: 6px 8px;
       border-bottom: 1px solid var(--border);
       background: var(--panel);
+      position: sticky;
+      top: 100px;              /* below tabs */
+      z-index: 70;
     }
     .info { font-size: 12px; color: var(--muted); user-select: none; }
 
-    /* Code area (editable + copyable) */
+    /* Code area wrapper with syntax highlight layer + editable layer */
+    .code-wrap {
+      position: relative;
+      min-height: 240px;
+      max-height: none;
+      overflow: visible;       /* allow page scroll */
+    }
+    .highlight-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      padding: 12px 16px;
+      line-height: 1.5;
+      font-family: "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace;
+      font-size: 13px;
+      white-space: pre;
+      color: transparent;      /* base transparent; colored tokens show via spans */
+    }
+    .highlight-layer .tok-default { color: #aab1b7; }
+    .highlight-layer .tok-key { color: var(--blue); }
+    .highlight-layer .tok-type { color: var(--yellow); }
+    .highlight-layer .tok-func { color: var(--purple); }
+    .highlight-layer .tok-string { color: var(--green); }
+    .highlight-layer .tok-number { color: var(--orange); }
+    .highlight-layer .tok-comment { color: var(--muted); font-style: italic; }
+    .highlight-layer .tok-namespace { color: var(--blue); }
+    .highlight-layer .tok-using { color: var(--blue); }
+    .highlight-layer .tok-attr { color: var(--orange); }
+    .highlight-layer .tok-error { color: var(--red); text-decoration: wavy underline; }
+
+    /* Editable layer sits on top */
     .code-area {
       position: relative;
-      overflow: auto;
+      overflow: auto;          /* internal scroll if needed, but page can scroll too */
       padding: 12px 16px;
       line-height: 1.5;
       font-family: "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace;
       font-size: 13px;
       white-space: pre;
       outline: none;
+      background: transparent;
+      color: var(--text);
     }
     .code-area[contenteditable="true"] { caret-color: #cfe8ff; }
+
+    /* Ghost autocomplete hint */
+    .ghost-hint {
+      position: absolute;
+      background: transparent;
+      color: var(--ghost);
+      pointer-events: none;
+      font-family: "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      white-space: pre;
+      padding-left: 16px;
+      padding-top: 12px;
+      z-index: 2;
+    }
 
     /* Output terminal — freely resizable up or down */
     .output-container {
       display: grid;
-      grid-template-rows: 28px 1fr 32px; /* header, body, input */
+      grid-template-rows: 28px auto 32px; /* header, body, input */
       border-top: 1px solid var(--border);
       background: var(--terminal-bg);
       resize: vertical;     /* can be dragged up or down */
       overflow: auto;
-      min-height: 100px;
+      min-height: 200px;
       max-height: 70vh;
     }
     .output-header {
@@ -279,6 +346,9 @@
       font-family: Menlo, Consolas, monospace;
       font-size: 12px;
     }
+    .output-body .line.err { color: var(--red); }
+    .output-body .line.warn { color: var(--orange); }
+    .output-body .line.info { color: var(--blue); }
     .output-input {
       display: grid;
       grid-template-columns: 36px 1fr 90px;
@@ -321,6 +391,9 @@
       font-size: 12px;
       color: var(--muted);
       user-select: none;
+      position: sticky;
+      bottom: 0;              /* keep visible on scroll */
+      z-index: 50;
     }
     .statusbar .cell { cursor: default; }
     .statusbar .cell.interactive { cursor: pointer; }
@@ -479,9 +552,13 @@
             <span class="info" style="margin-left:auto;" id="statusMsg">Ready</span>
           </div>
 
-          <div class="code-area" id="codeArea" contenteditable="true">
+          <div class="code-wrap">
+            <pre aria-hidden="true" class="highlight-layer" id="highlightLayer"></pre>
+            <div class="ghost-hint" id="ghostHint" style="display:none;"></div>
+            <div class="code-area" id="codeArea" contenteditable="true">
 // Type ANYTHING here. To start, create a New File and select a language.
 // This area is the ONLY copyable/editable part of the UI.
+            </div>
           </div>
 
           <div class="output-container" id="output">
@@ -489,8 +566,7 @@
               <span>Output</span>
               <span style="margin-left:auto;">bash • Press Enter to run</span>
             </div>
-            <div class="output-body" id="terminalBody">$ echo "welcome"
-welcome</div>
+            <div class="output-body" id="terminalBody"><div class="line">$ echo "welcome"</div><div class="line">welcome</div></div>
             <div class="output-input">
               <div class="prompt">❯</div>
               <input class="term-field" id="termInput" placeholder="Type a command, e.g., node -v" />
@@ -548,7 +624,11 @@ welcome</div>
 
     const explorer = document.getElementById('explorer');
     const tabs = document.getElementById('tabs');
+
     const codeArea = document.getElementById('codeArea');
+    const highlightLayer = document.getElementById('highlightLayer');
+    const ghostHint = document.getElementById('ghostHint');
+
     const cursorCell = document.getElementById('cursorCell');
 
     const output = document.getElementById('output');
@@ -625,6 +705,27 @@ welcome</div>
       'PYTHON': '.py'
     };
 
+    // Default language usings/imports for convenience (non-NuGet basics)
+    const defaultImports = {
+      'CS': [
+        'using System;',
+        'using System.Collections.Generic;',
+        'using System.Linq;',
+        'using System.Threading;',
+        'using System.Threading.Tasks;'
+      ],
+      'JAVA': [
+        'import java.util.*;',
+        'import java.io.*;'
+      ],
+      'CPP': [
+        '#include <bits/stdc++.h>',
+        'using namespace std;'
+      ],
+      'PYTHON': [],
+      'HTML': []
+    };
+
     // Language templates
     const templates = {
       'JAVA': `public class Program {
@@ -666,6 +767,115 @@ if __name__ == "__main__":
 `
     };
 
+    // Simple syntax highlighter
+    function highlight(lang, text) {
+      // Escape HTML
+      const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const E = esc(text);
+
+      // Common token patterns
+      const patterns = {
+        CS: [
+          { re: /\/\/[^\n]*/g, cls: 'tok-comment' },
+          { re: /"(?:\\.|[^"\\])*"/g, cls: 'tok-string' },
+          { re: /\b(using|namespace|class|interface|struct|public|private|protected|internal|static|async|await|void|int|string|var|new|return)\b/g, cls: 'tok-key' },
+          { re: /\b(Console|Enumerable|Task|Guid|CancellationToken|IAsyncEnumerable)\b/g, cls: 'tok-type' },
+          { re: /\b(Main|WriteLine|RunAsync|RunAllAsync|ExecuteAsync|Reverse|Dequeue|Enqueue)\b/g, cls: 'tok-func' },
+          { re: /\b\d+(\.\d+)?\b/g, cls: 'tok-number' }
+        ],
+        JAVA: [
+          { re: /\/\/[^\n]*/g, cls: 'tok-comment' },
+          { re: /"(?:\\.|[^"\\])*"/g, cls: 'tok-string' },
+          { re: /\b(import|package|class|public|private|protected|static|void|int|String|new|return)\b/g, cls: 'tok-key' },
+          { re: /\b(System|String|List|Map)\b/g, cls: 'tok-type' },
+          { re: /\b(main|println)\b/g, cls: 'tok-func' },
+          { re: /\b\d+(\.\d+)?\b/g, cls: 'tok-number' }
+        ],
+        CPP: [
+          { re: /\/\/[^\n]*/g, cls: 'tok-comment' },
+          { re: /"(?:\\.|[^"\\])*"/g, cls: 'tok-string' },
+          { re: /\b(#include|using|namespace|int|void|return|std)\b/g, cls: 'tok-key' },
+          { re: /\b(cout|endl|main)\b/g, cls: 'tok-func' },
+          { re: /\b\d+(\.\d+)?\b/g, cls: 'tok-number' }
+        ],
+        PYTHON: [
+          { re: /#.*$/gm, cls: 'tok-comment' },
+          { re: /"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'/g, cls: 'tok-string' },
+          { re: /\b(def|class|import|from|return|async|await|for|while|if|elif|else|try|except|with|as|lambda)\b/g, cls: 'tok-key' },
+          { re: /\b(print|range|len|str|int)\b/g, cls: 'tok-func' },
+          { re: /\b\d+(\.\d+)?\b/g, cls: 'tok-number' }
+        ],
+        HTML: [
+          { re: /&lt;!--[\s\S]*?--&gt;/g, cls: 'tok-comment' },
+          { re: /(&lt;\/?[a-zA-Z][^&]*?&gt;)/g, cls: 'tok-key' },
+          { re: /"(?:\\.|[^"\\])*"/g, cls: 'tok-string' }
+        ]
+      };
+
+      const langKey = currentFile.language || 'CS';
+      const rules = patterns[langKey] || [];
+
+      // Tokenize by applying rules iteratively
+      let html = E;
+      for (const { re, cls } of rules) {
+        html = html.replace(re, (m) => `<span class="${cls}">${m}</span>`);
+      }
+      return html;
+    }
+
+    // Autocomplete basics
+    const autoWords = {
+      CS: ['Console', 'WriteLine', 'ReadLine', 'Enumerable', 'Task', 'Guid', 'CancellationToken', 'IAsyncEnumerable'],
+      JAVA: ['System', 'out', 'println', 'String', 'List', 'Map'],
+      CPP: ['std', 'cout', 'endl', 'string', 'vector'],
+      PYTHON: ['print', 'range', 'len', 'str', 'int'],
+      HTML: ['html', 'head', 'body', 'div', 'span', 'script', 'link', 'meta', 'title']
+    };
+
+    function showGhostSuggestion(prefix) {
+      const langKey = currentFile.language || 'CS';
+      const list = autoWords[langKey] || [];
+      const found = list.find(w => w.toLowerCase().startsWith(prefix.toLowerCase()) && w.toLowerCase() !== prefix.toLowerCase());
+      if (!found) {
+        ghostHint.style.display = 'none';
+        return;
+      }
+      const { x, y } = caretPixel(codeArea);
+      ghostHint.style.left = x + 'px';
+      ghostHint.style.top = y + 'px';
+      ghostHint.textContent = found.slice(prefix.length);
+      ghostHint.style.display = 'block';
+    }
+
+    function acceptGhost(prefix) {
+      if (ghostHint.style.display === 'none') return false;
+      document.execCommand('insertText', false, ghostHint.textContent); // append remainder
+      ghostHint.style.display = 'none';
+      return true;
+    }
+
+    // Capitalization fix: console -> Console (CS only)
+    function autoCapitalizeConsole() {
+      if (currentFile.language !== 'CS') return;
+      const text = codeArea.textContent;
+      const caret = getCaretIndex(codeArea);
+      const before = text.slice(0, caret);
+      const lastWordMatch = before.match(/([A-Za-z_][A-Za-z_0-9]*)$/);
+      if (!lastWordMatch) return;
+      const word = lastWordMatch[1];
+      if (word === 'console') {
+        // Replace the last occurrence before caret
+        const start = caret - word.length;
+        const sel = window.getSelection();
+        const range = sel.getRangeAt(0);
+        range.setStart(codeArea.firstChild || codeArea, 0); // naive
+        const current = codeArea.textContent;
+        const newText = current.slice(0, start) + 'Console' + current.slice(caret);
+        codeArea.textContent = newText;
+        placeCaret(codeArea, start + 'Console'.length);
+      }
+    }
+
     // Utility: status
     function setStatus(msg) {
       statusMsg.textContent = msg;
@@ -694,6 +904,13 @@ if __name__ == "__main__":
       optFileName.textContent = fullName;
       brandText.textContent = 'Mini Studio — ' + fullName;
       languageNameEl.textContent = currentFile.language ? currentFile.language : 'None';
+      refreshHighlight();
+    }
+
+    function refreshHighlight() {
+      const html = highlight(currentFile.language, codeArea.textContent);
+      highlightLayer.innerHTML = html;
+      syncLayersScroll();
     }
 
     // Open file into editor
@@ -704,13 +921,14 @@ if __name__ == "__main__":
       codeArea.textContent = currentFile.content || '';
       renderWorkspace();
       setStatus('Opened ' + key);
+      diagnoseIfPossible();
     }
 
     // Keep cursor cell updated (basic)
     codeArea.addEventListener('keyup', updateCursor);
     codeArea.addEventListener('click', updateCursor);
+    codeArea.addEventListener('scroll', syncLayersScroll);
     function updateCursor() {
-      // naive line/col
       const sel = window.getSelection();
       let line = 1, col = 1;
       if (sel && sel.anchorNode) {
@@ -723,6 +941,9 @@ if __name__ == "__main__":
       currentFile.content = codeArea.textContent;
       files.set(currentFile.name + (currentFile.ext || ''), { ...currentFile });
       enableUndoRedo(); // mark actions
+      refreshHighlight();
+      autoCapitalizeConsole();
+      liveAutocomplete();
     }
     function getCaretIndex(el) {
       const selection = window.getSelection();
@@ -732,6 +953,37 @@ if __name__ == "__main__":
       preRange.selectNodeContents(el);
       preRange.setEnd(range.endContainer, range.endOffset);
       return preRange.toString().length;
+    }
+    function placeCaret(el, idx) {
+      el.focus();
+      const selection = window.getSelection();
+      const range = document.createRange();
+      // naive: set in first child text node
+      let node = el.firstChild;
+      if (!node) {
+        node = document.createTextNode('');
+        el.appendChild(node);
+      }
+      range.setStart(node, Math.min(idx, node.textContent.length));
+      range.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      updateCursor();
+    }
+    function syncLayersScroll() {
+      highlightLayer.scrollTop = codeArea.scrollTop;
+      highlightLayer.scrollLeft = codeArea.scrollLeft;
+    }
+    function caretPixel(el) {
+      const idx = getCaretIndex(el);
+      const pre = el.textContent.slice(0, idx);
+      const lines = pre.split('\n');
+      const lh = 19.5; // approximate line-height in px
+      const y = lines.length * lh - lh + el.getBoundingClientRect().top + window.scrollY + 12;
+      const last = lines[lines.length - 1] || '';
+      const charW = 7.8; // approximate character width
+      const x = last.length * charW + el.getBoundingClientRect().left + window.scrollX + 16;
+      return { x, y };
     }
 
     // Undo/Redo (very naive stack)
@@ -764,6 +1016,8 @@ if __name__ == "__main__":
     });
     codeArea.addEventListener('input', () => {
       pushUndo();
+      refreshHighlight();
+      liveAutocomplete();
     });
 
     // Sidebar resize impact: observe width and update grid column
@@ -777,15 +1031,27 @@ if __name__ == "__main__":
     });
     resizeObserver.observe(sidebar);
 
-    // File menu toggling
+    // File menu toggling — position directly under the File button, same Y
+    function positionFileMenu() {
+      const rect = btnFile.getBoundingClientRect();
+      fileMenu.style.left = (rect.left + window.scrollX) + 'px';
+      fileMenu.style.top = (rect.bottom + window.scrollY) + 'px';
+    }
     btnFile.addEventListener('click', (e) => {
       e.stopPropagation();
+      positionFileMenu();
       fileMenu.style.display = (fileMenu.style.display === 'flex') ? 'none' : 'flex';
     });
     document.addEventListener('click', (e) => {
       if (fileMenu.style.display === 'flex' && !fileMenu.contains(e.target) && e.target !== btnFile) {
         fileMenu.style.display = 'none';
       }
+    });
+    window.addEventListener('scroll', () => {
+      if (fileMenu.style.display === 'flex') positionFileMenu();
+    });
+    window.addEventListener('resize', () => {
+      if (fileMenu.style.display === 'flex') positionFileMenu();
     });
 
     // Explorer click
@@ -823,7 +1089,11 @@ if __name__ == "__main__":
       }
       const ext = langExt[lang] || '';
       const fullName = name + ext;
-      const content = templates[lang] || '';
+
+      const base = templates[lang] || '';
+      const imports = defaultImports[lang] || [];
+      const content = (imports.length ? imports.join('\n') + '\n\n' : '') + base;
+
       const file = { name, language: lang, ext, content, lockedLanguage: true };
       files.set(fullName, file);
       currentFile = { ...file };
@@ -831,15 +1101,15 @@ if __name__ == "__main__":
       renderWorkspace();
       setStatus('Created ' + fullName + ' (language locked)');
       hideNewFileModal();
-      // Update run target display to show file name
       document.getElementById('optFileName').textContent = fullName;
+      diagnoseIfPossible();
     });
 
     // Hook up menu and toolbar to modal
     btnNewFile.addEventListener('click', showNewFileModal);
     fmNewFile.addEventListener('click', showNewFileModal);
 
-    // Save logic: always [file name].[language extension], not "Program.(ext)"
+    // Save logic
     function saveToDisk(filename, text) {
       const blob = new Blob([text], { type: 'text/plain' });
       const a = document.createElement('a');
@@ -851,7 +1121,6 @@ if __name__ == "__main__":
     }
 
     async function chooseFolderAndSave(filename, text) {
-      // Attempt File System Access API; fallback to download
       if ('showDirectoryPicker' in window) {
         try {
           const dirHandle = await window.showDirectoryPicker();
@@ -862,7 +1131,6 @@ if __name__ == "__main__":
           setStatus('Saved to folder: ' + filename);
           return;
         } catch {
-          // fallback
           saveToDisk(filename, text);
           setStatus('Saved (fallback) ' + filename);
           return;
@@ -929,6 +1197,7 @@ if __name__ == "__main__":
           codeArea.textContent = f.content || '';
           renderWorkspace();
           setStatus('Opened file ' + file.name);
+          diagnoseIfPossible();
         };
         reader.readAsText(file);
       };
@@ -936,7 +1205,6 @@ if __name__ == "__main__":
     }
 
     async function openLocalFolder() {
-      // Try FS Access API for folder; otherwise inform fallback
       if ('showDirectoryPicker' in window) {
         try {
           const dir = await window.showDirectoryPicker();
@@ -958,7 +1226,6 @@ if __name__ == "__main__":
               files.set(file.name, f);
             }
           }
-          // Open first file if any
           const firstKey = files.keys().next().value;
           if (firstKey) openFile(firstKey);
           setStatus('Folder opened');
@@ -1014,10 +1281,6 @@ if __name__ == "__main__":
     // Comment / Uncomment selected lines (basic)
     function commentSelection() {
       const text = codeArea.textContent;
-      const sel = window.getSelection();
-      if (!sel || sel.rangeCount === 0) return;
-      const range = sel.getRangeAt(0);
-      // naive: comment entire document if selection is collapsed
       const commented = text.split('\n').map(line => '// ' + line).join('\n');
       codeArea.textContent = commented;
       updateCursor();
@@ -1043,20 +1306,90 @@ if __name__ == "__main__":
       setStatus('Switched tab');
     });
 
-    // Run actions (mock)
-    function printToTerminal(text) {
+    // Output helpers
+    function printLine(text, cls) {
       const div = document.createElement('div');
+      div.className = 'line' + (cls ? ' ' + cls : '');
       div.textContent = text;
       terminalBody.appendChild(div);
       terminalBody.scrollTop = terminalBody.scrollHeight;
     }
+    function printToTerminal(text) {
+      printLine(text, '');
+    }
+
+    // Diagnostics (mock, focused on CS scenarios)
+    function diagnoseCSharp(source) {
+      const lines = source.split('\n');
+      const diags = [];
+
+      // Check for lowercase "console" usage
+      lines.forEach((l, i) => {
+        if (/\bconsole\b/.test(l)) {
+          diags.push({
+            level: 'Error (active)',
+            code: 'CS0246',
+            desc: "The type or namespace name 'console' could not be found (did you mean 'Console'?)",
+            file: currentFilename(),
+            line: i + 1
+          });
+        }
+      });
+
+      // Check for identifiers ending with a number (like console2)
+      lines.forEach((l, i) => {
+        const m = l.match(/\bconsole2\b/i);
+        if (m) {
+          diags.push({
+            level: 'Error (active)',
+            code: 'CS0246',
+            desc: "The type or namespace name 'console2' could not be found (are you missing a using directive or an assembly reference?)",
+            file: currentFilename(),
+            line: i + 1
+          });
+        }
+      });
+
+      // Info: Suggest LibraryImportAttribute for mouse_event API mention
+      lines.forEach((l, i) => {
+        if (/\bDllImport\b/.test(l) || /\bmouse_event\b/.test(l)) {
+          diags.push({
+            level: 'Info',
+            code: 'NETSDK',
+            desc: "Mark the 'mouse_event' method with the 'LibraryImportAttribute' instead of the 'DllImportAttribute' to generate P/Invoke stub code at compile time.",
+            file: currentFilename(),
+            line: i + 1
+          });
+        }
+      });
+
+      return diags;
+    }
+
+    function showDiagnostics(diags) {
+      if (!diags || diags.length === 0) return;
+      printLine('Priority  Code    Description                                         File              Line  Status', 'info');
+      diags.forEach(d => {
+        const row = `${d.level}  ${d.code}  ${d.desc}  ${d.file}  ${d.line}  ${d.level.includes('Error') ? 'Error' : d.level}`;
+        printLine(row, d.level.includes('Error') ? 'err' : (d.level.includes('Warn') ? 'warn' : 'info'));
+      });
+    }
+
+    function diagnoseIfPossible() {
+      if (currentFile.language === 'CS') {
+        const diags = diagnoseCSharp(codeArea.textContent || '');
+        showDiagnostics(diags);
+      }
+    }
+
+    // Run actions (mock)
     function runCommand(cmd) {
       printToTerminal(`$ ${cmd}`);
-      if (cmd === 'node -v') printToTerminal('v18.19.0');
-      else if (cmd === 'python -V') printToTerminal('Python 3.11.0');
-      else if (cmd === 'javac -version') printToTerminal('javac 17.0.9');
-      else if (cmd.startsWith('echo ')) printToTerminal(cmd.slice(5));
-      else printToTerminal('Command not found.');
+      if (cmd === 'node -v') printLine('v18.19.0', 'info');
+      else if (cmd === 'python -V') printLine('Python 3.11.0', 'info');
+      else if (cmd === 'javac -version') printLine('javac 17.0.9', 'info');
+      else if (cmd.startsWith('echo ')) printLine(cmd.slice(5), '');
+      else printLine('Command not found.', 'warn');
     }
     termRun.addEventListener('click', () => {
       const cmd = termInput.value.trim();
@@ -1072,12 +1405,14 @@ if __name__ == "__main__":
       const target = runTarget.value;
       printToTerminal('$ run ' + target);
       printToTerminal('Executing ' + currentFilename() + ' (' + (currentFile.language || 'Unknown') + ')');
+      diagnoseIfPossible();
       setStatus('Running ' + target);
     });
     btnRunNoDebug.addEventListener('click', () => {
       const target = runTarget.value;
       printToTerminal('$ run-no-debug ' + target);
       printToTerminal('Executing without debugger: ' + currentFilename());
+      diagnoseIfPossible();
       setStatus('Run without debugging');
     });
 
@@ -1086,14 +1421,35 @@ if __name__ == "__main__":
     fmOpenProject.addEventListener('click', () => setStatus('Open Project (mock)'));
     fmOpenFolder.addEventListener('click', openLocalFolder);
 
-    // Save buttons in toolbar already wired
     // Explorer extra buttons
     document.getElementById('sdNew').addEventListener('click', showNewFileModal);
     document.getElementById('sdRefresh').addEventListener('click', () => setStatus('Explorer refreshed'));
 
+    // Lightweight autocomplete lifecycle
+    function liveAutocomplete() {
+      const caret = getCaretIndex(codeArea);
+      const text = codeArea.textContent;
+      const before = text.slice(0, caret);
+      const m = before.match(/([A-Za-z_][A-Za-z_0-9]*)$/);
+      const prefix = m ? m[1] : '';
+      if (prefix && prefix.length >= 3) {
+        showGhostSuggestion(prefix);
+      } else {
+        ghostHint.style.display = 'none';
+      }
+    }
+    codeArea.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        if (acceptGhost()) return;
+        document.execCommand('insertText', false, '  ');
+      }
+    });
+
     // Initialize UI
     renderWorkspace();
     setStatus('Ready');
+    refreshHighlight();
   </script>
 </body>
 </html>

@@ -163,7 +163,6 @@
   .cmd:hover, .cmd.active { background: var(--hover); }
   .hint { color: var(--muted); font-family: var(--mono); }
 
-  /* Responsive collapse */
   @media (max-width: 900px) {
     .main { grid-template-columns: 48px 0 1fr; }
     .sidebar { display: none; }
@@ -496,7 +495,6 @@ function applyFilter(q) {
 
   const paths = nodes.map(n => n.dataset.path);
   const matchSet = new Set(paths.filter(p => p.toLowerCase().includes(query)));
-  // include ancestors
   for (const p of [...matchSet]) {
     const parts = p.split("/");
     for (let i = 1; i < parts.length; i++) {

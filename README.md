@@ -19,7 +19,6 @@
     --tab-active: #1f1f1f;
     --status: #0b0b0b;
     --badge: #37373d;
-    --shadow: rgba(0,0,0,0.6);
     --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     --sans: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Noto Sans", "Helvetica Neue", Arial;
   }
@@ -30,9 +29,19 @@
   .root { display: grid; grid-template-rows: 32px auto 24px; height: 100vh; }
   .main { display: grid; grid-template-columns: 48px 260px auto; height: 100%; }
 
+  /* Make UI chrome unselectable */
+  .titlebar, .titlebar * ,
+  .activitybar, .activitybar * ,
+  .sidebar, .sidebar * ,
+  .tabs, .tabs * ,
+  .statusbar, .statusbar * {
+    user-select: none;
+  }
+
+  /* Title Bar */
   .titlebar {
     display: flex; align-items: center; gap: 8px;
-    background: linear-gradient(180deg, #2c2c2f, var(--panel));
+    background: var(--panel);
     border-bottom: 1px solid var(--border);
     padding: 0 10px; font-size: 12px;
   }
@@ -45,23 +54,25 @@
   .spacer { flex: 1; }
   .kbd { font-family: var(--mono); background: var(--badge); padding: 2px 6px; border-radius: 4px; }
 
+  /* Activity Bar */
   .activitybar {
     width: 48px; background: #202020; border-right: 1px solid var(--border);
     display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 0;
   }
   .activitybar .icon {
     width: 36px; height: 36px; border-radius: 8px; display: grid; place-items: center;
-    color: var(--muted); cursor: pointer; transition: transform 90ms ease, background 120ms ease, color 120ms ease;
+    color: var(--muted); cursor: pointer;
   }
-  .activitybar .icon:hover { background: var(--hover); color: var(--text); transform: translateY(-1px); }
-  .activitybar .icon.active { background: var(--active); color: #fff; box-shadow: inset 0 0 0 1px #0e639c66; }
+  .activitybar .icon:hover { background: var(--hover); color: var(--text); }
+  .activitybar .icon.active { background: var(--active); color: #fff; }
 
+  /* Sidebar */
   .sidebar {
     background: var(--sidebar); border-right: 1px solid var(--border);
     display: flex; flex-direction: column; min-width: 160px;
   }
   .section-header {
-    font-size: 11px; letter-spacing: 0.5px; text-transform: uppercase;
+    font-size: 11px; text-transform: uppercase;
     color: var(--muted); padding: 10px 12px; border-bottom: 1px solid var(--border);
     display: flex; align-items: center; gap: 8px;
   }
@@ -79,14 +90,14 @@
   .node {
     display: flex; align-items: center; gap: 6px;
     padding: 6px 8px; border-radius: 6px; cursor: pointer; white-space: nowrap;
-    transition: background 100ms ease, color 100ms ease;
   }
   .node:hover { background: var(--hover); }
-  .node.active { background: #093a61; box-shadow: inset 0 0 0 1px #0e639c55; }
+  .node.active { background: #093a61; }
   .twisty { width: 12px; text-align: center; color: var(--muted); }
   .file { color: var(--text); }
   .dir { color: var(--muted); }
 
+  /* Editor */
   .editor { display: grid; grid-template-rows: 32px auto; background: #151515; }
   .tabs {
     display: flex; align-items: center; overflow: auto;
@@ -95,8 +106,7 @@
   .tab {
     display: flex; align-items: center; gap: 8px;
     padding: 6px 12px; cursor: pointer; color: var(--muted);
-    border-right: 1px solid var(--border); user-select: none;
-    transition: background 100ms ease, color 100ms ease;
+    border-right: 1px solid var(--border);
   }
   .tab:hover { background: var(--hover); color: var(--text); }
   .tab.active { background: var(--tab-active); color: var(--text); border-bottom: 2px solid var(--accent); }
@@ -116,6 +126,7 @@
     position: absolute; left: 0; width: 40px; text-align: right; color: var(--muted);
   }
 
+  /* Syntax colors */
   .tok-key { color: #569cd6; }
   .tok-fn  { color: #dcdcaa; }
   .tok-str { color: #ce9178; }
@@ -123,6 +134,7 @@
   .tok-type{ color: #6a9955; }
   .tok-com { color: #6b6b6b; font-style: italic; }
 
+  /* Status Bar */
   .statusbar {
     display: flex; align-items: center; gap: 12px;
     background: var(--status); border-top: 1px solid var(--border);
@@ -131,6 +143,7 @@
   .item { padding: 0 6px; border-radius: 4px; }
   .item.active { background: var(--badge); color: var(--text); }
 
+  /* Command Palette */
   .palette {
     position: absolute; inset: 0; display: none; place-items: start center;
     background: rgba(0,0,0,0.35);
@@ -139,7 +152,6 @@
   .box {
     margin-top: 12vh; width: min(780px, 92vw); background: var(--panel);
     border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
-    box-shadow: 0 16px 50px var(--shadow);
   }
   .input {
     width: 100%; padding: 12px 14px; background: #1f1f1f; border: none; outline: none;
@@ -153,6 +165,7 @@
   .cmd:hover, .cmd.active { background: var(--hover); }
   .hint { color: var(--muted); font-family: var(--mono); }
 
+  /* Responsive collapse */
   @media (max-width: 900px) {
     .main { grid-template-columns: 48px 0 1fr; }
     .sidebar { display: none; }
@@ -161,6 +174,8 @@
 </head>
 <body>
 <div class="root">
+
+  <!-- Title Bar -->
   <div class="titlebar">
     <div class="menu">
       <button id="btnFile">File</button>
@@ -175,7 +190,9 @@
     </div>
   </div>
 
+  <!-- Main -->
   <div class="main">
+    <!-- Activity Bar -->
     <aside class="activitybar">
       <div class="icon active" title="Explorer" id="iconExplorer">🗂️</div>
       <div class="icon" title="Search" id="iconSearch">🔎</div>
@@ -184,6 +201,7 @@
       <div class="icon" title="Extensions">🧩</div>
     </aside>
 
+    <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
       <div class="section-header">Explorer <span class="badge" id="fileCount">0</span></div>
       <div class="search">
@@ -193,11 +211,13 @@
       <div id="tree" class="tree"></div>
     </aside>
 
+    <!-- Editor -->
     <section class="editor">
       <div id="tabs" class="tabs"></div>
       <div class="surface">
         <div id="pane" class="editor-pane" tabindex="0" aria-label="Editor" role="textbox"></div>
 
+        <!-- Command Palette -->
         <div id="palette" class="palette" aria-modal="true">
           <div class="box" role="dialog" aria-label="Command palette">
             <input id="paletteInput" class="input" placeholder="Type a command or file name" />
@@ -208,6 +228,7 @@
     </section>
   </div>
 
+  <!-- Status Bar -->
   <footer class="statusbar">
     <div class="item active">UTF-8</div>
     <div class="item">LF</div>
@@ -477,6 +498,7 @@ function applyFilter(q) {
 
   const paths = nodes.map(n => n.dataset.path);
   const matchSet = new Set(paths.filter(p => p.toLowerCase().includes(query)));
+  // include ancestors
   for (const p of [...matchSet]) {
     const parts = p.split("/");
     for (let i = 1; i < parts.length; i++) {

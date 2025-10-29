@@ -18,25 +18,39 @@
       --editor-bg: #1e1e1e;
       --terminal-bg: #111111;
       --status-bg: #0b0b0b;
-      --danger: #c15555;
+
+      /* Syntax colors (Dark+ style-ish) */
+      --cs-keyword: #569cd6;
+      --cs-type: #4ec9b0;
+      --cs-string: #ce9178;
+      --cs-number: #b5cea8;
+      --cs-method: #dcdcaa;
+      --cs-namespace: #9cdcfe;
+      --cs-comment: #6a9955;
+      --cs-attr: #c586c0;
+      --ghost: rgba(207,232,255,0.35);
+      --ghost-border: rgba(14,99,156,0.35);
+      --error: #ff6b6b;
+      --warn: #e5c07b;
+      --info: #8ab4f8;
     }
+
     * { box-sizing: border-box; }
     html, body { height: 100%; margin: 0; }
     body {
       background: var(--bg);
       color: var(--text);
       font-family: ui-sans-serif, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
-      overflow: hidden;
-      user-select: none; /* make UI non-copiable by default */
+      overflow: auto; /* page is scrollable */
+      user-select: none; /* UI non-copiable by default */
     }
-
-    /* Only the code editor should be copyable/editable */
+    /* Only code area should be copyable/editable */
     .code-area, .code-area * { user-select: text; }
 
     .workspace {
       display: grid;
-      grid-template-rows: 32px 32px 1fr 24px;
-      height: 100%;
+      grid-template-rows: 32px auto 1fr 24px; /* titlebar, toolbar, main, status */
+      min-height: 100vh;
     }
 
     /* Title bar */
@@ -61,11 +75,11 @@
     .tb-btn:hover { background: var(--hover); }
     .brand { margin-left: auto; font-size: 12px; color: var(--muted); }
 
-    /* File menu with hover submenus */
+    /* File menu aligned directly under File button */
     .file-menu {
       position: absolute;
-      top: 32px;
-      left: 8px;
+      left: 8px; /* same X as File button padding */
+      top: 32px; /* exactly below titlebar */
       background: var(--panel);
       border: 1px solid var(--border);
       border-radius: 6px;
@@ -86,11 +100,7 @@
       align-items: center;
     }
     .file-menu .item:hover { background: var(--hover); }
-    .file-menu .item.has-sub::after {
-      content: "▸";
-      color: var(--muted);
-      margin-left: 8px;
-    }
+    .file-menu .item.has-sub::after { content: "▸"; color: var(--muted); margin-left: 8px; }
     .submenu {
       position: absolute;
       left: 100%;
@@ -105,19 +115,19 @@
       z-index: 1100;
     }
     .item.has-sub:hover .submenu { display: flex; }
-
     .divider { height: 1px; background: var(--border); margin: 6px 0; }
 
-    /* Secondary toolbar (Run, Save, etc.) */
+    /* Toolbar placed in same Y line block right under File */
     .toolbar {
       background: var(--panel);
       border-bottom: 1px solid var(--border);
-      display: grid;
-      grid-template-columns: auto auto auto auto auto auto auto 1fr auto auto auto auto auto auto;
+      display: flex;            /* ensure single row alignment */
+      align-items: center;      /* same Y for all buttons */
       gap: 8px;
-      align-items: center;
-      padding: 0 8px;
-      height: 32px;
+      padding: 4px 8px;         /* placed directly below titlebar */
+      position: sticky;
+      top: 32px;                /* sticks under titlebar when scrolling */
+      z-index: 900;
     }
     .btn {
       font-size: 12px;
@@ -139,22 +149,18 @@
       padding: 2px 6px;
       cursor: pointer;
     }
-    .filename {
-      font-size: 12px;
-      color: var(--muted);
-      user-select: none;
-    }
+    .filename { font-size: 12px; color: var(--muted); user-select: none; }
 
-    /* Main area: resizable sidebar + editor */
+    /* Main: resizable sidebar + editor */
     .main {
       display: grid;
-      grid-template-columns: 300px 1fr; /* sidebar default 300px */
+      grid-template-columns: 300px 1fr; /* sidebar default */
       min-height: 0;
     }
     .sidebar {
       background: var(--sidebar);
       border-right: 1px solid var(--border);
-      resize: horizontal;     /* freely resizable */
+      resize: horizontal; /* freely resizable */
       overflow: auto;
       min-width: 160px;
       max-width: 720px;
@@ -167,6 +173,10 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      position: sticky;
+      top: 0;
+      background: var(--sidebar);
+      z-index: 2;
     }
     .sd-actions { display: flex; gap: 6px; }
     .sd-btn {
@@ -204,6 +214,9 @@
       align-items: center;
       gap: 6px;
       padding: 0 6px;
+      position: sticky;
+      top: calc(32px + 32px); /* under title + toolbar when scrolling */
+      z-index: 800;
     }
     .tab {
       background: #2d2d2d;
@@ -225,7 +238,7 @@
 
     .editor-surface {
       display: grid;
-      grid-template-rows: 40px 1fr auto; /* toolbar, code, output */
+      grid-template-rows: 40px auto auto; /* editor-toolbar, code-area, output */
       min-height: 0;
       background: var(--editor-bg);
     }
@@ -236,32 +249,59 @@
       padding: 6px 8px;
       border-bottom: 1px solid var(--border);
       background: var(--panel);
+      position: sticky;
+      top: calc(32px + 32px + 36px); /* title + toolbar + tabs */
+      z-index: 700;
     }
     .info { font-size: 12px; color: var(--muted); user-select: none; }
 
-    /* Code area (editable + copyable) */
+    /* Code area: editable + copyable + syntax highlighting */
     .code-area {
       position: relative;
       overflow: auto;
-      padding: 12px 16px;
+      padding: 12px 16px 60px; /* extra bottom space before output */
       line-height: 1.5;
       font-family: "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace;
       font-size: 13px;
-      white-space: pre;
       outline: none;
+      white-space: pre-wrap; /* allow wrapping but keep newlines */
+      word-break: break-word;
     }
-    .code-area[contenteditable="true"] { caret-color: #cfe8ff; }
+    .token.kw { color: var(--cs-keyword); }
+    .token.type { color: var(--cs-type); }
+    .token.str { color: var(--cs-string); }
+    .token.num { color: var(--cs-number); }
+    .token.ns { color: var(--cs-namespace); }
+    .token.method { color: var(--cs-method); }
+    .token.attr { color: var(--cs-attr); }
+    .token.comment { color: var(--cs-comment); }
+
+    /* Ghost completion */
+    .ghost {
+      position: absolute;
+      pointer-events: none;
+      color: var(--ghost);
+    }
+    .ghost-box {
+      position: absolute;
+      border: 1px dashed var(--ghost-border);
+      border-radius: 4px;
+      padding: 2px 4px;
+      background: transparent;
+      color: var(--ghost);
+      font-size: 12px;
+    }
 
     /* Output terminal — freely resizable up or down */
     .output-container {
       display: grid;
-      grid-template-rows: 28px 1fr 32px; /* header, body, input */
+      grid-template-rows: 28px 1fr 32px;
       border-top: 1px solid var(--border);
       background: var(--terminal-bg);
-      resize: vertical;     /* can be dragged up or down */
+      resize: vertical;     /* drag handle bottom edge */
       overflow: auto;
-      min-height: 100px;
-      max-height: 70vh;
+      min-height: 140px;
+      max-height: 75vh;
     }
     .output-header {
       padding: 4px 8px;
@@ -278,7 +318,12 @@
       overflow: auto;
       font-family: Menlo, Consolas, monospace;
       font-size: 12px;
+      white-space: pre-wrap;
     }
+    .output-line.error { color: var(--error); }
+    .output-line.warn { color: var(--warn); }
+    .output-line.info { color: var(--info); }
+
     .output-input {
       display: grid;
       grid-template-columns: 36px 1fr 90px;
@@ -321,12 +366,15 @@
       font-size: 12px;
       color: var(--muted);
       user-select: none;
+      position: sticky;
+      bottom: 0;
+      z-index: 1000;
     }
     .statusbar .cell { cursor: default; }
     .statusbar .cell.interactive { cursor: pointer; }
     .statusbar .cell.interactive:hover { color: #e0e0e0; }
 
-    /* Modal for New File (language + name) */
+    /* Modal: New File (language lock) */
     .modal-backdrop {
       position: fixed;
       inset: 0;
@@ -337,7 +385,7 @@
       z-index: 2000;
     }
     .modal {
-      width: 420px;
+      width: 460px;
       background: var(--panel);
       border: 1px solid var(--border);
       border-radius: 8px;
@@ -365,12 +413,8 @@
       border-radius: 4px;
       padding: 0 8px;
     }
-    .modal-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-    }
-    .danger { border-color: var(--danger); color: #f7d4d4; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
+    .danger { color: var(--error); }
   </style>
 </head>
 <body>
@@ -381,7 +425,7 @@
       <span class="brand" id="brandText">Mini Studio — Program</span>
     </div>
 
-    <!-- Secondary toolbar -->
+    <!-- Toolbar: aligned under File, same Y for buttons -->
     <div class="toolbar">
       <button class="btn" id="btnNewFile">📝 New File</button>
       <button class="btn" id="btnOpenFile">📂 Open File</button>
@@ -410,7 +454,7 @@
       <button class="btn" id="btnSwitchTab">↹ Switch tab</button>
     </div>
 
-    <!-- File menu -->
+    <!-- File menu (hover submenus) -->
     <div class="file-menu" id="fileMenu">
       <div class="item has-sub" id="fmNew">New
         <div class="submenu">
@@ -479,11 +523,13 @@
             <span class="info" style="margin-left:auto;" id="statusMsg">Ready</span>
           </div>
 
+          <!-- Code editor -->
           <div class="code-area" id="codeArea" contenteditable="true">
-// Type ANYTHING here. To start, create a New File and select a language.
-// This area is the ONLY copyable/editable part of the UI.
+// Type ANYTHING here. Create a New File to lock language and load templates.
+// This editor has syntax coloring, ghost completions, and simple error hints.
           </div>
 
+          <!-- Output terminal -->
           <div class="output-container" id="output">
             <div class="output-header">
               <span>Output</span>
@@ -493,7 +539,7 @@
 welcome</div>
             <div class="output-input">
               <div class="prompt">❯</div>
-              <input class="term-field" id="termInput" placeholder="Type a command, e.g., node -v" />
+              <input class="term-field" id="termInput" placeholder="Type a command, e.g., dotnet --info" />
               <button class="term-run" id="termRun">Run</button>
             </div>
           </div>
@@ -539,7 +585,7 @@ welcome</div>
   </div>
 
   <script>
-    // Elements
+    /* Elements */
     const btnFile = document.getElementById('btnFile');
     const fileMenu = document.getElementById('fileMenu');
     const statusMsg = document.getElementById('statusMsg');
@@ -551,7 +597,6 @@ welcome</div>
     const codeArea = document.getElementById('codeArea');
     const cursorCell = document.getElementById('cursorCell');
 
-    const output = document.getElementById('output');
     const terminalBody = document.getElementById('terminalBody');
     const termInput = document.getElementById('termInput');
     const termRun = document.getElementById('termRun');
@@ -575,7 +620,7 @@ welcome</div>
     const btnUncommentLines = document.getElementById('btnUncommentLines');
     const btnSwitchTab = document.getElementById('btnSwitchTab');
 
-    // File menu items
+    /* File menu items */
     const fmNewFile = document.getElementById('fmNewFile');
     const fmOpenFile = document.getElementById('fmOpenFile');
     const fmSaveProgram = document.getElementById('fmSaveProgram');
@@ -596,7 +641,7 @@ welcome</div>
     const fmRecentFiles = document.getElementById('fmRecentFiles');
     const fmRecentSolutions = document.getElementById('fmRecentSolutions');
 
-    // Modal elements
+    /* Modal elements */
     const newFileModal = document.getElementById('newFileModal');
     const nfName = document.getElementById('nfName');
     const nfLang = document.getElementById('nfLang');
@@ -605,7 +650,7 @@ welcome</div>
     const nfError = document.getElementById('nfError');
     const languageNameEl = document.getElementById('languageName');
 
-    // File model
+    /* File model */
     let currentFile = {
       name: 'Program',
       language: null,
@@ -613,10 +658,10 @@ welcome</div>
       content: codeArea.textContent,
       lockedLanguage: false
     };
-    const files = new Map(); // key: filename.ext, value: {name, language, ext, content, lockedLanguage}
+    const files = new Map(); // key: filename.ext
     files.set('Program', { ...currentFile });
 
-    // Language extensions
+    /* Language extensions */
     const langExt = {
       'JAVA': '.java',
       'CPP': '.cpp',
@@ -625,27 +670,44 @@ welcome</div>
       'PYTHON': '.py'
     };
 
-    // Language templates
+    /* Language templates (richer C# templates to handle Console.ReadLine, async, LINQ) */
     const templates = {
       'JAVA': `public class Program {
-  public static void main(String[] args) {
+  public static void main(String[] args) throws java.io.IOException {
     System.out.println("Hello, Java!");
   }
 }
 `,
       'CPP': `#include <iostream>
+#include <string>
 using namespace std;
 
 int main() {
   cout << "Hello, C++!" << endl;
+  string name;
+  cout << "Name: ";
+  getline(cin, name);
+  cout << "Nice to meet you, " << name << "!" << endl;
   return 0;
 }
 `,
       'CS': `using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
-class Program {
-  static void Main(string[] args) {
-    Console.WriteLine("Hello, C#!");
+namespace Demo {
+  class Program {
+    static async Task Main() {
+      Console.WriteLine("Hello, what's your name?");
+      var name = Console.ReadLine();
+      Console.WriteLine($"Nice to meet you, {name}!");
+
+      var nums = Enumerable.Range(1, 5).Select(n => n * n).ToList();
+      await Task.Delay(200);
+      Console.WriteLine(string.Join(", ", nums));
+    }
   }
 }
 `,
@@ -658,126 +720,219 @@ class Program {
   <body>Hi</body>
 </html>
 `,
-      'PYTHON': `def main():
-    print("Hello, Python!")
+      'PYTHON': `import asyncio
+
+async def main():
+    name = input("Hello, what's your name? ")
+    print(f"Nice to meet you, {name}!")
+    await asyncio.sleep(0.2)
+    nums = [n*n for n in range(1,6)]
+    print(", ".join(map(str, nums)))
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
 `
     };
 
-    // Utility: status
+    /* Syntax highlighting (basic tokenization for C#, minimal for others) */
+    function highlight(text, lang) {
+      if (lang === 'CS') {
+        const escape = s => s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+        // comments
+        text = text.replace(/\/\/.*$/gm, m => `<span class="token comment">${escape(m)}</span>`);
+        // strings (including interpolated)
+        text = text.replace(/(\$?@"[^"]*"|@"[^"]*"|\$"[^"]*"|"[^"\\]
+
+*(?:\\.[^"\\]
+
+*)*")/g,
+          m => `<span class="token str">${escape(m)}</span>`);
+        // attributes
+        text = text.replace(/^\s*
+
+\[([A-Za-z_][\w.]*)\]
+
+/gm,
+          (_, a) => `[<span class="token attr">${escape(a)}</span>]`);
+        // keywords
+        const kw = ['using','namespace','class','interface','struct','public','private','protected','internal','static','async','await','return','new','var','void','int','string','bool','Guid','Task'];
+        const kwRe = new RegExp(`\\b(${kw.join('|')})\\b`, 'g');
+        text = text.replace(kwRe, m => `<span class="token kw">${m}</span>`);
+        // methods common
+        const meth = ['Console','WriteLine','ReadLine','Select','ToList','Range','Delay','Join','Any','Enqueue','Dequeue','Main','RunAllAsync','ExecuteAsync'];
+        const methRe = new RegExp(`\\b(${meth.join('|')})\\b`, 'g');
+        text = text.replace(methRe, m => `<span class="token method">${m}</span>`);
+        // numbers
+        text = text.replace(/\b\d+\b/g, m => `<span class="token num">${m}</span>`);
+        // namespaces
+        text = text.replace(/\b(System|System\.[A-Za-z\.]+)\b/g, m => `<span class="token ns">${m}</span>`);
+        return text;
+      }
+      if (lang === 'HTML') {
+        const escape = s => s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+        return escape(text); // keep simple
+      }
+      if (lang === 'PYTHON' || lang === 'JAVA' || lang === 'CPP') {
+        const escape = s => s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+        // simple strings and comments
+        let out = text.replace(/#.*$/gm, m => `<span class="token comment">${escape(m)}</span>`);
+        out = out.replace(/\/\/.*$/gm, m => `<span class="token comment">${escape(m)}</span>`);
+        out = out.replace(/"[^"]*"|'[^']*'/g, m => `<span class="token str">${escape(m)}</span>`);
+        out = out.replace(/\b\d+\b/g, m => `<span class="token num">${m}</span>`);
+        return out;
+      }
+      return text;
+    }
+
+    /* Ghost completion for C#: suggest common identifiers by prefix */
+    const csDictionary = [
+      'Console','Console.WriteLine','Console.ReadLine','IAsyncEnumerable','CancellationToken','Task','Guid','Enumerable','Range','Select','ToList','Any'
+    ];
+    let ghostActive = null;
+
+    function suggestGhost(prefix, caretRect, lineLeft) {
+      const suggests = csDictionary.filter(x => x.toLowerCase().startsWith(prefix.toLowerCase()) && x.toLowerCase() !== prefix.toLowerCase());
+      if (suggests.length === 0) { hideGhost(); return; }
+      const best = suggests[0];
+      const suggestion = best.slice(prefix.length);
+      showGhost(suggestion, caretRect, lineLeft);
+    }
+
+    function showGhost(suffix, caretRect, lineLeft) {
+      hideGhost();
+      const g = document.createElement('div');
+      g.className = 'ghost';
+      g.style.left = (caretRect.left - lineLeft) + 'px';
+      g.style.top = caretRect.top + 'px';
+      g.textContent = suffix;
+      codeArea.appendChild(g);
+      ghostActive = { node: g, suffix };
+    }
+    function hideGhost() {
+      if (ghostActive && ghostActive.node) {
+        ghostActive.node.remove();
+      }
+      ghostActive = null;
+    }
+
+    function getCaretClientRect() {
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0) return null;
+      const range = sel.getRangeAt(0).cloneRange();
+      if (range.collapsed) {
+        const span = document.createElement('span');
+        span.appendChild(document.createTextNode('\u200b'));
+        range.insertNode(span);
+        const rect = span.getBoundingClientRect();
+        span.parentNode.removeChild(span);
+        return rect;
+      } else {
+        return range.getBoundingClientRect();
+      }
+    }
+
+    function getLineLeft() {
+      const rect = codeArea.getBoundingClientRect();
+      return rect.left;
+    }
+
+    /* Error hints (mock parser for a few C# issues) */
+    function analyzeCS(text) {
+      const lines = text.split('\n');
+      const issues = [];
+      lines.forEach((line, idx) => {
+        if (/\bconsole2\b/i.test(line)) {
+          issues.push({
+            level: 'error',
+            code: 'CS0246',
+            desc: "The type or namespace name 'console2' could not be found (are you missing a using directive or an assembly reference?)",
+            file: currentFilename(),
+            line: idx + 1
+          });
+        }
+        if (/DllImportAttribute/.test(line)) {
+          issues.push({
+            level: 'info',
+            code: 'IL0001',
+            desc: "Mark the 'mouse_event' method with the 'LibraryImportAttribute' instead of the 'DllImportAttribute' to generate P/Invoke stub code at compile time.",
+            file: currentFilename(),
+            line: idx + 1
+          });
+        }
+      });
+      return issues;
+    }
+
+    function renderIssues(issues) {
+      issues.forEach(it => {
+        const div = document.createElement('div');
+        div.className = 'output-line ' + (it.level === 'error' ? 'error' : it.level === 'warn' ? 'warn' : 'info');
+        div.textContent =
+          `${it.level.toUpperCase()} ${it.code} ${it.desc} — ${it.file} (Line ${it.line})`;
+        terminalBody.appendChild(div);
+      });
+      terminalBody.scrollTop = terminalBody.scrollHeight;
+    }
+
+    /* Status updates */
     function setStatus(msg) {
       statusMsg.textContent = msg;
       statusTail.textContent = msg;
     }
 
-    // Utility: render explorer + tabs from files map
+    /* Workspace rendering */
     function renderWorkspace() {
       explorer.innerHTML = '';
       tabs.innerHTML = '';
-      for (const [key, f] of files.entries()) {
+      for (const [key] of files.entries()) {
         const item = document.createElement('div');
-        item.className = 'tree-item' + (key === (currentFile.name + (currentFile.ext || '')) ? ' active' : '');
+        item.className = 'tree-item' + (key === currentFilename() ? ' active' : '');
         item.dataset.open = key;
         item.textContent = key;
         explorer.appendChild(item);
 
         const tab = document.createElement('div');
-        tab.className = 'tab' + (key === (currentFile.name + (currentFile.ext || '')) ? ' active' : '');
+        tab.className = 'tab' + (key === currentFilename() ? ' active' : '');
         tab.dataset.file = key;
         tab.textContent = key;
         tabs.appendChild(tab);
       }
-      const fullName = currentFile.name + (currentFile.ext || '');
+      const fullName = currentFilename();
       fileDisplay.textContent = fullName;
       optFileName.textContent = fullName;
       brandText.textContent = 'Mini Studio — ' + fullName;
       languageNameEl.textContent = currentFile.language ? currentFile.language : 'None';
     }
 
-    // Open file into editor
+    function currentFilename() {
+      const name = currentFile.name || 'Program';
+      const ext = currentFile.ext || '';
+      return name + ext;
+    }
+
+    /* Open file */
     function openFile(key) {
       const f = files.get(key);
       if (!f) return;
       currentFile = { ...f };
       codeArea.textContent = currentFile.content || '';
+      applyHighlight();
       renderWorkspace();
       setStatus('Opened ' + key);
     }
 
-    // Keep cursor cell updated (basic)
-    codeArea.addEventListener('keyup', updateCursor);
-    codeArea.addEventListener('click', updateCursor);
-    function updateCursor() {
-      // naive line/col
-      const sel = window.getSelection();
-      let line = 1, col = 1;
-      if (sel && sel.anchorNode) {
-        const textUpToCursor = codeArea.textContent.slice(0, getCaretIndex(codeArea));
-        line = (textUpToCursor.match(/\n/g) || []).length + 1;
-        const lastNL = textUpToCursor.lastIndexOf('\n');
-        col = textUpToCursor.length - (lastNL + 1) + 1;
-      }
-      cursorCell.textContent = 'Ln ' + line + ', Col ' + col;
-      currentFile.content = codeArea.textContent;
-      files.set(currentFile.name + (currentFile.ext || ''), { ...currentFile });
-      enableUndoRedo(); // mark actions
-    }
-    function getCaretIndex(el) {
-      const selection = window.getSelection();
-      if (!selection || selection.rangeCount === 0) return 0;
-      const range = selection.getRangeAt(0);
-      const preRange = range.cloneRange();
-      preRange.selectNodeContents(el);
-      preRange.setEnd(range.endContainer, range.endOffset);
-      return preRange.toString().length;
-    }
-
-    // Undo/Redo (very naive stack)
-    const undoStack = [];
-    const redoStack = [];
-    function pushUndo() {
-      undoStack.push(codeArea.textContent);
-      btnUndo.classList.remove('disabled');
-    }
-    function enableUndoRedo() {
-      if (undoStack.length > 0) btnUndo.classList.remove('disabled');
-      if (redoStack.length > 0) btnRedo.classList.remove('disabled');
-    }
-    btnUndo.addEventListener('click', () => {
-      if (undoStack.length === 0) return;
-      redoStack.push(codeArea.textContent);
-      const prev = undoStack.pop();
-      codeArea.textContent = prev;
-      updateCursor();
-      btnRedo.classList.remove('disabled');
-      if (undoStack.length === 0) btnUndo.classList.add('disabled');
+    explorer.addEventListener('click', (e) => {
+      const item = e.target.closest('.tree-item');
+      if (!item) return;
+      openFile(item.dataset.open);
     });
-    btnRedo.addEventListener('click', () => {
-      if (redoStack.length === 0) return;
-      undoStack.push(codeArea.textContent);
-      const next = redoStack.pop();
-      codeArea.textContent = next;
-      updateCursor();
-      if (redoStack.length === 0) btnRedo.classList.add('disabled');
-    });
-    codeArea.addEventListener('input', () => {
-      pushUndo();
+    tabs.addEventListener('click', (e) => {
+      const tab = e.target.closest('.tab');
+      if (!tab) return;
+      openFile(tab.dataset.file);
     });
 
-    // Sidebar resize impact: observe width and update grid column
-    const sidebar = document.getElementById('sidebar');
-    const mainGrid = document.getElementById('mainGrid');
-    const resizeObserver = new ResizeObserver(entries => {
-      for (const entry of entries) {
-        const w = Math.round(entry.contentRect.width);
-        mainGrid.style.gridTemplateColumns = w + 'px 1fr';
-      }
-    });
-    resizeObserver.observe(sidebar);
-
-    // File menu toggling
+    /* File menu toggle + close when clicking outside */
     btnFile.addEventListener('click', (e) => {
       e.stopPropagation();
       fileMenu.style.display = (fileMenu.style.display === 'flex') ? 'none' : 'flex';
@@ -788,21 +943,18 @@ if __name__ == "__main__":
       }
     });
 
-    // Explorer click
-    explorer.addEventListener('click', (e) => {
-      const item = e.target.closest('.tree-item');
-      if (!item) return;
-      openFile(item.dataset.open);
+    /* Sidebar resize affects grid */
+    const sidebar = document.getElementById('sidebar');
+    const mainGrid = document.getElementById('mainGrid');
+    const resizeObserver = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        const w = Math.round(entry.contentRect.width);
+        mainGrid.style.gridTemplateColumns = w + 'px 1fr';
+      }
     });
+    resizeObserver.observe(sidebar);
 
-    // Tabs click
-    tabs.addEventListener('click', (e) => {
-      const tab = e.target.closest('.tab');
-      if (!tab) return;
-      openFile(tab.dataset.file);
-    });
-
-    // New File modal workflow (language locked after creation)
+    /* New file modal: language locked after creation */
     function showNewFileModal() {
       nfName.value = '';
       nfLang.value = '';
@@ -810,17 +962,15 @@ if __name__ == "__main__":
       newFileModal.style.display = 'flex';
       nfName.focus();
     }
-    function hideNewFileModal() {
-      newFileModal.style.display = 'none';
-    }
+    function hideNewFileModal() { newFileModal.style.display = 'none'; }
+    document.getElementById('sdNew').addEventListener('click', showNewFileModal);
+    btnNewFile.addEventListener('click', showNewFileModal);
+    fmNewFile.addEventListener('click', showNewFileModal);
     nfCancel.addEventListener('click', hideNewFileModal);
     nfCreate.addEventListener('click', () => {
       const name = (nfName.value || '').trim();
       const lang = nfLang.value;
-      if (!name || !lang) {
-        nfError.style.display = 'block';
-        return;
-      }
+      if (!name || !lang) { nfError.style.display = 'block'; return; }
       const ext = langExt[lang] || '';
       const fullName = name + ext;
       const content = templates[lang] || '';
@@ -828,18 +978,13 @@ if __name__ == "__main__":
       files.set(fullName, file);
       currentFile = { ...file };
       codeArea.textContent = content;
+      applyHighlight();
       renderWorkspace();
       setStatus('Created ' + fullName + ' (language locked)');
       hideNewFileModal();
-      // Update run target display to show file name
-      document.getElementById('optFileName').textContent = fullName;
     });
 
-    // Hook up menu and toolbar to modal
-    btnNewFile.addEventListener('click', showNewFileModal);
-    fmNewFile.addEventListener('click', showNewFileModal);
-
-    // Save logic: always [file name].[language extension], not "Program.(ext)"
+    /* Save logic: always [file name].[lang ext] */
     function saveToDisk(filename, text) {
       const blob = new Blob([text], { type: 'text/plain' });
       const a = document.createElement('a');
@@ -849,9 +994,7 @@ if __name__ == "__main__":
       a.click();
       document.body.removeChild(a);
     }
-
     async function chooseFolderAndSave(filename, text) {
-      // Attempt File System Access API; fallback to download
       if ('showDirectoryPicker' in window) {
         try {
           const dirHandle = await window.showDirectoryPicker();
@@ -862,7 +1005,6 @@ if __name__ == "__main__":
           setStatus('Saved to folder: ' + filename);
           return;
         } catch {
-          // fallback
           saveToDisk(filename, text);
           setStatus('Saved (fallback) ' + filename);
           return;
@@ -872,24 +1014,12 @@ if __name__ == "__main__":
         setStatus('Saved (download) ' + filename);
       }
     }
-
-    function currentFilename() {
-      const name = currentFile.name || 'Program';
-      const ext = currentFile.ext || '';
-      return name + ext;
-    }
-
-    // Save / Save As / Save All
     function saveCurrent(asFolder = false) {
       const key = currentFilename();
       currentFile.content = codeArea.textContent;
       files.set(key, { ...currentFile });
-      if (asFolder) {
-        chooseFolderAndSave(key, currentFile.content);
-      } else {
-        saveToDisk(key, currentFile.content);
-        setStatus('Saved ' + key);
-      }
+      if (asFolder) { chooseFolderAndSave(key, currentFile.content); }
+      else { saveToDisk(key, currentFile.content); setStatus('Saved ' + key); }
     }
     function saveAll() {
       for (const [key, f] of files.entries()) {
@@ -897,14 +1027,13 @@ if __name__ == "__main__":
       }
       setStatus('Saved all files');
     }
-
     btnSaveFile.addEventListener('click', () => saveCurrent(false));
     btnSaveAll.addEventListener('click', saveAll);
     fmSaveProgram.addEventListener('click', () => saveCurrent(false));
     fmSaveProgramAs.addEventListener('click', () => saveCurrent(true));
     fmSaveAll.addEventListener('click', saveAll);
 
-    // Open File (upload), Open Folder (limited fallback)
+    /* Open file / folder */
     async function openLocalFile() {
       const input = document.createElement('input');
       input.type = 'file';
@@ -913,20 +1042,15 @@ if __name__ == "__main__":
         if (!file) return;
         const reader = new FileReader();
         reader.onload = () => {
-          // infer name and ext
           const nameParts = file.name.split('.');
           const ext = nameParts.length > 1 ? '.' + nameParts.pop() : '';
           const name = nameParts.join('.') || 'Untitled';
-          const f = {
-            name,
-            language: Object.keys(langExt).find(k => langExt[k] === ext) || null,
-            ext,
-            content: reader.result,
-            lockedLanguage: true
-          };
+          const lang = Object.keys(langExt).find(k => langExt[k] === ext) || null;
+          const f = { name, language: lang, ext, content: reader.result, lockedLanguage: true };
           files.set(file.name, f);
           currentFile = { ...f };
           codeArea.textContent = f.content || '';
+          applyHighlight();
           renderWorkspace();
           setStatus('Opened file ' + file.name);
         };
@@ -934,9 +1058,7 @@ if __name__ == "__main__":
       };
       input.click();
     }
-
     async function openLocalFolder() {
-      // Try FS Access API for folder; otherwise inform fallback
       if ('showDirectoryPicker' in window) {
         try {
           const dir = await window.showDirectoryPicker();
@@ -948,78 +1070,47 @@ if __name__ == "__main__":
               const nameParts = file.name.split('.');
               const ext = nameParts.length > 1 ? '.' + nameParts.pop() : '';
               const name = nameParts.join('.') || 'Untitled';
-              const f = {
-                name,
-                language: Object.keys(langExt).find(k => langExt[k] === ext) || null,
-                ext,
-                content: text,
-                lockedLanguage: true
-              };
+              const lang = Object.keys(langExt).find(k => langExt[k] === ext) || null;
+              const f = { name, language: lang, ext, content: text, lockedLanguage: true };
               files.set(file.name, f);
             }
           }
-          // Open first file if any
           const firstKey = files.keys().next().value;
           if (firstKey) openFile(firstKey);
           setStatus('Folder opened');
-        } catch {
-          setStatus('Folder open canceled');
-        }
-      } else {
-        setStatus('Folder open not supported; use Open File.');
-      }
+        } catch { setStatus('Folder open canceled'); }
+      } else { setStatus('Folder open not supported; use Open File.'); }
     }
-
     btnOpenFile.addEventListener('click', openLocalFile);
     fmOpenFile.addEventListener('click', openLocalFile);
     fmOpenFolder.addEventListener('click', openLocalFolder);
 
-    // New Project / Repository / From Existing (mock behaviors)
+    /* Misc menu */
     fmNewProject.addEventListener('click', () => setStatus('New Project (mock) created'));
     fmNewRepository.addEventListener('click', () => setStatus('New Repository (mock) initialized'));
     fmNewFromExisting.addEventListener('click', () => setStatus('Import project from existing sources (mock)'));
-
-    // Add New/Existing Project (mock)
     fmAddNewProj.addEventListener('click', () => setStatus('Added New Project (mock)'));
     fmAddExistingProj.addEventListener('click', () => setStatus('Added Existing Project (mock)'));
-
-    // Close / Close Solution (mock)
     fmClose.addEventListener('click', () => setStatus('Closed current window (mock)'));
     fmCloseSolution.addEventListener('click', () => setStatus('Closed solution (mock)'));
-
-    // Clone Repository (mock)
     fmCloneRepo.addEventListener('click', () => setStatus('Clone Repository (mock)'));
-
-    // Open Window same as toolbar
     fmOpenWindow.addEventListener('click', () => setStatus('Opening new window (mock)'));
-    btnOpenWindow.addEventListener('click', () => setStatus('Opening new window (mock)'));
-
-    // Page Settings, Recent lists (mock)
+    document.getElementById('sdRefresh').addEventListener('click', () => setStatus('Explorer refreshed'));
     fmPageSettings.addEventListener('click', () => setStatus('Page Settings (mock)'));
     fmRecentFiles.addEventListener('click', () => setStatus('Recent Files (mock)'));
     fmRecentSolutions.addEventListener('click', () => setStatus('Recent Projects and Solutions (mock)'));
 
-    // Spell-check toggle (mock)
+    /* Spell check, quick info (mock) */
     let spellOn = false;
-    btnSpell.addEventListener('click', () => {
-      spellOn = !spellOn;
-      setStatus('Spell-check ' + (spellOn ? 'enabled' : 'disabled'));
-    });
+    btnSpell.addEventListener('click', () => { spellOn = !spellOn; setStatus('Spell-check ' + (spellOn ? 'enabled' : 'disabled')); });
+    btnQuickInfo.addEventListener('click', () => { setStatus('Quick info displayed (mock)'); });
 
-    // Quick info (mock)
-    btnQuickInfo.addEventListener('click', () => {
-      setStatus('Quick info displayed (mock)');
-    });
-
-    // Comment / Uncomment selected lines (basic)
+    /* Comment / Uncomment lines (basic) */
     function commentSelection() {
       const text = codeArea.textContent;
-      const sel = window.getSelection();
-      if (!sel || sel.rangeCount === 0) return;
-      const range = sel.getRangeAt(0);
-      // naive: comment entire document if selection is collapsed
       const commented = text.split('\n').map(line => '// ' + line).join('\n');
       codeArea.textContent = commented;
+      applyHighlight();
       updateCursor();
       setStatus('Selected lines commented');
     }
@@ -1027,13 +1118,14 @@ if __name__ == "__main__":
       const text = codeArea.textContent;
       const uncommented = text.split('\n').map(line => line.startsWith('// ') ? line.slice(3) : line).join('\n');
       codeArea.textContent = uncommented;
+      applyHighlight();
       updateCursor();
       setStatus('Selected lines uncommented');
     }
     btnCommentLines.addEventListener('click', commentSelection);
     btnUncommentLines.addEventListener('click', uncommentSelection);
 
-    // Switch tab (mock)
+    /* Switch tab (mock) */
     btnSwitchTab.addEventListener('click', () => {
       const keys = Array.from(files.keys());
       if (keys.length < 2) return;
@@ -1043,9 +1135,10 @@ if __name__ == "__main__":
       setStatus('Switched tab');
     });
 
-    // Run actions (mock)
-    function printToTerminal(text) {
+    /* Terminal commands mock */
+    function printToTerminal(text, cls) {
       const div = document.createElement('div');
+      div.className = 'output-line' + (cls ? ' ' + cls : '');
       div.textContent = text;
       terminalBody.appendChild(div);
       terminalBody.scrollTop = terminalBody.scrollHeight;
@@ -1055,6 +1148,7 @@ if __name__ == "__main__":
       if (cmd === 'node -v') printToTerminal('v18.19.0');
       else if (cmd === 'python -V') printToTerminal('Python 3.11.0');
       else if (cmd === 'javac -version') printToTerminal('javac 17.0.9');
+      else if (cmd === 'dotnet --info') printToTerminal('.NET SDK info (mock)');
       else if (cmd.startsWith('echo ')) printToTerminal(cmd.slice(5));
       else printToTerminal('Command not found.');
     }
@@ -1064,36 +1158,177 @@ if __name__ == "__main__":
       runCommand(cmd);
       termInput.value = '';
     });
-    termInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') termRun.click();
-    });
+    termInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') termRun.click(); });
 
+    /* Run actions (mock execute + show issues for C#) */
     btnRun.addEventListener('click', () => {
       const target = runTarget.value;
-      printToTerminal('$ run ' + target);
-      printToTerminal('Executing ' + currentFilename() + ' (' + (currentFile.language || 'Unknown') + ')');
+      printToTerminal('$ run ' + target, 'info');
+      printToTerminal('Executing ' + currentFilename() + ' (' + (currentFile.language || 'Unknown') + ')', 'info');
+      if (currentFile.language === 'CS') {
+        renderIssues(analyzeCS(codeArea.textContent));
+      }
       setStatus('Running ' + target);
     });
     btnRunNoDebug.addEventListener('click', () => {
       const target = runTarget.value;
-      printToTerminal('$ run-no-debug ' + target);
-      printToTerminal('Executing without debugger: ' + currentFilename());
+      printToTerminal('$ run-no-debug ' + target, 'info');
+      printToTerminal('Executing without debugger: ' + currentFilename(), 'info');
+      if (currentFile.language === 'CS') {
+        renderIssues(analyzeCS(codeArea.textContent));
+      }
       setStatus('Run without debugging');
     });
 
-    // File menu main actions hooking
-    fmOpenFile.addEventListener('click', openLocalFile);
-    fmOpenProject.addEventListener('click', () => setStatus('Open Project (mock)'));
-    fmOpenFolder.addEventListener('click', openLocalFolder);
+    /* Cursor position + undo/redo */
+    function updateCursor() {
+      const sel = window.getSelection();
+      let line = 1, col = 1;
+      if (sel && sel.anchorNode) {
+        const idx = getCaretIndex(codeArea);
+        const text = codeArea.textContent;
+        const upTo = text.slice(0, idx);
+        line = (upTo.match(/\n/g) || []).length + 1;
+        const lastNL = upTo.lastIndexOf('\n');
+        col = upTo.length - (lastNL + 1) + 1;
+      }
+      cursorCell.textContent = 'Ln ' + line + ', Col ' + col;
+      currentFile.content = codeArea.textContent;
+      files.set(currentFilename(), { ...currentFile });
+      enableUndoRedo();
+    }
+    function getCaretIndex(el) {
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) return 0;
+      const range = selection.getRangeAt(0);
+      const preRange = range.cloneRange();
+      preRange.selectNodeContents(el);
+      preRange.setEnd(range.endContainer, range.endOffset);
+      return preRange.toString().length;
+    }
+    const undoStack = [];
+    const redoStack = [];
+    function pushUndo() { undoStack.push(codeArea.textContent); btnUndo.classList.remove('disabled'); }
+    function enableUndoRedo() {
+      if (undoStack.length > 0) btnUndo.classList.remove('disabled'); else btnUndo.classList.add('disabled');
+      if (redoStack.length > 0) btnRedo.classList.remove('disabled'); else btnRedo.classList.add('disabled');
+    }
+    btnUndo.addEventListener('click', () => {
+      if (undoStack.length === 0) return;
+      redoStack.push(codeArea.textContent);
+      const prev = undoStack.pop();
+      codeArea.textContent = prev;
+      applyHighlight();
+      updateCursor();
+    });
+    btnRedo.addEventListener('click', () => {
+      if (redoStack.length === 0) return;
+      undoStack.push(codeArea.textContent);
+      const next = redoStack.pop();
+      codeArea.textContent = next;
+      applyHighlight();
+      updateCursor();
+    });
+    codeArea.addEventListener('input', () => { pushUndo(); applyHighlight(); autoCaseFix(); triggerGhost(); });
 
-    // Save buttons in toolbar already wired
-    // Explorer extra buttons
-    document.getElementById('sdNew').addEventListener('click', showNewFileModal);
-    document.getElementById('sdRefresh').addEventListener('click', () => setStatus('Explorer refreshed'));
+    /* Auto-case fix: "console" -> "Console" (C#) */
+    function autoCaseFix() {
+      if (currentFile.language !== 'CS') return;
+      const text = codeArea.textContent;
+      const fixed = text.replace(/\bconsole\b/g, 'Console');
+      if (fixed !== text) {
+        const idx = getCaretIndex(codeArea);
+        codeArea.textContent = fixed;
+        applyHighlight();
+        // restore caret approximately
+        placeCaret(codeArea, Math.min(idx + ('Console'.length - 'console'.length), fixed.length));
+      }
+    }
+    function placeCaret(el, idx) {
+      const range = document.createRange();
+      const sel = window.getSelection();
+      let count = 0, nodeStack = [el], node, lastText = null;
+      while (nodeStack.length) {
+        node = nodeStack.pop();
+        if (node.nodeType === 3) {
+          const nextCount = count + node.length;
+          if (idx <= nextCount) {
+            range.setStart(node, idx - count);
+            range.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(range);
+            return;
+          }
+          count = nextCount;
+          lastText = node;
+        } else {
+          let i = node.childNodes.length;
+          while (i--) nodeStack.push(node.childNodes[i]);
+        }
+      }
+      if (lastText) {
+        range.setStart(lastText, lastText.length);
+        range.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
+    }
 
-    // Initialize UI
+    /* Ghost completion trigger on typing */
+    function triggerGhost() {
+      hideGhost();
+      if (currentFile.language !== 'CS') return;
+      const idx = getCaretIndex(codeArea);
+      const text = codeArea.textContent;
+      const upTo = text.slice(0, idx);
+      const match = upTo.match(/([A-Za-z_][A-Za-z0-9_]*)$/);
+      if (!match) return;
+      const prefix = match[1];
+      const rect = getCaretClientRect();
+      if (!rect) return;
+      suggestGhost(prefix, rect, getLineLeft());
+    }
+    codeArea.addEventListener('keyup', () => { updateCursor(); triggerGhost(); });
+    codeArea.addEventListener('click', () => { updateCursor(); triggerGhost(); });
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab' && ghostActive) {
+        e.preventDefault();
+        // Accept ghost suffix
+        const idx = getCaretIndex(codeArea);
+        const text = codeArea.textContent;
+        const upTo = text.slice(0, idx);
+        const after = text.slice(idx);
+        const match = upTo.match(/([A-Za-z_][A-Za-z0-9_]*)$/);
+        if (!match) return;
+        const accepted = upTo + ghostActive.suffix + after;
+        codeArea.textContent = accepted;
+        applyHighlight();
+        placeCaret(codeArea, (upTo + ghostActive.suffix).length);
+        hideGhost();
+      }
+    });
+
+    /* Apply syntax highlight by replacing content with spans (keep editable by using textContent for source of truth) */
+    function applyHighlight() {
+      // We re-render by setting innerHTML of codeArea using highlighted version of textContent.
+      // This resets selection; we restore cursor after where possible (handled in other calls where needed).
+      const text = codeArea.textContent;
+      const lang = currentFile.language;
+      const html = highlight(text, lang);
+      // Preserve editability: replace with HTML but keep plain text basis by setting innerHTML
+      codeArea.innerHTML = html.replace(/\n/g, '<br/>');
+    }
+
+    /* Initialize */
     renderWorkspace();
     setStatus('Ready');
+    applyHighlight();
+
+    /* Hook toolbar run/open/save duplication with menu */
+    btnOpenFile.addEventListener('click', openLocalFile);
+    btnSaveFile.addEventListener('click', () => saveCurrent(false));
+
+    /* Done */
   </script>
 </body>
 </html>

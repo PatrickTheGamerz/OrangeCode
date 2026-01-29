@@ -2,174 +2,1684 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>EToH Style RNG Menu</title>
+<title>EToH Style RNG</title>
 <style>
-    * {
-        box-sizing: border-box;
-        font-family: Arial, sans-serif;
-    }
-
-    body {
-        margin: 0;
-        background: #0a0a14;
-        color: white;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-    }
-
-    .screen {
-        display: none;
-        text-align: center;
-        width: 100%;
-        max-width: 500px;
-        padding: 20px;
-    }
-
-    .active {
-        display: block;
-    }
-
-    h1 {
-        margin-bottom: 20px;
-        letter-spacing: 2px;
-    }
-
-    button {
-        width: 80%;
-        padding: 14px;
-        margin: 8px 0;
-        font-size: 1.2rem;
-        border: none;
-        border-radius: 10px;
-        cursor: pointer;
-        background: #1e1e2e;
-        color: white;
-        transition: 0.15s;
-    }
-
-    button:hover {
-        background: #34344a;
-    }
-
-    .backBtn {
-        margin-top: 25px;
-        background: #444;
-    }
-
-    /* RNG result */
-    .rarity {
-        font-size: 2rem;
-        margin-top: 20px;
-    }
-
-    .common { color: #b0b0b0; }
-    .uncommon { color: #5cff8d; }
-    .rare { color: #4bb6ff; }
-    .legendary { color: #ffdf4b; }
-    .mythic { color: #ff4bff; }
-
+* {
+    box-sizing: border-box;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+body {
+    margin: 0;
+    background: radial-gradient(circle at top, #141428 0, #050510 55%, #000 100%);
+    color: #f5f5ff;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.app {
+    width: 100%;
+    max-width: 900px;
+    height: 540px;
+    background: rgba(5, 5, 18, 0.95);
+    border-radius: 20px;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    overflow: hidden;
+    position: relative;
+}
+.menu-panel {
+    background: linear-gradient(180deg, rgba(20, 20, 60, 0.95), rgba(5, 5, 20, 0.98));
+    padding: 24px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+.menu-title {
+    font-size: 1.4rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+.menu-sub {
+    font-size: 0.75rem;
+    opacity: 0.7;
+    margin-bottom: 10px;
+}
+.menu-buttons {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    margin-top: 4px;
+}
+.menu-btn {
+    padding: 10px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(10, 10, 30, 0.9);
+    color: #f5f5ff;
+    font-size: 0.9rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: background 0.12s ease, transform 0.08s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+}
+.menu-btn span {
+    font-size: 0.7rem;
+    opacity: 0.7;
+}
+.menu-btn:hover {
+    background: rgba(40, 40, 90, 0.95);
+    border-color: rgba(255, 255, 255, 0.18);
+    box-shadow: 0 0 14px rgba(120, 120, 255, 0.35);
+    transform: translateY(-1px);
+}
+.menu-btn.active {
+    background: linear-gradient(135deg, #ff4b8b, #ffb347);
+    color: #111;
+    border-color: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 18px rgba(255, 75, 139, 0.6);
+}
+.menu-footer {
+    margin-top: auto;
+    font-size: 0.7rem;
+    opacity: 0.6;
+}
+.menu-footer div {
+    margin-top: 4px;
+}
+.content-panel {
+    padding: 20px 22px;
+    position: relative;
+    overflow: hidden;
+}
+.screen {
+    display: none;
+    width: 100%;
+    height: 100%;
+}
+.screen.active {
+    display: block;
+}
+.screen-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+.screen-header h1 {
+    font-size: 1.3rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    margin: 0;
+}
+.screen-header span {
+    font-size: 0.8rem;
+    opacity: 0.7;
+}
+.section {
+    margin-top: 10px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: rgba(10, 10, 30, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.roll-main {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 14px;
+    height: calc(100% - 40px);
+}
+.roll-left {
+    display: flex;
+    flex-direction: column;
+}
+.roll-display {
+    flex: 1;
+    border-radius: 14px;
+    background: radial-gradient(circle at top, #1b1b3f 0, #050515 55%, #000 100%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+.roll-result {
+    text-align: center;
+}
+.roll-tower-name {
+    font-size: 1.4rem;
+    font-weight: 700;
+}
+.roll-diff {
+    font-size: 0.9rem;
+    opacity: 0.8;
+    margin-top: 4px;
+}
+.roll-meta {
+    font-size: 0.8rem;
+    opacity: 0.7;
+    margin-top: 4px;
+}
+.roll-btn {
+    margin-top: 10px;
+    padding: 10px 18px;
+    border-radius: 999px;
+    border: none;
+    cursor: pointer;
+    background: linear-gradient(135deg, #ff4b8b, #ffb347);
+    color: #111;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    box-shadow: 0 0 18px rgba(255, 75, 139, 0.6);
+    transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.08s ease;
+}
+.roll-btn:active {
+    transform: scale(0.96);
+    box-shadow: 0 0 8px rgba(255, 75, 139, 0.4);
+    filter: brightness(0.9);
+}
+.roll-btn[disabled] {
+    opacity: 0.6;
+    cursor: default;
+    box-shadow: none;
+}
+.roll-history {
+    font-size: 0.8rem;
+    max-height: 180px;
+    overflow-y: auto;
+}
+.roll-history-item {
+    margin-bottom: 3px;
+}
+.roll-anim-item {
+    position: absolute;
+    font-size: 1.1rem;
+    opacity: 0;
+    animation: rollFlash 0.22s ease-out forwards;
+}
+@keyframes rollFlash {
+    0% { opacity: 0; transform: translateY(10px) scale(0.96); }
+    40% { opacity: 1; transform: translateY(0) scale(1.02); }
+    100% { opacity: 0; transform: translateY(-10px) scale(0.96); }
+}
+.index-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    max-height: 380px;
+    overflow-y: auto;
+}
+.index-section {
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: rgba(10, 10, 30, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.index-section-title {
+    font-size: 0.9rem;
+    margin-bottom: 6px;
+}
+.index-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.index-tower {
+    padding: 4px 7px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    font-size: 0.8rem;
+    cursor: default;
+    position: relative;
+}
+.index-tower.unlocked {
+    border-color: #3cff7a;
+    background: rgba(20, 60, 30, 0.6);
+}
+.index-tower.easy {
+    color: #4cff7a;
+}
+.index-tower.medium {
+    color: #ffd94c;
+}
+.index-tower.hard {
+    color: #ff9b3c;
+}
+.index-tower.difficult {
+    color: #ff4c4c;
+}
+.index-tower.challenging {
+    color: #b00000;
+}
+.index-tower.intense {
+    color: #111;
+}
+.index-tower.remorseless {
+    color: #b94cff;
+}
+.index-tower.insane {
+    color: #3c6cff;
+}
+.tooltip {
+    position: fixed;
+    pointer-events: none;
+    background: rgba(10, 10, 25, 0.98);
+    border-radius: 8px;
+    padding: 6px 8px;
+    font-size: 0.78rem;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    z-index: 9999;
+    display: none;
+    max-width: 260px;
+}
+.tooltip-title {
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+.tooltip-line {
+    opacity: 0.8;
+}
+.settings-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.85rem;
+}
+.settings-row select,
+.settings-row input[type="checkbox"],
+.settings-row input[type="text"] {
+    font-size: 0.8rem;
+}
+.shop-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 360px;
+    overflow-y: auto;
+}
+.shop-item {
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: rgba(10, 10, 30, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.shop-item-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+}
+.shop-item-desc {
+    font-size: 0.78rem;
+    opacity: 0.8;
+}
+.shop-item button {
+    align-self: flex-end;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: none;
+    font-size: 0.75rem;
+    cursor: pointer;
+    background: #ffb347;
+    color: #111;
+}
+.shop-item button:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+.profile-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 10px;
+    height: calc(100% - 40px);
+}
+.profile-section {
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: rgba(10, 10, 30, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 0.85rem;
+}
+.profile-stat {
+    margin-bottom: 6px;
+}
+.profile-label {
+    opacity: 0.7;
+}
+.profile-value {
+    font-weight: 600;
+}
+.profile-status-input {
+    width: 100%;
+    margin-top: 4px;
+    padding: 4px 6px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(5, 5, 20, 0.9);
+    color: #f5f5ff;
+}
+.profile-select {
+    width: 100%;
+    margin-top: 4px;
+    padding: 4px 6px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(5, 5, 20, 0.9);
+    color: #f5f5ff;
+    font-size: 0.8rem;
+}
+.inventory-main {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    gap: 8px;
+    height: calc(100% - 40px);
+}
+.inventory-tabs {
+    display: flex;
+    gap: 6px;
+}
+.inventory-tab {
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    font-size: 0.8rem;
+    cursor: pointer;
+    background: rgba(10, 10, 30, 0.9);
+}
+.inventory-tab.active {
+    background: linear-gradient(135deg, #4b9bff, #9b6bff);
+    color: #111;
+    border-color: rgba(255, 255, 255, 0.4);
+}
+.inventory-content {
+    border-radius: 10px;
+    background: rgba(10, 10, 30, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    overflow: hidden;
+}
+.inventory-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.inventory-item {
+    padding: 6px 8px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    font-size: 0.8rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.inventory-item.equipped {
+    border-color: #3cff7a;
+    background: rgba(20, 60, 30, 0.6);
+}
+.inventory-item button {
+    padding: 3px 8px;
+    border-radius: 999px;
+    border: none;
+    font-size: 0.75rem;
+    cursor: pointer;
+    background: #ffb347;
+    color: #111;
+}
+.inventory-item button.secondary {
+    background: #555;
+    color: #f5f5ff;
+}
+.performance-overlay {
+    position: fixed;
+    top: 8px;
+    left: 10px;
+    font-size: 0.75rem;
+    background: rgba(5, 5, 20, 0.85);
+    padding: 4px 7px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    z-index: 999;
+    display: none;
+}
+.performance-line {
+    white-space: nowrap;
+}
+.stress-ball {
+    position: fixed;
+    bottom: 14px;
+    right: 16px;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #ffdf4b, #ff4b8b);
+    box-shadow: 0 0 18px rgba(255, 75, 139, 0.7);
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    color: #111;
+    font-size: 0.7rem;
+    font-weight: 700;
+    user-select: none;
+}
+.stress-ball:active {
+    transform: scale(0.94);
+}
+.infinity-orbit {
+    position: absolute;
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    pointer-events: none;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+.infinity-gem {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    box-shadow: 0 0 12px currentColor;
+}
+.infinity-gem.active {
+    animation: gemPulse 0.8s ease-out;
+}
+@keyframes gemPulse {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.4); }
+    100% { transform: scale(1); }
+}
+.lantern-glow {
+    box-shadow: 0 0 18px rgba(255, 255, 200, 0.5);
+}
+.rainbow-bg {
+    background: linear-gradient(135deg, #ff4b4b, #ffb347, #ffe84b, #4bff88, #4bb6ff, #b44bff);
+}
+.crystal-bg {
+    background: radial-gradient(circle at top, #4bffea 0, #4b6bff 40%, #b44bff 80%);
+}
 </style>
 </head>
 <body>
-
-<!-- MAIN MENU -->
-<div id="menu" class="screen active">
-    <h1>Main Menu</h1>
-    <button onclick="openScreen('roll')">ROLL</button>
-    <button onclick="openScreen('settings')">SETTINGS</button>
-    <button onclick="openScreen('credits')">CREDITS</button>
-    <button onclick="openScreen('index')">INDEX</button>
-    <button onclick="openScreen('shop')">SHOP</button>
-    <button onclick="exitGame()">EXIT</button>
+<div class="performance-overlay" id="perfOverlay">
+    <div class="performance-line" id="perfFps"></div>
+    <div class="performance-line" id="perfPing"></div>
 </div>
-
-<!-- ROLL SCREEN -->
-<div id="roll" class="screen">
-    <h1>Roll RNG</h1>
-    <button onclick="rollRNG()">ROLL NOW</button>
-    <div id="rollResult" class="rarity"></div>
-    <button class="backBtn" onclick="openScreen('menu')">BACK</button>
+<div class="stress-ball" id="stressBall">CLICK</div>
+<div class="app" id="appRoot">
+    <div class="menu-panel" id="menuPanel">
+        <div>
+            <div class="menu-title">EToH RNG</div>
+            <div class="menu-sub">Select an option</div>
+        </div>
+        <div class="menu-buttons">
+            <button class="menu-btn active" data-screen="rollScreen">
+                ROLL
+                <span>Spin for a tower</span>
+            </button>
+            <button class="menu-btn" data-screen="shopScreen">
+                SHOP
+                <span>Daily items</span>
+            </button>
+            <button class="menu-btn" data-screen="settingsScreen">
+                SETTINGS
+                <span>Preferences</span>
+            </button>
+            <button class="menu-btn" data-screen="indexScreen">
+                INDEX
+                <span>Towers & difficulties</span>
+            </button>
+            <button class="menu-btn" data-screen="profileScreen">
+                PROFILE
+                <span>Stats & status</span>
+            </button>
+            <button class="menu-btn" data-screen="inventoryScreen">
+                INVENTORY
+                <span>Rolled & items</span>
+            </button>
+            <button class="menu-btn" data-screen="creditsScreen">
+                CREDITS
+                <span>Creator</span>
+            </button>
+        </div>
+        <div class="menu-footer">
+            <div id="playtimeLabel">Playtime: 0m 0s</div>
+            <div id="dateLabel"></div>
+        </div>
+    </div>
+    <div class="content-panel" id="contentPanel">
+        <div class="screen active" id="rollScreen">
+            <div class="screen-header">
+                <h1>Roll</h1>
+                <span>Spin for an EToH tower</span>
+            </div>
+            <div class="roll-main">
+                <div class="roll-left">
+                    <div class="roll-display" id="rollDisplay">
+                        <div class="roll-result" id="rollResult">
+                            <div class="roll-tower-name">Press ROLL</div>
+                            <div class="roll-diff">Waiting for your spin</div>
+                            <div class="roll-meta"></div>
+                        </div>
+                        <div class="infinity-orbit" id="infinityOrbit"></div>
+                    </div>
+                    <button class="roll-btn" id="rollButton">ROLL</button>
+                </div>
+                <div class="section">
+                    <div style="font-size:0.9rem;margin-bottom:4px;">Recent Rolls</div>
+                    <div class="roll-history" id="rollHistory"></div>
+                </div>
+            </div>
+        </div>
+        <div class="screen" id="settingsScreen">
+            <div class="screen-header">
+                <h1>Settings</h1>
+                <span>Customize your experience</span>
+            </div>
+            <div class="section">
+                <div class="settings-list">
+                    <div class="settings-row">
+                        <div>Performance display</div>
+                        <select id="perfMode">
+                            <option value="none">Nothing</option>
+                            <option value="fps">FPS</option>
+                            <option value="ping">Ping</option>
+                            <option value="both">FPS + Ping</option>
+                        </select>
+                    </div>
+                    <div class="settings-row">
+                        <div>Enable roll animation</div>
+                        <input type="checkbox" id="animToggle">
+                    </div>
+                    <div class="settings-row">
+                        <div>Menu glow effects</div>
+                        <input type="checkbox" id="glowToggle">
+                    </div>
+                    <div class="settings-row">
+                        <div>Auto-save profile</div>
+                        <input type="checkbox" id="autosaveToggle">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="screen" id="shopScreen">
+            <div class="screen-header">
+                <h1>Shop</h1>
+                <span>Daily selection</span>
+            </div>
+            <div class="section">
+                <div style="font-size:0.8rem;opacity:0.75;margin-bottom:6px;">Five items appear each day based on your local time.</div>
+                <div class="shop-list" id="shopList"></div>
+            </div>
+        </div>
+        <div class="screen" id="indexScreen">
+            <div class="screen-header">
+                <h1>Index</h1>
+                <span>Towers and difficulties</span>
+            </div>
+            <div class="index-grid" id="indexGrid">
+                <div class="index-section">
+                    <div class="index-section-title" style="color:#4cff7a;">Easy</div>
+                    <div class="index-list">
+                        <div class="index-tower easy" data-id="ToAST">ToAST</div>
+                        <div class="index-tower easy" data-id="ToA">ToA</div>
+                    </div>
+                </div>
+                <div class="index-section">
+                    <div class="index-section-title" style="color:#ffd94c;">Medium</div>
+                    <div class="index-list">
+                        <div class="index-tower medium" data-id="ToM">ToM</div>
+                        <div class="index-tower medium" data-id="ToNI">ToNI</div>
+                    </div>
+                </div>
+                <div class="index-section">
+                    <div class="index-section-title" style="color:#ff9b3c;">Hard</div>
+                    <div class="index-list">
+                        <div class="index-tower hard" data-id="ToH">ToH</div>
+                        <div class="index-tower hard" data-id="ToK">ToK</div>
+                    </div>
+                </div>
+                <div class="index-section">
+                    <div class="index-section-title" style="color:#ff4c4c;">Difficult</div>
+                    <div class="index-list">
+                        <div class="index-tower difficult" data-id="ToKY">ToKY</div>
+                        <div class="index-tower difficult" data-id="ToS">ToS</div>
+                    </div>
+                </div>
+                <div class="index-section">
+                    <div class="index-section-title" style="color:#b00000;">Challenging</div>
+                    <div class="index-list">
+                        <div class="index-tower challenging" data-id="ToSP">ToSP</div>
+                        <div class="index-tower challenging" data-id="ToR">ToR</div>
+                    </div>
+                </div>
+                <div class="index-section">
+                    <div class="index-section-title" style="color:#111;">Intense</div>
+                    <div class="index-list">
+                        <div class="index-tower intense" data-id="ToIM">ToIM</div>
+                        <div class="index-tower intense" data-id="CoLS">CoLS</div>
+                    </div>
+                </div>
+                <div class="index-section">
+                    <div class="index-section-title" style="color:#b94cff;">Remorseless</div>
+                    <div class="index-list">
+                        <div class="index-tower remorseless" data-id="ToTS">ToTS</div>
+                        <div class="index-tower remorseless" data-id="R1TR">R1TR</div>
+                    </div>
+                </div>
+                <div class="index-section">
+                    <div class="index-section-title" style="color:#3c6cff;">Insane</div>
+                    <div class="index-list">
+                        <div class="index-tower insane" data-id="ToIG">ToIG</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="screen" id="profileScreen">
+            <div class="screen-header">
+                <h1>Profile</h1>
+                <span>Your progress</span>
+            </div>
+            <div class="profile-grid">
+                <div class="profile-section">
+                    <div class="profile-stat">
+                        <div class="profile-label">Towers Unlocked</div>
+                        <div class="profile-value" id="profileUnlocked">0</div>
+                    </div>
+                    <div class="profile-stat">
+                        <div class="profile-label">Hardest Completion</div>
+                        <div class="profile-value" id="profileHardest">None</div>
+                    </div>
+                    <div class="profile-stat">
+                        <div class="profile-label">Total Playtime</div>
+                        <div class="profile-value" id="profilePlaytime">0m 0s</div>
+                    </div>
+                    <div class="profile-stat">
+                        <div class="profile-label">Favorite Tower</div>
+                        <select class="profile-select" id="favoriteSelect">
+                            <option value="">None</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="profile-section">
+                    <div class="profile-label">Status</div>
+                    <input type="text" id="statusInput" class="profile-status-input" placeholder="Type your status">
+                    <div style="font-size:0.75rem;opacity:0.7;margin-top:6px;">Status and favorite tower are saved.</div>
+                </div>
+            </div>
+        </div>
+        <div class="screen" id="inventoryScreen">
+            <div class="screen-header">
+                <h1>Inventory</h1>
+                <span>Rolled and items</span>
+            </div>
+            <div class="inventory-main">
+                <div class="inventory-tabs">
+                    <button class="inventory-tab active" data-tab="rolledTab">Rolled</button>
+                    <button class="inventory-tab" data-tab="itemsTab">Items</button>
+                </div>
+                <div class="inventory-content">
+                    <div class="inventory-list" id="rolledTab"></div>
+                    <div class="inventory-list" id="itemsTab" style="display:none;"></div>
+                    <div style="font-size:0.75rem;opacity:0.7;">Max 10 stored rolls. Max 2 items equipped at once.</div>
+                </div>
+            </div>
+        </div>
+        <div class="screen" id="creditsScreen">
+            <div class="screen-header">
+                <h1>Credits</h1>
+                <span>Who made this</span>
+            </div>
+            <div class="section">
+                <div style="font-size:0.9rem;">Creator: Orange_Toaster</div>
+            </div>
+        </div>
+    </div>
 </div>
-
-<!-- SETTINGS -->
-<div id="settings" class="screen">
-    <h1>Settings</h1>
-    <p>Nothing here yet…</p>
-    <button class="backBtn" onclick="openScreen('menu')">BACK</button>
+<div class="tooltip" id="tooltip">
+    <div class="tooltip-title" id="tooltipTitle"></div>
+    <div class="tooltip-line" id="tooltipDiff"></div>
 </div>
-
-<!-- CREDITS -->
-<div id="credits" class="screen">
-    <h1>Credits</h1>
-    <p>Made by: You 😎</p>
-    <p>Code by: Copilot</p>
-    <button class="backBtn" onclick="openScreen('menu')">BACK</button>
-</div>
-
-<!-- INDEX -->
-<div id="index" class="screen">
-    <h1>Rarity Index</h1>
-
-    <h3>Easy:</h3>
-    <p>Common – 70%</p>
-    <p>Uncommon – 20%</p>
-
-    <h3>Medium:</h3>
-    <p>Rare – 7%</p>
-
-    <h3>Hard:</h3>
-    <p>Legendary – 2%</p>
-    <p>Mythic – 1%</p>
-
-    <button class="backBtn" onclick="openScreen('menu')">BACK</button>
-</div>
-
-<!-- SHOP -->
-<div id="shop" class="screen">
-    <h1>Shop</h1>
-    <p>Coming soon…</p>
-    <button class="backBtn" onclick="openScreen('menu')">BACK</button>
-</div>
-
 <script>
-    function openScreen(id) {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
+const towers = {
+    ToAST: {
+        id: "ToAST",
+        short: "ToAST",
+        name: "Tower of A Simple Time",
+        difficultyTier: "Easy",
+        difficultyBand: "Low Easy",
+        rating: 1.25,
+        bandClass: "baseline"
+    },
+    ToA: {
+        id: "ToA",
+        short: "ToA",
+        name: "Tower of Anger",
+        difficultyTier: "Easy",
+        difficultyBand: "Mid Easy",
+        rating: 1.5,
+        bandClass: "baseline"
+    },
+    ToM: {
+        id: "ToM",
+        short: "ToM",
+        name: "Tower of Madness",
+        difficultyTier: "Medium",
+        difficultyBand: "Bottom-Low Medium",
+        rating: 2.12,
+        bandClass: "bottom-low"
+    },
+    ToNI: {
+        id: "ToNI",
+        short: "ToNI",
+        name: "Tower of Noticeable Infuriation",
+        difficultyTier: "Medium",
+        difficultyBand: "High-Peak Medium",
+        rating: 2.8,
+        bandClass: "high-peak"
+    },
+    ToH: {
+        id: "ToH",
+        short: "ToH",
+        name: "Tower of Hecc",
+        difficultyTier: "Hard",
+        difficultyBand: "Low Hard",
+        rating: 3.3,
+        bandClass: "low"
+    },
+    ToK: {
+        id: "ToK",
+        short: "ToK",
+        name: "Tower of Killjoys",
+        difficultyTier: "Hard",
+        difficultyBand: "Mid Hard",
+        rating: 3.47,
+        bandClass: "mid"
+    },
+    ToKY: {
+        id: "ToKY",
+        short: "ToKY",
+        name: "Tower of Keyboard Yeeting",
+        difficultyTier: "Difficult",
+        difficultyBand: "Bottom Difficult",
+        rating: 4.1,
+        bandClass: "bottom"
+    },
+    ToS: {
+        id: "ToS",
+        short: "ToS",
+        name: "Tower of Stress",
+        difficultyTier: "Difficult",
+        difficultyBand: "High-Peak Difficult",
+        rating: 4.88,
+        bandClass: "high-peak"
+    },
+    ToSP: {
+        id: "ToSP",
+        short: "ToSP",
+        name: "Tower of Screen Punching",
+        difficultyTier: "Challenging",
+        difficultyBand: "Bottom-Low Challenging",
+        rating: 5.2,
+        bandClass: "bottom-low"
+    },
+    ToR: {
+        id: "ToR",
+        short: "ToR",
+        name: "Tower of Rage",
+        difficultyTier: "Challenging",
+        difficultyBand: "Mid-High Challenging",
+        rating: 5.58,
+        bandClass: "mid-high"
+    },
+    ToIM: {
+        id: "ToIM",
+        short: "ToIM",
+        name: "Tower of Impossible Expectations",
+        difficultyTier: "Intense",
+        difficultyBand: "Bottom Intense",
+        rating: 6.01,
+        bandClass: "bottom"
+    },
+    CoLS: {
+        id: "CoLS",
+        short: "CoLS",
+        name: "Citadel of Laptop Splitting",
+        difficultyTier: "Intense",
+        difficultyBand: "Mid Intense",
+        rating: 6.5,
+        bandClass: "mid"
+    },
+    ToTS: {
+        id: "ToTS",
+        short: "ToTS",
+        name: "Tower of True Skill",
+        difficultyTier: "Remorseless",
+        difficultyBand: "Bottom Remorseless",
+        rating: 7.09,
+        bandClass: "bottom"
+    },
+    R1TR: {
+        id: "R1TR",
+        short: "R1TR",
+        name: "Ring 1 Tower Rush",
+        difficultyTier: "Remorseless",
+        difficultyBand: "High-Peak Remorseless",
+        rating: 7.83,
+        bandClass: "high-peak"
+    },
+    ToIG: {
+        id: "ToIG",
+        short: "ToIG",
+        name: "Tower of Infinite Gauntlet",
+        difficultyTier: "Insane",
+        difficultyBand: "Low Insane",
+        rating: 8.23,
+        bandClass: "low"
     }
-
-    function exitGame() {
-        alert("You can't exit a webpage, but nice try 😄");
+};
+const difficultyBands = [
+    "Baseline",
+    "Bottom",
+    "Bottom-Low",
+    "Low",
+    "Low-Mid",
+    "Mid",
+    "Mid-High",
+    "High",
+    "High-Peak",
+    "Peak"
+];
+const itemsPool = [
+    {
+        id: "bootleg_speed_coil",
+        name: "Bootleg Speed Coil",
+        desc: "Makes the rolling animation a bit faster.",
+        type: "utility",
+        effects: { rollSpeed: 1.3 }
+    },
+    {
+        id: "trail_mix_of_hell",
+        name: "Trail Mix of Hell",
+        desc: "Doubles your luck when rolling.",
+        type: "luck",
+        effects: { luck: 2 }
+    },
+    {
+        id: "pride_flag",
+        name: "Pride Flag",
+        desc: "Turns the menu background into a rainbow when equipped.",
+        type: "cosmetic",
+        effects: { rainbowMenu: true }
+    },
+    {
+        id: "lantern",
+        name: "Lantern",
+        desc: "Brightens buttons and adds 0.5x more luck.",
+        type: "utility",
+        effects: { luck: 1.5, lantern: true }
+    },
+    {
+        id: "heavily_desired_item",
+        name: "Heavily Desired Item",
+        desc: "10x luck, 2x roll speed, 2 towers can roll at once.",
+        type: "power",
+        effects: { luck: 10, rollSpeed: 2, doubleRoll: true }
+    },
+    {
+        id: "crystal",
+        name: "Crystal",
+        desc: "Colorful shiny backgrounds, 5x luck, higher chance for Insane.",
+        type: "power",
+        effects: { luck: 5, crystal: true }
+    },
+    {
+        id: "stress_ball",
+        name: "Stress Ball",
+        desc: "Click it to gain tiny temporary luck for one roll.",
+        type: "utility",
+        effects: { stressBall: true }
+    },
+    {
+        id: "infinity_stone",
+        name: "Infinity Stone",
+        desc: "Spinning gems around the roll button. 6x luck, 1.5x roll speed, random gem effects.",
+        type: "power",
+        effects: { luck: 6, rollSpeed: 1.5, infinity: true }
     }
-
-    // RNG SYSTEM
-    const rarities = [
-        { name: "Common", key: "common", chance: 70 },
-        { name: "Uncommon", key: "uncommon", chance: 20 },
-        { name: "Rare", key: "rare", chance: 7 },
-        { name: "Legendary", key: "legendary", chance: 2 },
-        { name: "Mythic", key: "mythic", chance: 1 }
-    ];
-
-    function rollRNG() {
-        const roll = Math.random() * 100;
-        let cumulative = 0;
-        let result = rarities[0];
-
-        for (const r of rarities) {
-            cumulative += r.chance;
-            if (roll <= cumulative) {
-                result = r;
-                break;
+];
+const infinityGems = [
+    { id: "space", color: "#4bb6ff", effect: "boostHigh", label: "Space" },
+    { id: "mind", color: "#ffe84b", effect: "boostMid", label: "Mind" },
+    { id: "reality", color: "#ff4b8b", effect: "boostChaos", label: "Reality" },
+    { id: "power", color: "#b000ff", effect: "boostTop", label: "Power" },
+    { id: "time", color: "#4bff88", effect: "boostEasy", label: "Time" },
+    { id: "soul", color: "#ff9b3c", effect: "boostBalanced", label: "Soul" }
+];
+const menuButtons = document.querySelectorAll(".menu-btn");
+const screens = document.querySelectorAll(".screen");
+const appRoot = document.getElementById("appRoot");
+const menuPanel = document.getElementById("menuPanel");
+const rollButton = document.getElementById("rollButton");
+const rollResult = document.getElementById("rollResult");
+const rollHistory = document.getElementById("rollHistory");
+const rollDisplay = document.getElementById("rollDisplay");
+const infinityOrbit = document.getElementById("infinityOrbit");
+const tooltip = document.getElementById("tooltip");
+const tooltipTitle = document.getElementById("tooltipTitle");
+const tooltipDiff = document.getElementById("tooltipDiff");
+const perfOverlay = document.getElementById("perfOverlay");
+const perfFps = document.getElementById("perfFps");
+const perfPing = document.getElementById("perfPing");
+const perfModeSelect = document.getElementById("perfMode");
+const animToggle = document.getElementById("animToggle");
+const glowToggle = document.getElementById("glowToggle");
+const autosaveToggle = document.getElementById("autosaveToggle");
+const shopList = document.getElementById("shopList");
+const playtimeLabel = document.getElementById("playtimeLabel");
+const dateLabel = document.getElementById("dateLabel");
+const profileUnlocked = document.getElementById("profileUnlocked");
+const profileHardest = document.getElementById("profileHardest");
+const profilePlaytime = document.getElementById("profilePlaytime");
+const favoriteSelect = document.getElementById("favoriteSelect");
+const statusInput = document.getElementById("statusInput");
+const inventoryTabs = document.querySelectorAll(".inventory-tab");
+const rolledTab = document.getElementById("rolledTab");
+const itemsTab = document.getElementById("itemsTab");
+const stressBall = document.getElementById("stressBall");
+let state = {
+    unlockedTowers: [],
+    completedTowers: [],
+    favoriteTower: "",
+    status: "",
+    playtimeSeconds: 0,
+    settings: {
+        perfMode: "none",
+        animEnabled: true,
+        glowEnabled: true,
+        autosave: true
+    },
+    inventory: {
+        items: [],
+        equipped: [],
+        storedRolls: []
+    },
+    shop: {
+        dateKey: "",
+        items: []
+    },
+    tempLuckBonus: 0
+};
+let fpsCounter = {
+    lastTime: performance.now(),
+    frames: 0,
+    fps: 0
+};
+let pingValue = 0;
+let rollInProgress = false;
+let luckMultiplier = 1;
+let rollSpeedMultiplier = 1;
+let doubleRoll = false;
+let lanternActive = false;
+let rainbowMenu = false;
+let crystalActive = false;
+let infinityActive = false;
+let autosaveTimer = null;
+function saveState() {
+    localStorage.setItem("etoh_rng_state", JSON.stringify(state));
+}
+function loadState() {
+    const raw = localStorage.getItem("etoh_rng_state");
+    if (!raw) return;
+    try {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === "object") {
+            state = Object.assign(state, parsed);
+        }
+    } catch (e) {}
+}
+function applySettingsToUI() {
+    perfModeSelect.value = state.settings.perfMode || "none";
+    animToggle.checked = state.settings.animEnabled;
+    glowToggle.checked = state.settings.glowEnabled;
+    autosaveToggle.checked = state.settings.autosave;
+    updatePerformanceOverlay();
+    updateGlow();
+}
+function updatePerformanceOverlay() {
+    const mode = state.settings.perfMode;
+    if (mode === "none") {
+        perfOverlay.style.display = "none";
+        return;
+    }
+    perfOverlay.style.display = "block";
+    perfFps.style.display = mode === "fps" || mode === "both" ? "block" : "none";
+    perfPing.style.display = mode === "ping" || mode === "both" ? "block" : "none";
+}
+function updateGlow() {
+    if (state.settings.glowEnabled) {
+        appRoot.classList.add("lantern-glow");
+    } else {
+        appRoot.classList.remove("lantern-glow");
+    }
+}
+function updateMenuBackground() {
+    appRoot.classList.remove("rainbow-bg");
+    appRoot.classList.remove("crystal-bg");
+    if (rainbowMenu) {
+        appRoot.classList.add("rainbow-bg");
+    } else if (crystalActive) {
+        appRoot.classList.add("crystal-bg");
+    }
+}
+function updateLanternGlow() {
+    if (lanternActive) {
+        menuPanel.classList.add("lantern-glow");
+    } else {
+        menuPanel.classList.remove("lantern-glow");
+    }
+}
+function updateStressBallVisibility() {
+    if (state.inventory.equipped.includes("stress_ball")) {
+        stressBall.style.display = "flex";
+    } else {
+        stressBall.style.display = "none";
+    }
+}
+function updateInfinityOrbit() {
+    infinityOrbit.innerHTML = "";
+    if (!infinityActive) return;
+    const radius = 80;
+    infinityGems.forEach((gem, index) => {
+        const angle = (index / infinityGems.length) * Math.PI * 2;
+        const x = radius * Math.cos(angle);
+        const y = radius * Math.sin(angle);
+        const el = document.createElement("div");
+        el.className = "infinity-gem";
+        el.style.color = gem.color;
+        el.style.background = gem.color;
+        el.style.left = "50%";
+        el.style.top = "50%";
+        el.style.transform = "translate(-50%, -50%) translate(" + x + "px," + y + "px)";
+        infinityOrbit.appendChild(el);
+    });
+}
+function applyEquippedEffects() {
+    luckMultiplier = 1 + state.tempLuckBonus;
+    rollSpeedMultiplier = 1;
+    doubleRoll = false;
+    lanternActive = false;
+    rainbowMenu = false;
+    crystalActive = false;
+    infinityActive = false;
+    state.inventory.equipped.forEach(id => {
+        const item = itemsPool.find(i => i.id === id);
+        if (!item) return;
+        const eff = item.effects || {};
+        if (eff.luck) luckMultiplier *= eff.luck;
+        if (eff.rollSpeed) rollSpeedMultiplier *= eff.rollSpeed;
+        if (eff.doubleRoll) doubleRoll = true;
+        if (eff.lantern) lanternActive = true;
+        if (eff.rainbowMenu) rainbowMenu = true;
+        if (eff.crystal) crystalActive = true;
+        if (eff.infinity) infinityActive = true;
+    });
+    updateLanternGlow();
+    updateMenuBackground();
+    updateStressBallVisibility();
+    updateInfinityOrbit();
+}
+function updatePlaytimeLabels() {
+    const minutes = Math.floor(state.playtimeSeconds / 60);
+    const seconds = state.playtimeSeconds % 60;
+    const text = minutes + "m " + seconds + "s";
+    playtimeLabel.textContent = "Playtime: " + text;
+    profilePlaytime.textContent = text;
+}
+function initPlaytime() {
+    updatePlaytimeLabels();
+    setInterval(() => {
+        state.playtimeSeconds += 1;
+        updatePlaytimeLabels();
+        if (state.settings.autosave) saveState();
+    }, 1000);
+}
+function initDateLabel() {
+    const now = new Date();
+    dateLabel.textContent = now.toLocaleDateString() + " " + now.toLocaleTimeString();
+    setInterval(() => {
+        const n = new Date();
+        dateLabel.textContent = n.toLocaleDateString() + " " + n.toLocaleTimeString();
+    }, 1000);
+}
+menuButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+        const screenId = btn.getAttribute("data-screen");
+        menuButtons.forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        screens.forEach(s => s.classList.remove("active"));
+        const screen = document.getElementById(screenId);
+        if (screen) screen.classList.add("active");
+    });
+});
+function updateFPS() {
+    const now = performance.now();
+    fpsCounter.frames++;
+    if (now - fpsCounter.lastTime >= 1000) {
+        fpsCounter.fps = fpsCounter.frames;
+        fpsCounter.frames = 0;
+        fpsCounter.lastTime = now;
+        if (perfFps.style.display !== "none") {
+            perfFps.textContent = "FPS: " + fpsCounter.fps;
+        }
+    }
+    requestAnimationFrame(updateFPS);
+}
+function updatePing() {
+    pingValue = 20 + Math.floor(Math.random() * 60);
+    if (perfPing.style.display !== "none") {
+        perfPing.textContent = "Ping: " + pingValue + " ms";
+    }
+}
+setInterval(updatePing, 1000);
+requestAnimationFrame(updateFPS);
+perfModeSelect.addEventListener("change", () => {
+    state.settings.perfMode = perfModeSelect.value;
+    updatePerformanceOverlay();
+    if (state.settings.autosave) saveState();
+});
+animToggle.addEventListener("change", () => {
+    state.settings.animEnabled = animToggle.checked;
+    if (state.settings.autosave) saveState();
+});
+glowToggle.addEventListener("change", () => {
+    state.settings.glowEnabled = glowToggle.checked;
+    updateGlow();
+    if (state.settings.autosave) saveState();
+});
+autosaveToggle.addEventListener("change", () => {
+    state.settings.autosave = autosaveToggle.checked;
+    if (state.settings.autosave) saveState();
+});
+function getShopDateKey() {
+    const d = new Date();
+    return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
+}
+function generateDailyShop() {
+    const key = getShopDateKey();
+    if (state.shop.dateKey === key && state.shop.items && state.shop.items.length === 5) {
+        return;
+    }
+    const pool = [...itemsPool];
+    const result = [];
+    function canInclude(item) {
+        if (item.id === "infinity_stone") {
+            return state.unlockedTowers.includes("ToIG");
+        }
+        return true;
+    }
+    while (result.length < 5 && pool.length > 0) {
+        const idx = Math.floor(Math.random() * pool.length);
+        const candidate = pool.splice(idx, 1)[0];
+        if (!canInclude(candidate)) continue;
+        result.push(candidate.id);
+    }
+    state.shop.dateKey = key;
+    state.shop.items = result;
+    saveState();
+}
+function renderShop() {
+    generateDailyShop();
+    shopList.innerHTML = "";
+    state.shop.items.forEach(id => {
+        const item = itemsPool.find(i => i.id === id);
+        if (!item) return;
+        const owned = state.inventory.items.includes(id);
+        const div = document.createElement("div");
+        div.className = "shop-item";
+        const header = document.createElement("div");
+        header.className = "shop-item-header";
+        const name = document.createElement("div");
+        name.textContent = item.name;
+        const tag = document.createElement("div");
+        tag.style.fontSize = "0.75rem";
+        tag.style.opacity = "0.75";
+        tag.textContent = item.type.toUpperCase();
+        header.appendChild(name);
+        header.appendChild(tag);
+        const desc = document.createElement("div");
+        desc.className = "shop-item-desc";
+        desc.textContent = item.desc;
+        const btn = document.createElement("button");
+        btn.textContent = owned ? "Owned" : "Buy";
+        btn.disabled = owned;
+        btn.addEventListener("click", () => {
+            if (!state.inventory.items.includes(id)) {
+                state.inventory.items.push(id);
+                if (state.settings.autosave) saveState();
+                renderShop();
+                renderInventoryItems();
+                applyEquippedEffects();
+            }
+        });
+        div.appendChild(header);
+        div.appendChild(desc);
+        div.appendChild(btn);
+        shopList.appendChild(div);
+    });
+}
+function updateProfileFromState() {
+    profileUnlocked.textContent = state.unlockedTowers.length;
+    let hardest = null;
+    state.unlockedTowers.forEach(id => {
+        const t = towers[id];
+        if (!t) return;
+        if (!hardest || t.rating > hardest.rating) hardest = t;
+    });
+    profileHardest.textContent = hardest ? hardest.name : "None";
+    favoriteSelect.innerHTML = "";
+    const optNone = document.createElement("option");
+    optNone.value = "";
+    optNone.textContent = "None";
+    favoriteSelect.appendChild(optNone);
+    state.unlockedTowers.forEach(id => {
+        const t = towers[id];
+        if (!t) return;
+        const opt = document.createElement("option");
+        opt.value = id;
+        opt.textContent = t.name;
+        favoriteSelect.appendChild(opt);
+    });
+    favoriteSelect.value = state.favoriteTower || "";
+    statusInput.value = state.status || "";
+}
+favoriteSelect.addEventListener("change", () => {
+    state.favoriteTower = favoriteSelect.value;
+    if (state.settings.autosave) saveState();
+});
+statusInput.addEventListener("input", () => {
+    state.status = statusInput.value;
+    if (state.settings.autosave) saveState();
+});
+function renderInventoryRolled() {
+    rolledTab.innerHTML = "";
+    state.inventory.storedRolls.forEach((entry, index) => {
+        const t = towers[entry.id];
+        if (!t) return;
+        const div = document.createElement("div");
+        div.className = "inventory-item";
+        const left = document.createElement("div");
+        left.textContent = t.name + " [" + t.difficultyTier + "]";
+        const right = document.createElement("div");
+        const sellBtn = document.createElement("button");
+        sellBtn.textContent = "Sell";
+        sellBtn.addEventListener("click", () => {
+            state.inventory.storedRolls.splice(index, 1);
+            if (state.settings.autosave) saveState();
+            renderInventoryRolled();
+        });
+        right.appendChild(sellBtn);
+        div.appendChild(left);
+        div.appendChild(right);
+        rolledTab.appendChild(div);
+    });
+}
+function renderInventoryItems() {
+    itemsTab.innerHTML = "";
+    state.inventory.items.forEach(id => {
+        const item = itemsPool.find(i => i.id === id);
+        if (!item) return;
+        const div = document.createElement("div");
+        div.className = "inventory-item";
+        if (state.inventory.equipped.includes(id)) {
+            div.classList.add("equipped");
+        }
+        const left = document.createElement("div");
+        left.textContent = item.name;
+        const right = document.createElement("div");
+        const equipBtn = document.createElement("button");
+        if (state.inventory.equipped.includes(id)) {
+            equipBtn.textContent = "Unequip";
+            equipBtn.classList.add("secondary");
+        } else {
+            equipBtn.textContent = "Equip";
+        }
+        equipBtn.addEventListener("click", () => {
+            if (state.inventory.equipped.includes(id)) {
+                state.inventory.equipped = state.inventory.equipped.filter(e => e !== id);
+            } else {
+                if (state.inventory.equipped.length >= 2) {
+                    const removed = state.inventory.equipped.shift();
+                    state.inventory.equipped.push(id);
+                } else {
+                    state.inventory.equipped.push(id);
+                }
+            }
+            if (state.settings.autosave) saveState();
+            renderInventoryItems();
+            applyEquippedEffects();
+        });
+        right.appendChild(equipBtn);
+        div.appendChild(left);
+        div.appendChild(right);
+        itemsTab.appendChild(div);
+    });
+}
+inventoryTabs.forEach(tab => {
+    tab.addEventListener("click", () => {
+        inventoryTabs.forEach(t => t.classList.remove("active"));
+        tab.classList.add("active");
+        const target = tab.getAttribute("data-tab");
+        if (target === "rolledTab") {
+            rolledTab.style.display = "flex";
+            itemsTab.style.display = "none";
+        } else {
+            rolledTab.style.display = "none";
+            itemsTab.style.display = "flex";
+        }
+    });
+});
+function addRollToHistory(towerId) {
+    const t = towers[towerId];
+    if (!t) return;
+    const div = document.createElement("div");
+    div.className = "roll-history-item";
+    const time = new Date().toLocaleTimeString();
+    div.textContent = "[" + time + "] " + t.name + " (" + t.difficultyTier + ")";
+    rollHistory.prepend(div);
+    while (rollHistory.children.length > 20) {
+        rollHistory.removeChild(rollHistory.lastChild);
+    }
+}
+function storeRoll(towerId) {
+    if (state.inventory.storedRolls.length >= 10) return;
+    state.inventory.storedRolls.push({ id: towerId, time: Date.now() });
+    renderInventoryRolled();
+}
+function unlockTower(towerId) {
+    if (!state.unlockedTowers.includes(towerId)) {
+        state.unlockedTowers.push(towerId);
+    }
+}
+function updateIndexUnlocks() {
+    document.querySelectorAll(".index-tower").forEach(el => {
+        const id = el.getAttribute("data-id");
+        if (state.unlockedTowers.includes(id)) {
+            el.classList.add("unlocked");
+        } else {
+            el.classList.remove("unlocked");
+        }
+    });
+}
+function showRollResult(towerId) {
+    const t = towers[towerId];
+    if (!t) return;
+    rollResult.innerHTML = "";
+    const name = document.createElement("div");
+    name.className = "roll-tower-name";
+    name.textContent = t.name;
+    const diff = document.createElement("div");
+    diff.className = "roll-diff";
+    diff.textContent = t.difficultyTier + " [" + t.difficultyBand + " " + t.rating + "]";
+    const meta = document.createElement("div");
+    meta.className = "roll-meta";
+    meta.textContent = "Band: " + t.difficultyBand + " | Rating: " + t.rating;
+    rollResult.appendChild(name);
+    rollResult.appendChild(diff);
+    rollResult.appendChild(meta);
+}
+function getWeightedTowerPool() {
+    const entries = Object.values(towers);
+    const pool = [];
+    entries.forEach(t => {
+        let baseWeight = 1;
+        if (t.difficultyTier === "Easy") baseWeight = 6;
+        else if (t.difficultyTier === "Medium") baseWeight = 5;
+        else if (t.difficultyTier === "Hard") baseWeight = 4;
+        else if (t.difficultyTier === "Difficult") baseWeight = 3;
+        else if (t.difficultyTier === "Challenging") baseWeight = 2.5;
+        else if (t.difficultyTier === "Intense") baseWeight = 2;
+        else if (t.difficultyTier === "Remorseless") baseWeight = 1.5;
+        else if (t.difficultyTier === "Insane") baseWeight = 1;
+        let weight = baseWeight;
+        const luck = luckMultiplier;
+        if (luck > 1) {
+            if (t.difficultyTier === "Remorseless" || t.difficultyTier === "Insane") {
+                weight *= luck * 1.2;
+            } else if (t.difficultyTier === "Intense" || t.difficultyTier === "Challenging") {
+                weight *= luck;
+            } else if (t.difficultyTier === "Difficult") {
+                weight *= luck * 0.8;
             }
         }
-
-        const div = document.getElementById("rollResult");
-        div.className = "rarity " + result.key;
-        div.textContent = result.name + " (" + result.chance + "%)";
+        if (crystalActive && t.difficultyTier === "Insane") {
+            weight *= 1.8;
+        }
+        pool.push({ id: t.id, weight });
+    });
+    return pool;
+}
+function pickWeightedTower(extraEffect) {
+    const pool = getWeightedTowerPool();
+    if (extraEffect === "boostHigh") {
+        pool.forEach(p => {
+            const t = towers[p.id];
+            if (t.difficultyTier === "Remorseless" || t.difficultyTier === "Insane") p.weight *= 2;
+        });
+    } else if (extraEffect === "boostMid") {
+        pool.forEach(p => {
+            const t = towers[p.id];
+            if (t.difficultyTier === "Intense" || t.difficultyTier === "Challenging") p.weight *= 2;
+        });
+    } else if (extraEffect === "boostChaos") {
+        pool.forEach(p => {
+            const t = towers[p.id];
+            if (t.difficultyTier === "Difficult" || t.difficultyTier === "Hard") p.weight *= 2;
+        });
+    } else if (extraEffect === "boostTop") {
+        pool.forEach(p => {
+            const t = towers[p.id];
+            if (t.difficultyTier === "Insane") p.weight *= 3;
+        });
+    } else if (extraEffect === "boostEasy") {
+        pool.forEach(p => {
+            const t = towers[p.id];
+            if (t.difficultyTier === "Easy" || t.difficultyTier === "Medium") p.weight *= 2;
+        });
+    } else if (extraEffect === "boostBalanced") {
+        pool.forEach(p => {
+            p.weight *= 1.2;
+        });
     }
+    let total = 0;
+    pool.forEach(p => total += p.weight);
+    let r = Math.random() * total;
+    for (let i = 0; i < pool.length; i++) {
+        r -= pool[i].weight;
+        if (r <= 0) return pool[i].id;
+    }
+    return pool[0].id;
+}
+function spawnRollAnimText(text) {
+    const el = document.createElement("div");
+    el.className = "roll-anim-item";
+    el.textContent = text;
+    const x = (Math.random() * 40) - 20;
+    const y = (Math.random() * 20) - 10;
+    el.style.left = "50%";
+    el.style.top = "50%";
+    el.style.transform = "translate(-50%, -50%) translate(" + x + "px," + y + "px)";
+    rollDisplay.appendChild(el);
+    setTimeout(() => {
+        if (el.parentNode) el.parentNode.removeChild(el);
+    }, 220);
+}
+function triggerInfinityGemEffect() {
+    if (!infinityActive) return null;
+    const idx = Math.floor(Math.random() * infinityGems.length);
+    const gem = infinityGems[idx];
+    const gemsEls = infinityOrbit.querySelectorAll(".infinity-gem");
+    gemsEls.forEach((el, i) => {
+        if (i === idx) el.classList.add("active");
+        else el.classList.remove("active");
+    });
+    rollDisplay.style.transition = "background 0.3s ease";
+    const originalBg = rollDisplay.style.background;
+    rollDisplay.style.background = "radial-gradient(circle at top, " + gem.color + " 0, #050515 55%, #000 100%)";
+    setTimeout(() => {
+        rollDisplay.style.background = originalBg || "radial-gradient(circle at top, #1b1b3f 0, #050515 55%, #000 100%)";
+    }, 350);
+    return gem.effect;
+}
+function performRollOnce(callback) {
+    const useAnim = state.settings.animEnabled;
+    const baseCycles = 10;
+    const cycles = Math.max(5, Math.floor(baseCycles / rollSpeedMultiplier));
+    let currentCycle = 0;
+    let extraEffect = null;
+    if (infinityActive) {
+        extraEffect = triggerInfinityGemEffect();
+    }
+    const animInterval = useAnim ? Math.max(80, 180 / rollSpeedMultiplier) : 0;
+    if (!useAnim) {
+        const finalId = pickWeightedTower(extraEffect);
+        callback(finalId);
+        return;
+    }
+    const tempIds = Object.keys(towers);
+    const interval = setInterval(() => {
+        currentCycle++;
+        const randomId = tempIds[Math.floor(Math.random() * tempIds.length)];
+        const t = towers[randomId];
+        spawnRollAnimText(t.short);
+        if (currentCycle >= cycles) {
+            clearInterval(interval);
+            const finalId = pickWeightedTower(extraEffect);
+            callback(finalId);
+        }
+    }, animInterval);
+}
+function performRoll() {
+    if (rollInProgress) return;
+    rollInProgress = true;
+    rollButton.disabled = true;
+    state.tempLuckBonus = Math.min(state.tempLuckBonus, 5);
+    applyEquippedEffects();
+    const results = [];
+    const rollsToDo = doubleRoll ? 2 : 1;
+    let done = 0;
+    function onSingleRollDone(id) {
+        results.push(id);
+        done++;
+        if (done >= rollsToDo) {
+            state.tempLuckBonus = 0;
+            applyEquippedEffects();
+            if (results.length === 1) {
+                showRollResult(results[0]);
+                addRollToHistory(results[0]);
+                unlockTower(results[0]);
+                if (state.inventory.storedRolls.length < 10) {
+                    storeRoll(results[0]);
+                }
+            } else {
+                const t1 = towers[results[0]];
+                const t2 = towers[results[1]];
+                rollResult.innerHTML = "";
+                const name = document.createElement("div");
+                name.className = "roll-tower-name";
+                name.textContent = t1.name + " & " + t2.name;
+                const diff = document.createElement("div");
+                diff.className = "roll-diff";
+                diff.textContent = t1.difficultyTier + " + " + t2.difficultyTier;
+                const meta = document.createElement("div");
+                meta.className = "roll-meta";
+                meta.textContent = "Double roll result";
+                rollResult.appendChild(name);
+                rollResult.appendChild(diff);
+                rollResult.appendChild(meta);
+                results.forEach(id => {
+                    addRollToHistory(id);
+                    unlockTower(id);
+                    if (state.inventory.storedRolls.length < 10) {
+                        storeRoll(id);
+                    }
+                });
+            }
+            updateIndexUnlocks();
+            updateProfileFromState();
+            renderInventoryRolled();
+            if (state.settings.autosave) saveState();
+            rollInProgress = false;
+            rollButton.disabled = false;
+        }
+    }
+    for (let i = 0; i < rollsToDo; i++) {
+        performRollOnce(onSingleRollDone);
+    }
+}
+rollButton.addEventListener("click", () => {
+    performRoll();
+});
+document.querySelectorAll(".index-tower").forEach(el => {
+    el.addEventListener("mousemove", e => {
+        const id = el.getAttribute("data-id");
+        const t = towers[id];
+        if (!t) return;
+        tooltipTitle.textContent = t.name;
+        tooltipDiff.textContent = t.difficultyTier + " | " + t.difficultyBand + " [" + t.rating + "]";
+        tooltip.style.display = "block";
+        const offsetX = 14;
+        const offsetY = 10;
+        tooltip.style.left = e.clientX + offsetX + "px";
+        tooltip.style.top = e.clientY + offsetY + "px";
+    });
+    el.addEventListener("mouseleave", () => {
+        tooltip.style.display = "none";
+    });
+});
+stressBall.addEventListener("click", () => {
+    state.tempLuckBonus += 0.001;
+    stressBall.textContent = "+" + state.tempLuckBonus.toFixed(3);
+    setTimeout(() => {
+        stressBall.textContent = "CLICK";
+    }, 300);
+});
+function initFromState() {
+    loadState();
+    applySettingsToUI();
+    applyEquippedEffects();
+    updatePlaytimeLabels();
+    updateProfileFromState();
+    renderShop();
+    renderInventoryRolled();
+    renderInventoryItems();
+    updateIndexUnlocks();
+}
+initFromState();
+initPlaytime();
+initDateLabel();
 </script>
-
 </body>
 </html>

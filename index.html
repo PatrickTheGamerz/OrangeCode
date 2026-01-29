@@ -1,219 +1,175 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>EToH-style RNG</title>
-  <style>
+<meta charset="UTF-8">
+<title>EToH Style RNG Menu</title>
+<style>
     * {
-      box-sizing: border-box;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        box-sizing: border-box;
+        font-family: Arial, sans-serif;
     }
 
     body {
-      margin: 0;
-      height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: radial-gradient(circle at top, #1b1b2f 0, #050510 55%, #000 100%);
-      color: #fff;
+        margin: 0;
+        background: #0a0a14;
+        color: white;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
     }
 
-    .container {
-      text-align: center;
-      padding: 24px 32px;
-      background: rgba(10, 10, 25, 0.9);
-      border-radius: 16px;
-      box-shadow: 0 0 30px rgba(0, 0, 0, 0.7);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      max-width: 420px;
-      width: 100%;
+    .screen {
+        display: none;
+        text-align: center;
+        width: 100%;
+        max-width: 500px;
+        padding: 20px;
+    }
+
+    .active {
+        display: block;
     }
 
     h1 {
-      margin: 0 0 8px;
-      font-size: 1.8rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: #f5f5ff;
-    }
-
-    .subtitle {
-      font-size: 0.85rem;
-      opacity: 0.7;
-      margin-bottom: 20px;
+        margin-bottom: 20px;
+        letter-spacing: 2px;
     }
 
     button {
-      margin-top: 10px;
-      padding: 12px 28px;
-      font-size: 1rem;
-      border-radius: 999px;
-      border: none;
-      cursor: pointer;
-      background: linear-gradient(135deg, #ff4b8b, #ffb347);
-      color: #111;
-      font-weight: 600;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      box-shadow: 0 0 18px rgba(255, 75, 139, 0.6);
-      transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.08s ease;
+        width: 80%;
+        padding: 14px;
+        margin: 8px 0;
+        font-size: 1.2rem;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        background: #1e1e2e;
+        color: white;
+        transition: 0.15s;
     }
 
-    button:active {
-      transform: scale(0.96);
-      box-shadow: 0 0 8px rgba(255, 75, 139, 0.4);
-      filter: brightness(0.9);
+    button:hover {
+        background: #34344a;
     }
 
-    .result {
-      margin-top: 24px;
-      min-height: 80px;
+    .backBtn {
+        margin-top: 25px;
+        background: #444;
     }
 
-    .rarity-name {
-      font-size: 1.6rem;
-      font-weight: 700;
-      text-shadow: 0 0 12px rgba(255, 255, 255, 0.4);
+    /* RNG result */
+    .rarity {
+        font-size: 2rem;
+        margin-top: 20px;
     }
 
-    .rarity-tag {
-      display: inline-block;
-      margin-top: 6px;
-      padding: 4px 10px;
-      border-radius: 999px;
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      border: 1px solid rgba(255, 255, 255, 0.25);
-      background: rgba(0, 0, 0, 0.3);
-    }
-
-    .chance {
-      margin-top: 4px;
-      font-size: 0.8rem;
-      opacity: 0.7;
-    }
-
-    .history {
-      margin-top: 20px;
-      font-size: 0.8rem;
-      text-align: left;
-      max-height: 120px;
-      overflow-y: auto;
-      padding-right: 4px;
-      opacity: 0.85;
-    }
-
-    .history-title {
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      opacity: 0.6;
-      margin-bottom: 4px;
-    }
-
-    .history-item {
-      margin-bottom: 2px;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-      overflow: hidden;
-    }
-
-    /* Rarity colors */
     .common { color: #b0b0b0; }
     .uncommon { color: #5cff8d; }
     .rare { color: #4bb6ff; }
     .legendary { color: #ffdf4b; }
     .mythic { color: #ff4bff; }
 
-    .glow {
-      animation: glow 0.7s ease-out;
-    }
-
-    @keyframes glow {
-      0% { text-shadow: 0 0 0 rgba(255, 255, 255, 0); transform: scale(1); }
-      40% { text-shadow: 0 0 24px rgba(255, 255, 255, 0.9); transform: scale(1.08); }
-      100% { text-shadow: 0 0 10px rgba(255, 255, 255, 0.4); transform: scale(1); }
-    }
-  </style>
+</style>
 </head>
 <body>
-  <div class="container">
-    <h1>EToH RNG</h1>
-    <div class="subtitle">Click to roll and see what rarity you pull.</div>
 
-    <button id="rollBtn">Roll</button>
+<!-- MAIN MENU -->
+<div id="menu" class="screen active">
+    <h1>Main Menu</h1>
+    <button onclick="openScreen('roll')">ROLL</button>
+    <button onclick="openScreen('settings')">SETTINGS</button>
+    <button onclick="openScreen('credits')">CREDITS</button>
+    <button onclick="openScreen('index')">INDEX</button>
+    <button onclick="openScreen('shop')">SHOP</button>
+    <button onclick="exitGame()">EXIT</button>
+</div>
 
-    <div class="result" id="result">
-      <!-- Result appears here -->
-    </div>
+<!-- ROLL SCREEN -->
+<div id="roll" class="screen">
+    <h1>Roll RNG</h1>
+    <button onclick="rollRNG()">ROLL NOW</button>
+    <div id="rollResult" class="rarity"></div>
+    <button class="backBtn" onclick="openScreen('menu')">BACK</button>
+</div>
 
-    <div class="history" id="history">
-      <div class="history-title">Recent rolls</div>
-      <!-- History items -->
-    </div>
-  </div>
+<!-- SETTINGS -->
+<div id="settings" class="screen">
+    <h1>Settings</h1>
+    <p>Nothing here yet…</p>
+    <button class="backBtn" onclick="openScreen('menu')">BACK</button>
+</div>
 
-  <script>
-    // Define rarities and their chances (sum = 100)
+<!-- CREDITS -->
+<div id="credits" class="screen">
+    <h1>Credits</h1>
+    <p>Made by: You 😎</p>
+    <p>Code by: Copilot</p>
+    <button class="backBtn" onclick="openScreen('menu')">BACK</button>
+</div>
+
+<!-- INDEX -->
+<div id="index" class="screen">
+    <h1>Rarity Index</h1>
+
+    <h3>Easy:</h3>
+    <p>Common – 70%</p>
+    <p>Uncommon – 20%</p>
+
+    <h3>Medium:</h3>
+    <p>Rare – 7%</p>
+
+    <h3>Hard:</h3>
+    <p>Legendary – 2%</p>
+    <p>Mythic – 1%</p>
+
+    <button class="backBtn" onclick="openScreen('menu')">BACK</button>
+</div>
+
+<!-- SHOP -->
+<div id="shop" class="screen">
+    <h1>Shop</h1>
+    <p>Coming soon…</p>
+    <button class="backBtn" onclick="openScreen('menu')">BACK</button>
+</div>
+
+<script>
+    function openScreen(id) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+
+    function exitGame() {
+        alert("You can't exit a webpage, but nice try 😄");
+    }
+
+    // RNG SYSTEM
     const rarities = [
-      { name: "Common",    key: "common",    chance: 70 },
-      { name: "Uncommon",  key: "uncommon",  chance: 20 },
-      { name: "Rare",      key: "rare",      chance: 7  },
-      { name: "Legendary", key: "legendary", chance: 2  },
-      { name: "Mythic",    key: "mythic",    chance: 1  }
+        { name: "Common", key: "common", chance: 70 },
+        { name: "Uncommon", key: "uncommon", chance: 20 },
+        { name: "Rare", key: "rare", chance: 7 },
+        { name: "Legendary", key: "legendary", chance: 2 },
+        { name: "Mythic", key: "mythic", chance: 1 }
     ];
 
-    const rollBtn = document.getElementById("rollBtn");
-    const resultDiv = document.getElementById("result");
-    const historyDiv = document.getElementById("history");
+    function rollRNG() {
+        const roll = Math.random() * 100;
+        let cumulative = 0;
+        let result = rarities[0];
 
-    function rollRarity() {
-      const roll = Math.random() * 100;
-      let cumulative = 0;
-
-      for (const r of rarities) {
-        cumulative += r.chance;
-        if (roll <= cumulative) {
-          return r;
+        for (const r of rarities) {
+            cumulative += r.chance;
+            if (roll <= cumulative) {
+                result = r;
+                break;
+            }
         }
-      }
-      // Fallback (shouldn't really happen if chances sum to 100)
-      return rarities[0];
+
+        const div = document.getElementById("rollResult");
+        div.className = "rarity " + result.key;
+        div.textContent = result.name + " (" + result.chance + "%)";
     }
+</script>
 
-    function addToHistory(rarity) {
-      const item = document.createElement("div");
-      item.className = "history-item " + rarity.key;
-      const time = new Date().toLocaleTimeString();
-      item.textContent = `[${time}] ${rarity.name}`;
-      historyDiv.appendChild(item);
-
-      // Keep last 20 rolls
-      const items = historyDiv.querySelectorAll(".history-item");
-      if (items.length > 20) {
-        historyDiv.removeChild(items[0]);
-      }
-    }
-
-    rollBtn.addEventListener("click", () => {
-      const rarity = rollRarity();
-
-      resultDiv.innerHTML = `
-        <div class="rarity-name ${rarity.key} glow">${rarity.name}</div>
-        <div class="rarity-tag">${rarity.key.toUpperCase()}</div>
-        <div class="chance">Chance: ${rarity.chance}%</div>
-      `;
-
-      // retrigger glow animation
-      const nameEl = resultDiv.querySelector(".rarity-name");
-      nameEl.classList.remove("glow");
-      void nameEl.offsetWidth; // force reflow
-      nameEl.classList.add("glow");
-
-      addToHistory(rarity);
-    });
-  </script>
 </body>
 </html>

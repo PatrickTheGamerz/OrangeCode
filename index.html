@@ -1724,41 +1724,78 @@ function startMinigame(towerId) {
     mgLoop();
 }
 function setupMinigameLevel(t) {
+    const width = minigameCanvas.width;
+    const height = minigameCanvas.height;
+    mgPlatforms = [];
+    const baseY = 120;
+    let platformCount;
+    let gapX;
+    let heightVariance;
+    let platformWidth;
+    if (t.difficultyTier === "Easy") {
+        platformCount = 4;
+        gapX = 55;
+        heightVariance = 8;
+        platformWidth = 70;
+    } else if (t.difficultyTier === "Medium") {
+        platformCount = 5;
+        gapX = 50;
+        heightVariance = 14;
+        platformWidth = 60;
+    } else if (t.difficultyTier === "Hard") {
+        platformCount = 6;
+        gapX = 45;
+        heightVariance = 18;
+        platformWidth = 52;
+    } else if (t.difficultyTier === "Difficult") {
+        platformCount = 7;
+        gapX = 42;
+        heightVariance = 22;
+        platformWidth = 46;
+    } else if (t.difficultyTier === "Challenging") {
+        platformCount = 8;
+        gapX = 40;
+        heightVariance = 26;
+        platformWidth = 40;
+    } else if (t.difficultyTier === "Intense") {
+        platformCount = 9;
+        gapX = 36;
+        heightVariance = 30;
+        platformWidth = 34;
+    } else if (t.difficultyTier === "Remorseless") {
+        platformCount = 10;
+        gapX = 34;
+        heightVariance = 34;
+        platformWidth = 30;
+    } else {
+        platformCount = 11;
+        gapX = 32;
+        heightVariance = 38;
+        platformWidth = 26;
+    }
+    let x = 20;
+    let y = baseY;
+    for (let i = 0; i < platformCount; i++) {
+        const offset = (Math.random() - 0.5) * heightVariance;
+        y = Math.max(40, Math.min(baseY + offset, height - 30));
+        mgPlatforms.push({ x, y, w: platformWidth, h: 8, goal: false });
+        x += gapX;
+    }
+    const lastPlat = mgPlatforms[mgPlatforms.length - 1];
+    const goalX = Math.min(width - 40, lastPlat.x + gapX);
+    const goalY = Math.max(30, lastPlat.y - 20);
+    mgPlatforms.push({ x: goalX, y: goalY, w: 30, h: 10, goal: true });
+    const startPlat = mgPlatforms[0];
     mgPlayer = {
-        x: 20,
-        y: 100,
+        x: startPlat.x + startPlat.w / 2 - 6,
+        y: startPlat.y - 16,
         w: 12,
         h: 16,
         vx: 0,
         vy: 0,
-        onGround: false
+        onGround: true
     };
-    mgPlatforms = [];
-    const basePlatforms = 4;
-    let extra = 0;
-    if (t.difficultyTier === "Easy") extra = 0;
-    else if (t.difficultyTier === "Medium") extra = 1;
-    else if (t.difficultyTier === "Hard") extra = 2;
-    else if (t.difficultyTier === "Difficult") extra = 3;
-    else if (t.difficultyTier === "Challenging") extra = 4;
-    else if (t.difficultyTier === "Intense") extra = 5;
-    else if (t.difficultyTier === "Remorseless") extra = 6;
-    else if (t.difficultyTier === "Insane") extra = 7;
-    const totalPlatforms = basePlatforms + extra;
-    const width = minigameCanvas.width;
-    const height = minigameCanvas.height;
-    const startX = 10;
-    const endX = width - 40;
-    const gap = (endX - startX) / totalPlatforms;
-    for (let i = 0; i < totalPlatforms; i++) {
-        const px = startX + i * gap;
-        const py = 120 - Math.random() * 40;
-        const pw = 40;
-        const ph = 8;
-        mgPlatforms.push({ x: px, y: py, w: pw, h: ph });
-    }
-    mgPlatforms.push({ x: width - 40, y: 110, w: 30, h: 10, goal: true });
-    mgGoalX = width - 40;
+    mgGoalX = goalX;
 }
 function mgLoop() {
     if (!minigameActive) return;
@@ -1793,11 +1830,15 @@ function mgUpdate() {
             }
         }
     });
-    if (mgPlayer.y > minigameCanvas.height) {
+    if (mgPlayer.y > minigameCanvas.height + 40) {
         endMinigame(false);
     }
     const goal = mgPlatforms.find(p => p.goal);
-    if (goal && mgPlayer.x + mgPlayer.w > goal.x && mgPlayer.y + mgPlayer.h <= goal.y + 2) {
+    if (goal &&
+        mgPlayer.x + mgPlayer.w > goal.x &&
+        mgPlayer.x < goal.x + goal.w &&
+        mgPlayer.y + mgPlayer.h <= goal.y + 4 &&
+        mgPlayer.y + mgPlayer.h >= goal.y - 10) {
         endMinigame(true);
     }
 }
@@ -1805,7 +1846,8 @@ function mgDraw() {
     mgCtx.clearRect(0, 0, minigameCanvas.width, minigameCanvas.height);
     mgCtx.fillStyle = "#050510";
     mgCtx.fillRect(0, 0, minigameCanvas.width, minigameCanvas.height);
-    mgCtx.fillStyle = "#444";
+    mgCtx.fillStyle = "#222";
+    mgCtx.fillRect(0, minigameCanvas.height - 4, minigameCanvas.width, 4);
     mgPlatforms.forEach(p => {
         if (p.goal) mgCtx.fillStyle = "#4cff7a";
         else mgCtx.fillStyle = "#888";

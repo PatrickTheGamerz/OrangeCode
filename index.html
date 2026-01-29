@@ -520,6 +520,37 @@ body {
 .crystal-bg {
     background: radial-gradient(circle at top, #4bffea 0, #4b6bff 40%, #b44bff 80%);
 }
+.tickets-label {
+    font-size: 0.8rem;
+    margin-top: 4px;
+}
+.minigame-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(5, 5, 20, 0.96);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.minigame-header {
+    font-size: 0.9rem;
+    margin-bottom: 6px;
+}
+.minigame-instructions {
+    font-size: 0.75rem;
+    opacity: 0.8;
+    margin-bottom: 8px;
+}
+.minigame-status {
+    font-size: 0.8rem;
+    margin-top: 6px;
+}
+.minigame-canvas {
+    border-radius: 10px;
+    background: #050510;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
 </style>
 </head>
 <body>
@@ -566,6 +597,7 @@ body {
         </div>
         <div class="menu-footer">
             <div id="playtimeLabel">Playtime: 0m 0s</div>
+            <div id="ticketsLabel" class="tickets-label">Tickets: 0</div>
             <div id="dateLabel"></div>
         </div>
     </div>
@@ -584,6 +616,12 @@ body {
                             <div class="roll-meta"></div>
                         </div>
                         <div class="infinity-orbit" id="infinityOrbit"></div>
+                        <div class="minigame-overlay" id="minigameOverlay">
+                            <div class="minigame-header" id="minigameHeader">Obby Challenge</div>
+                            <div class="minigame-instructions">Arrow keys to move, Space to jump. Reach the right side platform to win.</div>
+                            <canvas id="minigameCanvas" class="minigame-canvas" width="320" height="160"></canvas>
+                            <div class="minigame-status" id="minigameStatus"></div>
+                        </div>
                     </div>
                     <button class="roll-btn" id="rollButton">ROLL</button>
                 </div>
@@ -630,7 +668,7 @@ body {
                 <span>Daily selection</span>
             </div>
             <div class="section">
-                <div style="font-size:0.8rem;opacity:0.75;margin-bottom:6px;">Five items appear each day based on your local time.</div>
+                <div style="font-size:0.8rem;opacity:0.75;margin-bottom:6px;">Five items appear each day based on your local time. Costs tickets.</div>
                 <div class="shop-list" id="shopList"></div>
             </div>
         </div>
@@ -770,8 +808,7 @@ const towers = {
         name: "Tower of A Simple Time",
         difficultyTier: "Easy",
         difficultyBand: "Low Easy",
-        rating: 1.25,
-        bandClass: "baseline"
+        rating: 1.25
     },
     ToA: {
         id: "ToA",
@@ -779,8 +816,7 @@ const towers = {
         name: "Tower of Anger",
         difficultyTier: "Easy",
         difficultyBand: "Mid Easy",
-        rating: 1.5,
-        bandClass: "baseline"
+        rating: 1.5
     },
     ToM: {
         id: "ToM",
@@ -788,8 +824,7 @@ const towers = {
         name: "Tower of Madness",
         difficultyTier: "Medium",
         difficultyBand: "Bottom-Low Medium",
-        rating: 2.12,
-        bandClass: "bottom-low"
+        rating: 2.12
     },
     ToNI: {
         id: "ToNI",
@@ -797,8 +832,7 @@ const towers = {
         name: "Tower of Noticeable Infuriation",
         difficultyTier: "Medium",
         difficultyBand: "High-Peak Medium",
-        rating: 2.8,
-        bandClass: "high-peak"
+        rating: 2.8
     },
     ToH: {
         id: "ToH",
@@ -806,8 +840,7 @@ const towers = {
         name: "Tower of Hecc",
         difficultyTier: "Hard",
         difficultyBand: "Low Hard",
-        rating: 3.3,
-        bandClass: "low"
+        rating: 3.3
     },
     ToK: {
         id: "ToK",
@@ -815,8 +848,7 @@ const towers = {
         name: "Tower of Killjoys",
         difficultyTier: "Hard",
         difficultyBand: "Mid Hard",
-        rating: 3.47,
-        bandClass: "mid"
+        rating: 3.47
     },
     ToKY: {
         id: "ToKY",
@@ -824,8 +856,7 @@ const towers = {
         name: "Tower of Keyboard Yeeting",
         difficultyTier: "Difficult",
         difficultyBand: "Bottom Difficult",
-        rating: 4.1,
-        bandClass: "bottom"
+        rating: 4.1
     },
     ToS: {
         id: "ToS",
@@ -833,8 +864,7 @@ const towers = {
         name: "Tower of Stress",
         difficultyTier: "Difficult",
         difficultyBand: "High-Peak Difficult",
-        rating: 4.88,
-        bandClass: "high-peak"
+        rating: 4.88
     },
     ToSP: {
         id: "ToSP",
@@ -842,8 +872,7 @@ const towers = {
         name: "Tower of Screen Punching",
         difficultyTier: "Challenging",
         difficultyBand: "Bottom-Low Challenging",
-        rating: 5.2,
-        bandClass: "bottom-low"
+        rating: 5.2
     },
     ToR: {
         id: "ToR",
@@ -851,8 +880,7 @@ const towers = {
         name: "Tower of Rage",
         difficultyTier: "Challenging",
         difficultyBand: "Mid-High Challenging",
-        rating: 5.58,
-        bandClass: "mid-high"
+        rating: 5.58
     },
     ToIM: {
         id: "ToIM",
@@ -860,8 +888,7 @@ const towers = {
         name: "Tower of Impossible Expectations",
         difficultyTier: "Intense",
         difficultyBand: "Bottom Intense",
-        rating: 6.01,
-        bandClass: "bottom"
+        rating: 6.01
     },
     CoLS: {
         id: "CoLS",
@@ -869,8 +896,7 @@ const towers = {
         name: "Citadel of Laptop Splitting",
         difficultyTier: "Intense",
         difficultyBand: "Mid Intense",
-        rating: 6.5,
-        bandClass: "mid"
+        rating: 6.5
     },
     ToTS: {
         id: "ToTS",
@@ -878,8 +904,7 @@ const towers = {
         name: "Tower of True Skill",
         difficultyTier: "Remorseless",
         difficultyBand: "Bottom Remorseless",
-        rating: 7.09,
-        bandClass: "bottom"
+        rating: 7.09
     },
     R1TR: {
         id: "R1TR",
@@ -887,8 +912,7 @@ const towers = {
         name: "Ring 1 Tower Rush",
         difficultyTier: "Remorseless",
         difficultyBand: "High-Peak Remorseless",
-        rating: 7.83,
-        bandClass: "high-peak"
+        rating: 7.83
     },
     ToIG: {
         id: "ToIG",
@@ -896,28 +920,16 @@ const towers = {
         name: "Tower of Infinite Gauntlet",
         difficultyTier: "Insane",
         difficultyBand: "Low Insane",
-        rating: 8.23,
-        bandClass: "low"
+        rating: 8.23
     }
 };
-const difficultyBands = [
-    "Baseline",
-    "Bottom",
-    "Bottom-Low",
-    "Low",
-    "Low-Mid",
-    "Mid",
-    "Mid-High",
-    "High",
-    "High-Peak",
-    "Peak"
-];
 const itemsPool = [
     {
         id: "bootleg_speed_coil",
         name: "Bootleg Speed Coil",
         desc: "Makes the rolling animation a bit faster.",
         type: "utility",
+        cost: 40,
         effects: { rollSpeed: 1.3 }
     },
     {
@@ -925,6 +937,7 @@ const itemsPool = [
         name: "Trail Mix of Hell",
         desc: "Doubles your luck when rolling.",
         type: "luck",
+        cost: 80,
         effects: { luck: 2 }
     },
     {
@@ -932,6 +945,7 @@ const itemsPool = [
         name: "Pride Flag",
         desc: "Turns the menu background into a rainbow when equipped.",
         type: "cosmetic",
+        cost: 30,
         effects: { rainbowMenu: true }
     },
     {
@@ -939,6 +953,7 @@ const itemsPool = [
         name: "Lantern",
         desc: "Brightens buttons and adds 0.5x more luck.",
         type: "utility",
+        cost: 60,
         effects: { luck: 1.5, lantern: true }
     },
     {
@@ -946,6 +961,7 @@ const itemsPool = [
         name: "Heavily Desired Item",
         desc: "10x luck, 2x roll speed, 2 towers can roll at once.",
         type: "power",
+        cost: 200,
         effects: { luck: 10, rollSpeed: 2, doubleRoll: true }
     },
     {
@@ -953,6 +969,7 @@ const itemsPool = [
         name: "Crystal",
         desc: "Colorful shiny backgrounds, 5x luck, higher chance for Insane.",
         type: "power",
+        cost: 160,
         effects: { luck: 5, crystal: true }
     },
     {
@@ -960,6 +977,7 @@ const itemsPool = [
         name: "Stress Ball",
         desc: "Click it to gain tiny temporary luck for one roll.",
         type: "utility",
+        cost: 50,
         effects: { stressBall: true }
     },
     {
@@ -967,6 +985,7 @@ const itemsPool = [
         name: "Infinity Stone",
         desc: "Spinning gems around the roll button. 6x luck, 1.5x roll speed, random gem effects.",
         type: "power",
+        cost: 260,
         effects: { luck: 6, rollSpeed: 1.5, infinity: true }
     }
 ];
@@ -999,6 +1018,7 @@ const glowToggle = document.getElementById("glowToggle");
 const autosaveToggle = document.getElementById("autosaveToggle");
 const shopList = document.getElementById("shopList");
 const playtimeLabel = document.getElementById("playtimeLabel");
+const ticketsLabel = document.getElementById("ticketsLabel");
 const dateLabel = document.getElementById("dateLabel");
 const profileUnlocked = document.getElementById("profileUnlocked");
 const profileHardest = document.getElementById("profileHardest");
@@ -1009,12 +1029,17 @@ const inventoryTabs = document.querySelectorAll(".inventory-tab");
 const rolledTab = document.getElementById("rolledTab");
 const itemsTab = document.getElementById("itemsTab");
 const stressBall = document.getElementById("stressBall");
+const minigameOverlay = document.getElementById("minigameOverlay");
+const minigameCanvas = document.getElementById("minigameCanvas");
+const minigameHeader = document.getElementById("minigameHeader");
+const minigameStatus = document.getElementById("minigameStatus");
+const mgCtx = minigameCanvas.getContext("2d");
 let state = {
     unlockedTowers: [],
-    completedTowers: [],
     favoriteTower: "",
     status: "",
     playtimeSeconds: 0,
+    tickets: 0,
     settings: {
         perfMode: "none",
         animEnabled: true,
@@ -1046,7 +1071,16 @@ let lanternActive = false;
 let rainbowMenu = false;
 let crystalActive = false;
 let infinityActive = false;
-let autosaveTimer = null;
+let currentRollResults = [];
+let minigameActive = false;
+let minigameTowerId = null;
+let mgPlayer = null;
+let mgPlatforms = [];
+let mgGoalX = 0;
+let mgKeys = { left: false, right: false, jump: false };
+let mgGravity = 0.5;
+let mgJumpStrength = -7;
+let mgLoopId = null;
 function saveState() {
     localStorage.setItem("etoh_rng_state", JSON.stringify(state));
 }
@@ -1057,6 +1091,10 @@ function loadState() {
         const parsed = JSON.parse(raw);
         if (parsed && typeof parsed === "object") {
             state = Object.assign(state, parsed);
+            if (!state.inventory) state.inventory = { items: [], equipped: [], storedRolls: [] };
+            if (!state.shop) state.shop = { dateKey: "", items: [] };
+            if (!state.settings) state.settings = { perfMode: "none", animEnabled: true, glowEnabled: true, autosave: true };
+            if (typeof state.tickets !== "number") state.tickets = 0;
         }
     } catch (e) {}
 }
@@ -1157,6 +1195,9 @@ function updatePlaytimeLabels() {
     const text = minutes + "m " + seconds + "s";
     playtimeLabel.textContent = "Playtime: " + text;
     profilePlaytime.textContent = text;
+}
+function updateTicketsLabel() {
+    ticketsLabel.textContent = "Tickets: " + state.tickets;
 }
 function initPlaytime() {
     updatePlaytimeLabels();
@@ -1266,23 +1307,33 @@ function renderShop() {
         const tag = document.createElement("div");
         tag.style.fontSize = "0.75rem";
         tag.style.opacity = "0.75";
-        tag.textContent = item.type.toUpperCase();
+        tag.textContent = item.type.toUpperCase() + " • " + item.cost + " tickets";
         header.appendChild(name);
         header.appendChild(tag);
         const desc = document.createElement("div");
         desc.className = "shop-item-desc";
         desc.textContent = item.desc;
         const btn = document.createElement("button");
-        btn.textContent = owned ? "Owned" : "Buy";
-        btn.disabled = owned;
+        if (owned) {
+            btn.textContent = "Owned";
+            btn.disabled = true;
+        } else if (state.tickets < item.cost) {
+            btn.textContent = "Not enough tickets";
+            btn.disabled = true;
+        } else {
+            btn.textContent = "Buy";
+        }
         btn.addEventListener("click", () => {
+            if (owned || state.tickets < item.cost) return;
+            state.tickets -= item.cost;
             if (!state.inventory.items.includes(id)) {
                 state.inventory.items.push(id);
-                if (state.settings.autosave) saveState();
-                renderShop();
-                renderInventoryItems();
-                applyEquippedEffects();
             }
+            updateTicketsLabel();
+            if (state.settings.autosave) saveState();
+            renderShop();
+            renderInventoryItems();
+            applyEquippedEffects();
         });
         div.appendChild(header);
         div.appendChild(desc);
@@ -1336,7 +1387,10 @@ function renderInventoryRolled() {
         const sellBtn = document.createElement("button");
         sellBtn.textContent = "Sell";
         sellBtn.addEventListener("click", () => {
+            const ticketsGain = getTicketsForTower(t);
+            state.tickets += ticketsGain;
             state.inventory.storedRolls.splice(index, 1);
+            updateTicketsLabel();
             if (state.settings.autosave) saveState();
             renderInventoryRolled();
         });
@@ -1371,11 +1425,9 @@ function renderInventoryItems() {
                 state.inventory.equipped = state.inventory.equipped.filter(e => e !== id);
             } else {
                 if (state.inventory.equipped.length >= 2) {
-                    const removed = state.inventory.equipped.shift();
-                    state.inventory.equipped.push(id);
-                } else {
-                    state.inventory.equipped.push(id);
+                    state.inventory.equipped.shift();
                 }
+                state.inventory.equipped.push(id);
             }
             if (state.settings.autosave) saveState();
             renderInventoryItems();
@@ -1401,13 +1453,13 @@ inventoryTabs.forEach(tab => {
         }
     });
 });
-function addRollToHistory(towerId) {
+function addRollToHistory(towerId, success) {
     const t = towers[towerId];
     if (!t) return;
     const div = document.createElement("div");
     div.className = "roll-history-item";
     const time = new Date().toLocaleTimeString();
-    div.textContent = "[" + time + "] " + t.name + " (" + t.difficultyTier + ")";
+    div.textContent = "[" + time + "] " + t.name + " (" + t.difficultyTier + ") " + (success ? "✓" : "✗");
     rollHistory.prepend(div);
     while (rollHistory.children.length > 20) {
         rollHistory.removeChild(rollHistory.lastChild);
@@ -1433,7 +1485,7 @@ function updateIndexUnlocks() {
         }
     });
 }
-function showRollResult(towerId) {
+function showRollResult(towerId, success) {
     const t = towers[towerId];
     if (!t) return;
     rollResult.innerHTML = "";
@@ -1445,7 +1497,7 @@ function showRollResult(towerId) {
     diff.textContent = t.difficultyTier + " [" + t.difficultyBand + " " + t.rating + "]";
     const meta = document.createElement("div");
     meta.className = "roll-meta";
-    meta.textContent = "Band: " + t.difficultyBand + " | Rating: " + t.rating;
+    meta.textContent = success ? "Obby cleared. Tower obtained." : "Failed obby. Tower lost.";
     rollResult.appendChild(name);
     rollResult.appendChild(diff);
     rollResult.appendChild(meta);
@@ -1582,57 +1634,25 @@ function performRollOnce(callback) {
     }, animInterval);
 }
 function performRoll() {
-    if (rollInProgress) return;
+    if (rollInProgress || minigameActive) return;
     rollInProgress = true;
     rollButton.disabled = true;
     state.tempLuckBonus = Math.min(state.tempLuckBonus, 5);
     applyEquippedEffects();
-    const results = [];
+    currentRollResults = [];
     const rollsToDo = doubleRoll ? 2 : 1;
     let done = 0;
     function onSingleRollDone(id) {
-        results.push(id);
+        currentRollResults.push(id);
         done++;
         if (done >= rollsToDo) {
             state.tempLuckBonus = 0;
             applyEquippedEffects();
-            if (results.length === 1) {
-                showRollResult(results[0]);
-                addRollToHistory(results[0]);
-                unlockTower(results[0]);
-                if (state.inventory.storedRolls.length < 10) {
-                    storeRoll(results[0]);
-                }
+            if (currentRollResults.length === 1) {
+                startMinigame(currentRollResults[0]);
             } else {
-                const t1 = towers[results[0]];
-                const t2 = towers[results[1]];
-                rollResult.innerHTML = "";
-                const name = document.createElement("div");
-                name.className = "roll-tower-name";
-                name.textContent = t1.name + " & " + t2.name;
-                const diff = document.createElement("div");
-                diff.className = "roll-diff";
-                diff.textContent = t1.difficultyTier + " + " + t2.difficultyTier;
-                const meta = document.createElement("div");
-                meta.className = "roll-meta";
-                meta.textContent = "Double roll result";
-                rollResult.appendChild(name);
-                rollResult.appendChild(diff);
-                rollResult.appendChild(meta);
-                results.forEach(id => {
-                    addRollToHistory(id);
-                    unlockTower(id);
-                    if (state.inventory.storedRolls.length < 10) {
-                        storeRoll(id);
-                    }
-                });
+                startMinigame(currentRollResults[0]);
             }
-            updateIndexUnlocks();
-            updateProfileFromState();
-            renderInventoryRolled();
-            if (state.settings.autosave) saveState();
-            rollInProgress = false;
-            rollButton.disabled = false;
         }
     }
     for (let i = 0; i < rollsToDo; i++) {
@@ -1666,11 +1686,192 @@ stressBall.addEventListener("click", () => {
         stressBall.textContent = "CLICK";
     }, 300);
 });
+function getTicketsForTower(t) {
+    if (!t) return 0;
+    if (t.difficultyTier === "Easy") return 5;
+    if (t.difficultyTier === "Medium") return 10;
+    if (t.difficultyTier === "Hard") return 20;
+    if (t.difficultyTier === "Difficult") return 30;
+    if (t.difficultyTier === "Challenging") return 40;
+    if (t.difficultyTier === "Intense") return 60;
+    if (t.difficultyTier === "Remorseless") return 80;
+    if (t.difficultyTier === "Insane") return 120;
+    return 5;
+}
+function initMinigameControls() {
+    window.addEventListener("keydown", e => {
+        if (!minigameActive) return;
+        if (e.code === "ArrowLeft" || e.code === "KeyA") mgKeys.left = true;
+        if (e.code === "ArrowRight" || e.code === "KeyD") mgKeys.right = true;
+        if (e.code === "Space") mgKeys.jump = true;
+    });
+    window.addEventListener("keyup", e => {
+        if (!minigameActive) return;
+        if (e.code === "ArrowLeft" || e.code === "KeyA") mgKeys.left = false;
+        if (e.code === "ArrowRight" || e.code === "KeyD") mgKeys.right = false;
+        if (e.code === "Space") mgKeys.jump = false;
+    });
+}
+function startMinigame(towerId) {
+    minigameTowerId = towerId;
+    minigameActive = true;
+    minigameOverlay.style.display = "flex";
+    minigameStatus.textContent = "";
+    const t = towers[towerId];
+    minigameHeader.textContent = "Obby for " + t.name + " (" + t.difficultyTier + ")";
+    setupMinigameLevel(t);
+    if (mgLoopId) cancelAnimationFrame(mgLoopId);
+    mgLoop();
+}
+function setupMinigameLevel(t) {
+    mgPlayer = {
+        x: 20,
+        y: 100,
+        w: 12,
+        h: 16,
+        vx: 0,
+        vy: 0,
+        onGround: false
+    };
+    mgPlatforms = [];
+    const basePlatforms = 4;
+    let extra = 0;
+    if (t.difficultyTier === "Easy") extra = 0;
+    else if (t.difficultyTier === "Medium") extra = 1;
+    else if (t.difficultyTier === "Hard") extra = 2;
+    else if (t.difficultyTier === "Difficult") extra = 3;
+    else if (t.difficultyTier === "Challenging") extra = 4;
+    else if (t.difficultyTier === "Intense") extra = 5;
+    else if (t.difficultyTier === "Remorseless") extra = 6;
+    else if (t.difficultyTier === "Insane") extra = 7;
+    const totalPlatforms = basePlatforms + extra;
+    const width = minigameCanvas.width;
+    const height = minigameCanvas.height;
+    const startX = 10;
+    const endX = width - 40;
+    const gap = (endX - startX) / totalPlatforms;
+    for (let i = 0; i < totalPlatforms; i++) {
+        const px = startX + i * gap;
+        const py = 120 - Math.random() * 40;
+        const pw = 40;
+        const ph = 8;
+        mgPlatforms.push({ x: px, y: py, w: pw, h: ph });
+    }
+    mgPlatforms.push({ x: width - 40, y: 110, w: 30, h: 10, goal: true });
+    mgGoalX = width - 40;
+}
+function mgLoop() {
+    if (!minigameActive) return;
+    mgUpdate();
+    mgDraw();
+    mgLoopId = requestAnimationFrame(mgLoop);
+}
+function mgUpdate() {
+    const speed = 1.8;
+    if (mgKeys.left) mgPlayer.vx = -speed;
+    else if (mgKeys.right) mgPlayer.vx = speed;
+    else mgPlayer.vx = 0;
+    if (mgKeys.jump && mgPlayer.onGround) {
+        mgPlayer.vy = mgJumpStrength;
+        mgPlayer.onGround = false;
+    }
+    mgPlayer.vy += mgGravity;
+    mgPlayer.x += mgPlayer.vx;
+    mgPlayer.y += mgPlayer.vy;
+    if (mgPlayer.x < 0) mgPlayer.x = 0;
+    if (mgPlayer.x + mgPlayer.w > minigameCanvas.width) mgPlayer.x = minigameCanvas.width - mgPlayer.w;
+    mgPlayer.onGround = false;
+    mgPlatforms.forEach(p => {
+        if (mgPlayer.x < p.x + p.w &&
+            mgPlayer.x + mgPlayer.w > p.x &&
+            mgPlayer.y < p.y + p.h &&
+            mgPlayer.y + mgPlayer.h > p.y) {
+            if (mgPlayer.vy > 0 && mgPlayer.y + mgPlayer.h - mgPlayer.vy <= p.y) {
+                mgPlayer.y = p.y - mgPlayer.h;
+                mgPlayer.vy = 0;
+                mgPlayer.onGround = true;
+            }
+        }
+    });
+    if (mgPlayer.y > minigameCanvas.height) {
+        endMinigame(false);
+    }
+    const goal = mgPlatforms.find(p => p.goal);
+    if (goal && mgPlayer.x + mgPlayer.w > goal.x && mgPlayer.y + mgPlayer.h <= goal.y + 2) {
+        endMinigame(true);
+    }
+}
+function mgDraw() {
+    mgCtx.clearRect(0, 0, minigameCanvas.width, minigameCanvas.height);
+    mgCtx.fillStyle = "#050510";
+    mgCtx.fillRect(0, 0, minigameCanvas.width, minigameCanvas.height);
+    mgCtx.fillStyle = "#444";
+    mgPlatforms.forEach(p => {
+        if (p.goal) mgCtx.fillStyle = "#4cff7a";
+        else mgCtx.fillStyle = "#888";
+        mgCtx.fillRect(p.x, p.y, p.w, p.h);
+    });
+    mgCtx.fillStyle = "#ffdf4b";
+    mgCtx.fillRect(mgPlayer.x, mgPlayer.y, mgPlayer.w, mgPlayer.h);
+}
+function endMinigame(success) {
+    minigameActive = false;
+    minigameOverlay.style.display = "none";
+    if (mgLoopId) cancelAnimationFrame(mgLoopId);
+    if (!minigameTowerId) {
+        rollInProgress = false;
+        rollButton.disabled = false;
+        return;
+    }
+    if (currentRollResults.length > 1) {
+        const t1 = towers[currentRollResults[0]];
+        const t2 = towers[currentRollResults[1]];
+        rollResult.innerHTML = "";
+        const name = document.createElement("div");
+        name.className = "roll-tower-name";
+        name.textContent = t1.name + " & " + t2.name;
+        const diff = document.createElement("div");
+        diff.className = "roll-diff";
+        diff.textContent = t1.difficultyTier + " + " + t2.difficultyTier;
+        const meta = document.createElement("div");
+        meta.className = "roll-meta";
+        meta.textContent = success ? "Obby cleared. Both towers obtained." : "Failed obby. Both towers lost.";
+        rollResult.appendChild(name);
+        rollResult.appendChild(diff);
+        rollResult.appendChild(meta);
+        currentRollResults.forEach(id => {
+            addRollToHistory(id, success);
+            if (success) {
+                unlockTower(id);
+                if (state.inventory.storedRolls.length < 10) {
+                    storeRoll(id);
+                }
+            }
+        });
+    } else {
+        addRollToHistory(minigameTowerId, success);
+        showRollResult(minigameTowerId, success);
+        if (success) {
+            unlockTower(minigameTowerId);
+            if (state.inventory.storedRolls.length < 10) {
+                storeRoll(minigameTowerId);
+            }
+        }
+    }
+    updateIndexUnlocks();
+    updateProfileFromState();
+    renderInventoryRolled();
+    if (state.settings.autosave) saveState();
+    rollInProgress = false;
+    rollButton.disabled = false;
+    minigameTowerId = null;
+}
 function initFromState() {
     loadState();
     applySettingsToUI();
     applyEquippedEffects();
     updatePlaytimeLabels();
+    updateTicketsLabel();
     updateProfileFromState();
     renderShop();
     renderInventoryRolled();
@@ -1680,6 +1881,7 @@ function initFromState() {
 initFromState();
 initPlaytime();
 initDateLabel();
+initMinigameControls();
 </script>
 </body>
 </html>

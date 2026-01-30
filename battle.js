@@ -1,24 +1,23 @@
-let battleMenuIndex = 0; // 0 FIGHT, 1 ACT, 2 ITEM, 3 MERCY
-let battleSubState = "menu"; // menu, attackBar, actMenu, itemMenu, text, enemyTurn
+// battle.js - battle system and combat rendering
+
+let battleMenuIndex = 0;
+let battleSubState = "menu";
 let battleText = "";
-let actIndex = 0; // 0 CHECK, 1 TALK
+let actIndex = 0;
 let itemIndex = 0;
 let talksDone = 0;
 let canSpare = false;
 
-// fight bar
 let fightMarkerPos = 0;
 let fightMarkerDir = 1;
 let fightInterval = null;
 
-// soul box movement
 let soulX = 120, soulY = 100;
 let soulVX = 0, soulVY = 0;
 let keyState = {};
 let gravity = 0;
 let onGround = false;
 
-// bullets
 let bullets = [];
 let enemyInterval = null;
 let enemyTurnTicks = 0;
@@ -145,8 +144,6 @@ function handleBattleMenuConfirm() {
     }
 }
 
-/* ---- FIGHT BAR ---- */
-
 function startAttackBar() {
     battleSubState = "attackBar";
     fightMarkerPos = 0;
@@ -180,8 +177,6 @@ function finishAttackBar() {
     renderBattle();
 }
 
-/* ---- ACT ---- */
-
 function handleActConfirm() {
     if (actIndex === 0) {
         battleSubState = "text";
@@ -198,8 +193,6 @@ function handleActConfirm() {
     }
     renderBattle();
 }
-
-/* ---- ITEM ---- */
 
 function useBattleItem() {
     const item = currentPlayer.inventory[itemIndex];
@@ -221,8 +214,6 @@ function useBattleItem() {
     renderBattle();
 }
 
-/* ---- ENEMY TURN WITH SOUL BOX ---- */
-
 function startEnemyTurn() {
     battleSubState = "enemyTurn";
     soulX = 120;
@@ -234,7 +225,9 @@ function startEnemyTurn() {
     gravity = currentEnemy.soulType === "blue" ? 0.5 : 0;
     onGround = false;
 
-    spawnPattern(currentEnemy.pattern);
+    const patterns = currentEnemy.patterns && currentEnemy.patterns.length ? currentEnemy.patterns : [currentEnemy.pattern];
+    const chosen = patterns[Math.floor(Math.random() * patterns.length)];
+    spawnPattern(chosen);
 
     if (enemyInterval) clearInterval(enemyInterval);
     enemyInterval = setInterval(() => {
@@ -259,18 +252,17 @@ function startEnemyTurn() {
 }
 
 function updateSoul() {
-    const speed = 3;
+    const speed = currentEnemy.soulType === "red" ? 4 : 3.5;
     if (currentEnemy.soulType === "red") {
         if (keyState["w"]) soulY -= speed;
         if (keyState["s"]) soulY += speed;
         if (keyState["a"]) soulX -= speed;
         if (keyState["d"]) soulX += speed;
     } else {
-        // blue soul: gravity + jump
         if (keyState["a"]) soulX -= speed;
         if (keyState["d"]) soulX += speed;
         if (keyState["w"] && onGround) {
-            soulVY = -6;
+            soulVY = -6.5;
             onGround = false;
         }
         soulVY += gravity;
@@ -290,22 +282,24 @@ function updateBullets() {
     bullets.forEach(b => {
         b.x += b.vx;
         b.y += b.vy;
+        if (b.ay) b.vy += b.ay;
+        if (b.ax) b.vx += b.ax;
     });
-    bullets = bullets.filter(b => b.x > -10 && b.x < 270 && b.y > -10 && b.y < 170);
+    bullets = bullets.filter(b => b.x > -20 && b.x < 280 && b.y > -20 && b.y < 180 && !b.remove);
 }
 
 function checkBulletCollisions() {
     bullets.forEach(b => {
         const dx = soulX - b.x;
         const dy = soulY - b.y;
-        if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
-            const dmg = Math.max(1, currentEnemy.AT - totalDF(currentPlayer));
+        if (Math.abs(dx) < 10 && Math.abs(dy) < 10 && !b.remove) {
+            const dmg = Math.max(1, (currentEnemy.AT || 1) - totalDF(currentPlayer));
             currentPlayer.HP = Math.max(0, currentPlayer.HP - dmg);
+            b.remove = true;
         }
     });
+    bullets = bullets.filter(b => !b.remove);
 }
-
-/* patterns */
 
 function spawnPattern(pattern) {
     bullets = [];
@@ -323,6 +317,10 @@ function spawnPattern(pattern) {
         for (let x = 20; x <= 240; x += 30) {
             bullets.push({ x, y: -10, vx: 0, vy: 3 });
         }
+    } else if (pattern === "fallingFireWave") {
+        for (let x = 20; x <= 240; x += 20) {
+            bullets.push({ x, y: -10 - (x % 40), vx: 0, vy: 3.5 });
+        }
     } else if (pattern === "bonesHorizontal") {
         for (let x = 0; x <= 240; x += 30) {
             bullets.push({ x, y: 140, vx: 0, vy: -3 });
@@ -336,18 +334,54 @@ function spawnPattern(pattern) {
             bullets.push({ x, y: 140, vx: 0, vy: -4 });
             bullets.push({ x, y: 0, vx: 0, vy: 4 });
         }
+    } else if (pattern === "boneRain") {
+        for (let x = 0; x <= 240; x += 24) {
+            bullets.push({ x, y: -10, vx: 0, vy: 4 });
+        }
+    } else if (pattern === "sideBones") {
+        for (let y = 20; y <= 140; y += 20) {
+            bullets.push({ x: -10, y, vx: 4, vy: 0 });
+            bullets.push({ x: 260, y, vx: -4, vy: 0 });
+        }
+    } else if (pattern === "dummySpiral") {
+        const cx = 130;
+        const cy = 80;
+        for (let i = 0; i < 24; i++) {
+            const angle = (Math.PI * 2 * i) / 24;
+            const speed = 2.5;
+            bullets.push({
+                x: cx,
+                y: cy,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed
+            });
+        }
+    } else if (pattern === "dummyRain") {
+        for (let x = 10; x <= 250; x += 20) {
+            bullets.push({ x, y: -10, vx: 0, vy: 3 + (x % 3) });
+        }
+    } else if (pattern === "sansKarma") {
+        for (let x = 0; x <= 240; x += 24) {
+            bullets.push({ x, y: 140, vx: 0, vy: -4 });
+        }
+        for (let y = 20; y <= 140; y += 20) {
+            bullets.push({ x: -10, y, vx: 5, vy: 0 });
+        }
+    } else if (pattern === "sansSideSpam") {
+        for (let i = 0; i < 10; i++) {
+            bullets.push({ x: -10 - i * 20, y: 40, vx: 5, vy: 0 });
+            bullets.push({ x: 260 + i * 20, y: 120, vx: -5, vy: 0 });
+        }
     }
 }
-
-/* ---- ENDINGS ---- */
 
 function endBattleWin() {
     if (enemyInterval) clearInterval(enemyInterval);
     if (fightInterval) clearInterval(fightInterval);
     battleSubState = "text";
     battleText = `* You won!\n* You earned ${currentEnemy.gold}G and ${currentEnemy.exp} EXP. (Z)`;
-    currentPlayer.G += currentEnemy.gold;
-    currentPlayer.EXP += currentEnemy.exp;
+    currentPlayer.G += currentEnemy.gold || 0;
+    currentPlayer.EXP += currentEnemy.exp || 0;
     currentPlayer.kills += 1;
     if (currentPlayer.EXP >= currentPlayer.NEXT) {
         currentPlayer.LV += 1;
@@ -400,8 +434,6 @@ function endBattleMercy() {
     };
 }
 
-/* ---- RENDER ---- */
-
 function enemySpriteClass() {
     if (!currentEnemy) return "";
     switch (currentEnemy.id) {
@@ -417,7 +449,10 @@ function enemySpriteClass() {
 
 function renderBattle() {
     const g = document.getElementById("game");
-    const hpPercent = (currentPlayer.HP / currentPlayer.maxHP) * 100;
+    const hpPercent = currentPlayer && currentPlayer.maxHP ? (currentPlayer.HP / currentPlayer.maxHP) * 100 : 0;
+    let hpColor = "#ff8000";
+    if (hpPercent <= 25) hpColor = "#ff0000";
+    else if (hpPercent >= 75) hpColor = "#ffff00";
 
     let subBoxHTML = "";
 
@@ -429,7 +464,6 @@ function renderBattle() {
             </div>
         `;
     } else if (battleSubState === "actMenu") {
-        const opts = ["CHECK", "TALK"];
         subBoxHTML = `
             <div class="sub-box">
                 <div class="sub-option">${actIndex === 0 ? '<span class="heart">♥</span>' : '&nbsp;&nbsp;'}CHECK</div>
@@ -487,7 +521,7 @@ function renderBattle() {
                     <span>${currentPlayer.name || "HUMAN"}</span>
                     <span>LV ${currentPlayer.LV}</span>
                     <span>HP ${currentPlayer.HP}/${currentPlayer.maxHP}</span>
-                    <span class="hp-bar"><span class="hp-fill" style="width:${hpPercent}%;"></span></span>
+                    <span class="hp-bar"><span class="hp-fill" style="width:${hpPercent}%; background:${hpColor};"></span></span>
                 </div>
             </div>
         </div>

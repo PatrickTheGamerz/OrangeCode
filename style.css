@@ -7,6 +7,7 @@ body {
     font-family: "Courier New", monospace;
     image-rendering: pixelated;
     overflow: hidden;
+    letter-spacing: 1px;
 }
 
 body::before {
@@ -58,7 +59,7 @@ body.file-select-bg-active::before {
 
 .menu-option {
     margin: 10px 0;
-    font-size: 20px;
+    font-size: 18px;
 }
 
 .menu-option span {
@@ -97,7 +98,7 @@ body.file-select-bg-active::before {
     height: 260px;
     margin: 40px auto 0;
     position: relative;
-    background: radial-gradient(circle at 50% 20%, #333 0, #000 60%);
+    background: black;
 }
 
 .battle-text {
@@ -186,7 +187,7 @@ body.file-select-bg-active::before {
     border: 2px solid white;
     margin: 12px auto;
     position: relative;
-    background: linear-gradient(90deg, #ff0000 0%, #ff8000 25%, #ffff00 50%, #ff8000 75%, #ff0000 100%);
+    background: linear-gradient(90deg, #ff8000 0%, #ffb000 50%, #ff8000 100%);
 }
 
 .fight-crit {
@@ -195,7 +196,7 @@ body.file-select-bg-active::before {
     left: 140px;
     width: 40px;
     height: 100%;
-    background: rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.2);
 }
 
 .fight-marker {
@@ -204,7 +205,6 @@ body.file-select-bg-active::before {
     width: 4px;
     height: 22px;
     background: #ffffff;
-    box-shadow: 0 0 4px #ffffaa;
 }
 
 .soul-box {
@@ -214,20 +214,41 @@ body.file-select-bg-active::before {
     margin: 10px auto 0;
     position: relative;
     overflow: hidden;
-    background: radial-gradient(circle at 50% 50%, #222 0, #000 70%);
+    background: black;
 }
 
 .soul {
-    width: 10px;
-    height: 10px;
-    background: #ff0000;
+    width: 12px;
+    height: 12px;
     position: absolute;
-    box-shadow: 0 0 4px #ff4444;
+    transform: rotate(45deg);
+    background: #ff0000;
+}
+
+.soul::before,
+.soul::after {
+    content: "";
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #ff0000;
+    top: -6px;
+    left: 0;
+}
+
+.soul::after {
+    left: -6px;
+    top: 0;
 }
 
 .soul.blue {
     background: #00a0ff;
-    box-shadow: 0 0 4px #66ccff;
+}
+
+.soul.blue::before,
+.soul.blue::after {
+    background: #00a0ff;
 }
 
 .bullet {
@@ -235,7 +256,6 @@ body.file-select-bg-active::before {
     height: 8px;
     background: #ffffff;
     position: absolute;
-    box-shadow: 0 0 4px #ffffff;
 }
 
 .enemy-area {
@@ -252,7 +272,7 @@ body.file-select-bg-active::before {
     border: 2px solid white;
     border-radius: 4px;
     position: relative;
-    background: radial-gradient(circle at 50% 20%, #555 0, #111 70%);
+    background: black;
 }
 
 .enemy-dummy {
@@ -303,7 +323,25 @@ body.file-select-bg-active::before {
     text-align: left;
 }
 
-.file-select-static-layer {
+.small-text {
+    font-size: 12px;
+}
+
+.game-over-screen {
+    margin-top: 150px;
+}
+
+.game-over-title {
+    font-size: 32px;
+    margin-bottom: 16px;
+}
+
+.game-over-text {
+    font-size: 16px;
+    white-space: pre-line;
+}
+
+.wingdings-layer {
     position: absolute;
     inset: 0;
     pointer-events: none;
@@ -311,30 +349,17 @@ body.file-select-bg-active::before {
     z-index: -1;
 }
 
-.file-select-static-layer::before,
-.file-select-static-layer::after {
-    content: "ᚷᚨᛊᛏᛖᚱ ᚹᛁᚾᛞᛁᚾᚷᛊ ᚷᚨᛊᛏᛖᚱ ᚹᛁᚾᛞᛁᚾᚷᛊ";
+.wingding {
     position: absolute;
     font-size: 18px;
     color: rgba(255,255,255,0.15);
-    animation: wingdingsFloat 3s infinite alternate;
-    white-space: nowrap;
-}
-
-.file-select-static-layer::after {
-    top: 70%;
-    left: 10%;
-    animation-duration: 4s;
-    animation-delay: 0.5s;
-}
-
-.file-select-static-layer::before {
-    top: 20%;
-    left: 40%;
+    animation-name: wingdingsFloat;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
 }
 
 @keyframes wingdingsFloat {
-    0% { transform: translate(-20px, 0); opacity: 0.1; }
-    50% { transform: translate(10px, -10px); opacity: 0.4; }
-    100% { transform: translate(30px, 10px); opacity: 0.15; }
+    0% { transform: translate(-10px, 0); opacity: 0.1; }
+    50% { transform: translate(5px, -10px); opacity: 0.4; }
+    100% { transform: translate(15px, 10px); opacity: 0.15; }
 }

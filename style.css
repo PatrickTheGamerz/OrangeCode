@@ -7,7 +7,7 @@ body {
     overflow: hidden;
 }
 
-/* fake static background */
+/* static background */
 body::before {
     content: "";
     position: fixed;
@@ -167,7 +167,7 @@ body::before {
     margin-top: 12px;
 }
 
-/* shop */
+/* stats / layout */
 
 .stats-box {
     width: 80%;
@@ -188,6 +188,16 @@ body::before {
     border: 2px solid white;
     margin: 12px auto;
     position: relative;
+    background: black;
+}
+
+.fight-crit {
+    position: absolute;
+    top: 0;
+    left: 140px;
+    width: 40px;
+    height: 100%;
+    background: rgba(255, 255, 0, 0.2);
 }
 
 .fight-marker {
@@ -206,6 +216,7 @@ body::before {
     height: 160px;
     margin: 10px auto 0;
     position: relative;
+    overflow: hidden;
 }
 
 .soul {
@@ -215,6 +226,10 @@ body::before {
     position: absolute;
 }
 
+.soul.blue {
+    background: #00a0ff;
+}
+
 .bullet {
     width: 8px;
     height: 8px;
@@ -222,7 +237,7 @@ body::before {
     position: absolute;
 }
 
-/* enemy sprite */
+/* enemy sprite area */
 
 .enemy-area {
     width: 100%;
@@ -240,24 +255,30 @@ body::before {
     position: relative;
 }
 
-.enemy-sprite::before {
-    content: "";
-    position: absolute;
-    left: 18px;
-    top: 20px;
-    width: 8px;
-    height: 8px;
-    background: white;
+/* different enemy “sprites” via classes */
+
+.enemy-dummy {
+    border-color: #aaaaaa;
 }
 
-.enemy-sprite::after {
-    content: "";
-    position: absolute;
-    right: 18px;
-    top: 20px;
-    width: 8px;
-    height: 8px;
-    background: white;
+.enemy-mad-dummy {
+    border-color: #ff0000;
+}
+
+.enemy-toriel {
+    border-color: #ffffff;
+}
+
+.enemy-papyrus {
+    border-color: #00ffff;
+}
+
+.enemy-p-sans {
+    border-color: #ffff00;
+}
+
+.enemy-us-sans {
+    border-color: #ff00ff;
 }
 
 /* sub-box for ACT / ITEM */

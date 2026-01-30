@@ -26,7 +26,6 @@ function handleKeyDown(e) {
         } else if (key === "z") {
             const slot = currentMenuIndex;
             if (!saves[slot]) {
-                // go to name entry
                 currentSlot = slot;
                 startNameEntry();
             } else {
@@ -45,7 +44,7 @@ function handleKeyDown(e) {
     }
 
     if (gameState === "mainMenu") {
-        const max = 5; // FIGHT, SHOP, INVENTORY, STATS, SETTINGS, CREDITS
+        const max = 5; // MONSTERS, SHOP, INVENTORY, STATS, SETTINGS, CREDITS
         if (key === "w") {
             currentMenuIndex = (currentMenuIndex + max) % (max + 1);
             render();
@@ -54,7 +53,7 @@ function handleKeyDown(e) {
             render();
         } else if (key === "z") {
             if (currentMenuIndex === 0) {
-                // FIGHT
+                // MONSTERS
                 startBattle("dummy");
             } else if (currentMenuIndex === 1) {
                 gameState = "shop";
@@ -74,11 +73,8 @@ function handleKeyDown(e) {
                 gameState = "credits";
                 render();
             }
-        } else if (key === "x") {
-            gameState = "fileSelect";
-            currentMenuIndex = 0;
-            render();
         }
+        // X does nothing here now
         return;
     }
 
@@ -88,36 +84,36 @@ function handleKeyDown(e) {
     }
 
     if (gameState === "inventory") {
-        if (key === "x" || key === "z") {
+        if (key === "z" || key === "x") {
             gameState = "mainMenu";
-            currentMenuIndex = 0;
+            currentMenuIndex = 2;
             render();
         }
         return;
     }
 
     if (gameState === "stats") {
-        if (key === "x" || key === "z") {
+        if (key === "z" || key === "x") {
             gameState = "mainMenu";
-            currentMenuIndex = 0;
+            currentMenuIndex = 3;
             render();
         }
         return;
     }
 
     if (gameState === "settings") {
-        if (key === "x" || key === "z") {
+        if (key === "z" || key === "x") {
             gameState = "mainMenu";
-            currentMenuIndex = 0;
+            currentMenuIndex = 4;
             render();
         }
         return;
     }
 
     if (gameState === "credits") {
-        if (key === "x" || key === "z") {
+        if (key === "z" || key === "x") {
             gameState = "mainMenu";
-            currentMenuIndex = 0;
+            currentMenuIndex = 5;
             render();
         }
         return;
@@ -134,7 +130,7 @@ function render() {
 
     if (gameState === "title") {
         g.innerHTML = `
-            <div class="center">
+            <div class="center" style="margin-top:120px;">
                 <h1>UNDERTALE: Fallen Timelines</h1>
                 <p class="small-text">Press Z</p>
             </div>
@@ -143,7 +139,10 @@ function render() {
     }
 
     if (gameState === "fileSelect") {
-        let html = `<div class="center"><p>SELECT A FILE</p>`;
+        let html = `<div class="center" style="margin-top:40px;">
+            <div class="undertale-box" style="width:90%;">
+                <p>SELECT A SAVE:</p>
+        `;
         for (let i = 0; i < SAVE_SLOTS; i++) {
             const s = saves[i];
             const selected = (i === currentMenuIndex) ? "selected" : "";
@@ -151,11 +150,15 @@ function render() {
                         <div class="undertale-box">
                             <p>SAVE ${i + 1}</p>
                             <p>${s && s.name ? s.name : ""}</p>
-                            <p>LV ${s ? s.LV : 1}   G ${s ? s.G : 0}</p>
+                            <div class="flex-between">
+                                <span>LV ${s ? s.LV : 1}</span>
+                                <span>EXP ${s ? s.EXP : 0}</span>
+                            </div>
+                            <p>G ${s ? s.G : 0}</p>
                         </div>
                     </div>`;
         }
-        html += `<p class="small-text">W/S to move, Z to select, X to go back</p></div>`;
+        html += `</div></div>`;
         g.innerHTML = html;
         return;
     }
@@ -166,19 +169,14 @@ function render() {
     }
 
     if (gameState === "mainMenu") {
-        const options = ["FIGHT", "SHOP", "INVENTORY", "STATS", "SETTINGS", "CREDITS"];
-        let html = `<div class="center">
-            <div class="undertale-box">
-                <p>${currentPlayer.name || "HUMAN"}</p>
-                <p>LV ${currentPlayer.LV}   G ${currentPlayer.G}</p>
-            </div>
-        `;
+        const options = ["MONSTERS", "SHOP", "INVENTORY", "STATS", "SETTINGS", "CREDITS"];
+        let html = `<div class="center" style="margin-top:80px;">`;
         options.forEach((opt, i) => {
             html += `<div class="menu-option ${i === currentMenuIndex ? "selected" : ""}">
                         <span>${opt}</span>
                     </div>`;
         });
-        html += `<p class="small-text">W/S to move, Z to select, X to files</p></div>`;
+        html += `</div>`;
         g.innerHTML = html;
         return;
     }
@@ -189,7 +187,8 @@ function render() {
     }
 
     if (gameState === "inventory") {
-        let html = `<div class="center"><div class="undertale-box"><p>INVENTORY</p>`;
+        let html = `<div class="center" style="margin-top:80px;">
+            <div class="undertale-box"><p>INVENTORY</p>`;
         if (currentPlayer.inventory.length === 0) {
             html += `<p>(empty)</p>`;
         } else {
@@ -197,14 +196,14 @@ function render() {
                 html += `<p>${i}</p>`;
             });
         }
-        html += `</div><p class="small-text">Z/X to return</p></div>`;
+        html += `</div></div>`;
         g.innerHTML = html;
         return;
     }
 
     if (gameState === "stats") {
         const p = currentPlayer;
-        let html = `<div class="center">
+        let html = `<div class="center" style="margin-top:60px;">
             <div class="undertale-box stats-box">
                 <p>"${p.name || "HUMAN"}"</p>
                 <div class="flex-between">
@@ -226,7 +225,6 @@ function render() {
                     <span>KILLS: ${p.kills}</span>
                 </div>
             </div>
-            <p class="small-text">Z/X to return</p>
         </div>`;
         g.innerHTML = html;
         return;
@@ -234,12 +232,11 @@ function render() {
 
     if (gameState === "settings") {
         g.innerHTML = `
-            <div class="center">
+            <div class="center" style="margin-top:80px;">
                 <div class="undertale-box">
                     <p>SETTINGS</p>
-                    <p>(placeholder: you can add sound, difficulty, etc.)</p>
+                    <p>(placeholder: sound, difficulty, controls)</p>
                 </div>
-                <p class="small-text">Z/X to return</p>
             </div>
         `;
         return;
@@ -247,12 +244,11 @@ function render() {
 
     if (gameState === "credits") {
         g.innerHTML = `
-            <div class="center">
+            <div class="center" style="margin-top:80px;">
                 <div class="undertale-box">
                     <p>CREDITS</p>
                     <p>Made by Orange_Toaster</p>
                 </div>
-                <p class="small-text">Z/X to return</p>
             </div>
         `;
         return;
@@ -274,7 +270,6 @@ function startNameEntry() {
     gameState = "nameEntry";
     chosenName = "";
     nameCursor = { row: 0, col: 0 };
-    // Simple grid similar to Undertale style
     const rows = [
         ["A","B","C","D","E","F","G"],
         ["H","I","J","K","L","M","N"],
@@ -288,7 +283,7 @@ function startNameEntry() {
         ["9","DEL","END","","","",""]
     ];
     nameGrid = rows;
-    render();
+    renderNameEntry();
 }
 
 function handleNameEntryKey(key) {
@@ -343,7 +338,7 @@ function handleNameEntryKey(key) {
 
 function renderNameEntry() {
     const g = document.getElementById("game");
-    let html = `<div class="center">
+    let html = `<div class="center" style="margin-top:40px;">
         <p>Name the fallen human.</p>
         <div class="name-grid undertale-box">
     `;
@@ -364,7 +359,6 @@ function renderNameEntry() {
         <div class="name-display">
             <p>${chosenName}</p>
         </div>
-        <p class="small-text">WASD to move, Z to select, X to cancel</p>
     </div>`;
     g.innerHTML = html;
 }
@@ -426,8 +420,8 @@ function renderShop() {
     const section = sections[shopSectionIndex];
     const items = shopData[section];
 
-    let html = `<div class="center">
-        <div class="undertale-box">
+    let html = `<div class="center" style="margin-top:60px;">
+        <div class="undertale-box" style="width:70%;">
             <p>SHOP</p>
             <p>G: ${currentPlayer.G}</p>
             <p>
@@ -442,9 +436,6 @@ function renderShop() {
         html += `<p class="${sel}">${it.name} - ${it.cost}G</p>`;
     });
 
-    html += `</div>
-        <p class="small-text">A/D change section, W/S move, Z buy, X back</p>
-    </div>`;
-
+    html += `</div></div>`;
     g.innerHTML = html;
 }

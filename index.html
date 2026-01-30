@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Mini Bonetale-like Game</title>
+  <title>Sans vs Wingdings</title>
   <style>
     html, body {
       margin: 0;
@@ -12,7 +12,6 @@
       font-family: sans-serif;
       overflow: hidden;
     }
-
     #gameContainer {
       display: flex;
       flex-direction: column;
@@ -20,24 +19,20 @@
       justify-content: flex-start;
       height: 100vh;
     }
-
     #ui {
       margin-top: 10px;
       text-align: center;
     }
-
     canvas {
       border: 2px solid #fff;
-      background: #111;
+      background: #000;
       image-rendering: pixelated;
     }
-
     #controls {
       font-size: 14px;
       margin-top: 6px;
       color: #ccc;
     }
-
     button {
       margin-top: 6px;
       padding: 4px 10px;
@@ -46,7 +41,6 @@
       border: 1px solid #555;
       cursor: pointer;
     }
-
     button:hover {
       background: #333;
     }
@@ -56,70 +50,84 @@
   <div id="gameContainer">
     <canvas id="game" width="640" height="360"></canvas>
     <div id="ui">
-      <div id="info">HP: <span id="hp">5</span> | Score: <span id="score">0</span></div>
+      <div id="info">
+        HP: <span id="hp">1</span> |
+        Stamina: <span id="stamina">100</span> |
+        Score: <span id="score">0</span>
+      </div>
       <div id="controls">
         Move: A / D or ← / → &nbsp;|&nbsp;
         Jump: W or ↑ or Space &nbsp;|&nbsp;
-        Shoot bone: J
+        Shoot bone: J &nbsp;|&nbsp;
+        Teleport: Q &nbsp;|&nbsp;
+        Gaster Blaster: E
       </div>
       <button id="restartBtn" style="display:none;">Restart</button>
     </div>
   </div>
 
   <script>
-    // ====== BASIC SETUP ======
     const canvas = document.getElementById("game");
     const ctx = canvas.getContext("2d");
 
     const hpEl = document.getElementById("hp");
+    const staminaEl = document.getElementById("stamina");
     const scoreEl = document.getElementById("score");
     const restartBtn = document.getElementById("restartBtn");
 
     const W = canvas.width;
     const H = canvas.height;
 
-    // ====== GAME STATE ======
     let lastTime = 0;
     let keys = {};
     let gameOver = false;
 
-    const GRAVITY = 1500;      // px/s^2
-    const MOVE_SPEED = 260;    // px/s
-    const JUMP_SPEED = -550;   // px/s
+    const GRAVITY = 1500;
+    const MOVE_SPEED = 260;
+    const JUMP_SPEED = -550;
     const FRICTION = 0.85;
 
     const BONE_SPEED = 500;
     const ENEMY_SPEED_MIN = 80;
     const ENEMY_SPEED_MAX = 160;
-    const ENEMY_SPAWN_INTERVAL = 1.2; // seconds
+    const ENEMY_SPAWN_INTERVAL = 1.2;
+
+    const WINGDING_SYMBOLS = ["✞", "✐", "✸", "✡", "✖", "✦", "✷", "✺"];
 
     let enemySpawnTimer = 0;
     let score = 0;
 
     const player = {
       x: 80,
-      y: H - 80,
-      w: 32,
-      h: 48,
+      y: H - 120,
+      w: 28,
+      h: 44,
       vx: 0,
       vy: 0,
       onGround: false,
-      facing: 1, // 1 right, -1 left
-      hp: 5
+      facing: 1,
+      hp: 1,
+      stamina: 100
     };
 
     const bones = [];
     const enemies = [];
+    const misses = [];
+    const blasters = [];
 
-    // ====== INPUT HANDLING ======
     window.addEventListener("keydown", (e) => {
       keys[e.key.toLowerCase()] = true;
       if (["ArrowLeft", "ArrowRight", "ArrowUp", " "].includes(e.key)) {
         e.preventDefault();
       }
-      // Shoot bone with J
       if (e.key.toLowerCase() === "j" && !gameOver) {
         shootBone();
+      }
+      if (e.key.toLowerCase() === "q" && !gameOver) {
+        teleportShortcut();
+      }
+      if (e.key.toLowerCase() === "e" && !gameOver) {
+        fireGasterBlaster();
       }
     });
 
@@ -127,27 +135,29 @@
       keys[e.key.toLowerCase()] = false;
     });
 
-    // ====== RESTART BUTTON ======
     restartBtn.addEventListener("click", () => {
       resetGame();
     });
 
-    // ====== GAME FUNCTIONS ======
     function resetGame() {
       player.x = 80;
-      player.y = H - 80;
+      player.y = H - 120;
       player.vx = 0;
       player.vy = 0;
-      player.hp = 5;
+      player.hp = 1;
+      player.stamina = 100;
       player.onGround = false;
       player.facing = 1;
       bones.length = 0;
       enemies.length = 0;
+      misses.length = 0;
+      blasters.length = 0;
       score = 0;
       enemySpawnTimer = 0;
       gameOver = false;
       restartBtn.style.display = "none";
       hpEl.textContent = player.hp;
+      staminaEl.textContent = player.stamina;
       scoreEl.textContent = score;
     }
 
@@ -164,10 +174,30 @@
       });
     }
 
+    function teleportShortcut() {
+      const margin = 40;
+      const newX = margin + Math.random() * (W - 2 * margin - player.w);
+      player.x = newX;
+    }
+
+    function fireGasterBlaster() {
+      const dir = player.facing || 1;
+      const bx = dir === 1 ? player.x + 80 : player.x - 80;
+      const by = player.y - 20;
+      blasters.push({
+        x: bx,
+        y: by,
+        dir: dir,
+        chargeTime: 0.4,
+        beamTime: 0.35,
+        state: "charge"
+      });
+    }
+
     function spawnEnemy() {
       const size = 32;
       const side = Math.random() < 0.5 ? "left" : "right";
-      const y = H - 64; // ground-ish
+      const y = H - 80;
       const speed =
         ENEMY_SPEED_MIN +
         Math.random() * (ENEMY_SPEED_MAX - ENEMY_SPEED_MIN);
@@ -178,7 +208,8 @@
         w: size,
         h: size,
         vx: side === "left" ? speed : -speed,
-        hp: 1
+        hp: 3,
+        symbol: WINGDING_SYMBOLS[Math.floor(Math.random() * WINGDING_SYMBOLS.length)]
       });
     }
 
@@ -191,11 +222,18 @@
       );
     }
 
-    // ====== UPDATE LOOP ======
+    function addMiss() {
+      misses.push({
+        x: player.x + player.w / 2,
+        y: player.y - 10,
+        vy: -40,
+        life: 0.6
+      });
+    }
+
     function update(dt) {
       if (gameOver) return;
 
-      // --- Player movement ---
       let moveLeft = keys["a"] || keys["arrowleft"];
       let moveRight = keys["d"] || keys["arrowright"];
       let jumpKey = keys["w"] || keys["arrowup"] || keys[" "];
@@ -216,26 +254,21 @@
         player.onGround = false;
       }
 
-      // Gravity
       player.vy += GRAVITY * dt;
 
-      // Apply velocity
       player.x += player.vx * dt;
       player.y += player.vy * dt;
 
-      // Floor collision
-      const floorY = H - 40;
+      const floorY = H - 60;
       if (player.y + player.h > floorY) {
         player.y = floorY - player.h;
         player.vy = 0;
         player.onGround = true;
       }
 
-      // Wall bounds
       if (player.x < 0) player.x = 0;
       if (player.x + player.w > W) player.x = W - player.w;
 
-      // --- Update bones ---
       for (let i = bones.length - 1; i >= 0; i--) {
         const b = bones[i];
         b.x += b.vx * dt;
@@ -244,26 +277,21 @@
         }
       }
 
-      // --- Spawn enemies ---
       enemySpawnTimer += dt;
       if (enemySpawnTimer >= ENEMY_SPAWN_INTERVAL) {
         enemySpawnTimer = 0;
         spawnEnemy();
       }
 
-      // --- Update enemies ---
       for (let i = enemies.length - 1; i >= 0; i--) {
         const e = enemies[i];
         e.x += e.vx * dt;
-
-        // Remove if off-screen far
-        if (e.x < -100 || e.x > W + 100) {
+        if (e.x < -120 || e.x > W + 120) {
           enemies.splice(i, 1);
           continue;
         }
       }
 
-      // --- Collisions: bones vs enemies ---
       for (let i = enemies.length - 1; i >= 0; i--) {
         const e = enemies[i];
         for (let j = bones.length - 1; j >= 0; j--) {
@@ -281,90 +309,239 @@
         }
       }
 
-      // --- Collisions: enemies vs player ---
       for (let i = enemies.length - 1; i >= 0; i--) {
         const e = enemies[i];
         if (rectsOverlap(e, player)) {
-          enemies.splice(i, 1);
-          player.hp -= 1;
-          hpEl.textContent = player.hp;
-          if (player.hp <= 0) {
-            gameOver = true;
-            restartBtn.style.display = "inline-block";
+          if (player.stamina >= 5) {
+            player.stamina -= 5;
+            staminaEl.textContent = player.stamina;
+            addMiss();
+            const push = e.vx > 0 ? 60 : -60;
+            player.x += push;
+            enemies.splice(i, 1);
+          } else {
+            enemies.splice(i, 1);
+            player.hp -= 1;
+            hpEl.textContent = player.hp;
+            if (player.hp <= 0) {
+              gameOver = true;
+              restartBtn.style.display = "inline-block";
+            }
           }
+        }
+      }
+
+      for (let i = blasters.length - 1; i >= 0; i--) {
+        const b = blasters[i];
+        if (b.state === "charge") {
+          b.chargeTime -= dt;
+          if (b.chargeTime <= 0) {
+            b.state = "beam";
+          }
+        } else if (b.state === "beam") {
+          b.beamTime -= dt;
+          const beamWidth = 260;
+          const beamHeight = 40;
+          const bx = b.dir === 1 ? b.x : b.x - beamWidth;
+          const by = b.y - beamHeight / 2;
+          const beamRect = { x: bx, y: by, w: beamWidth, h: beamHeight };
+          for (let j = enemies.length - 1; j >= 0; j--) {
+            const e = enemies[j];
+            if (rectsOverlap(beamRect, e)) {
+              enemies.splice(j, 1);
+              score += 15;
+              scoreEl.textContent = score;
+            }
+          }
+          if (b.beamTime <= 0) {
+            blasters.splice(i, 1);
+          }
+        }
+      }
+
+      for (let i = misses.length - 1; i >= 0; i--) {
+        const m = misses[i];
+        m.life -= dt;
+        m.y += m.vy * dt;
+        if (m.life <= 0) {
+          misses.splice(i, 1);
         }
       }
     }
 
-    // ====== DRAW LOOP ======
-    function draw() {
-      ctx.clearRect(0, 0, W, H);
-
-      // Background
+    function drawBackground() {
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, W, H);
 
-      // Floor
-      ctx.fillStyle = "#222";
+      ctx.fillStyle = "#fff";
       ctx.fillRect(0, H - 40, W, 40);
 
-      // Player (simple skeleton-like)
+      ctx.fillStyle = "#111";
+      ctx.fillRect(0, H - 42, W, 2);
+
+      ctx.save();
+      ctx.globalAlpha = 0.08;
+      ctx.fillStyle = "#fff";
+      ctx.font = "32px Wingdings, Webdings, sans-serif";
+      for (let i = 0; i < 18; i++) {
+        const s = WINGDING_SYMBOLS[Math.floor(Math.random() * WINGDING_SYMBOLS.length)];
+        const x = Math.random() * W;
+        const y = Math.random() * (H - 80);
+        ctx.fillText(s, x, y);
+      }
+      ctx.restore();
+
+      ctx.save();
+      ctx.globalAlpha = 0.18;
+      ctx.fillStyle = "#fff";
+      ctx.beginPath();
+      ctx.ellipse(W - 120, H - 140, 40, 70, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#000";
+      ctx.beginPath();
+      ctx.arc(W - 135, H - 155, 6, 0, Math.PI * 2);
+      ctx.arc(W - 105, H - 155, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillRect(W - 135, H - 135, 30, 4);
+      ctx.restore();
+    }
+
+    function drawPlayer() {
       ctx.save();
       ctx.translate(player.x + player.w / 2, player.y + player.h / 2);
       ctx.scale(player.facing, 1);
 
-      // Body
+      ctx.fillStyle = "#00bfff";
+      ctx.fillRect(-12, 0, 24, 20);
+
       ctx.fillStyle = "#fff";
-      ctx.fillRect(-8, -16, 16, 32);
+      ctx.fillRect(-10, -10, 20, 10);
 
-      // Head
-      ctx.beginPath();
-      ctx.arc(0, -26, 10, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(-8, -26, 16, 16);
 
-      // Eyes
       ctx.fillStyle = "#000";
-      ctx.fillRect(-5, -30, 3, 3);
-      ctx.fillRect(2, -30, 3, 3);
+      ctx.fillRect(-6, -22, 4, 4);
+      ctx.fillRect(2, -22, 4, 4);
 
-      // Mouth
-      ctx.fillRect(-4, -22, 8, 2);
+      ctx.fillStyle = "#000";
+      ctx.fillRect(-6, -16, 12, 3);
+
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(-10, 20, 8, 10);
+      ctx.fillRect(2, 20, 8, 10);
+
+      ctx.fillStyle = "#ccc";
+      ctx.fillRect(-10, 30, 8, 4);
+      ctx.fillRect(2, 30, 8, 4);
 
       ctx.restore();
+    }
 
-      // Bones
+    function drawBones() {
       for (const b of bones) {
         ctx.fillStyle = "#fff";
         ctx.fillRect(b.x, b.y, b.w, b.h);
         ctx.fillRect(b.x - 4, b.y - 2, 4, 10);
         ctx.fillRect(b.x + b.w, b.y - 2, 4, 10);
       }
+    }
 
-      // Enemies (simple red squares)
+    function drawEnemies() {
       for (const e of enemies) {
+        ctx.save();
         ctx.fillStyle = "#f33";
-        ctx.fillRect(e.x, e.y, e.w, e.h);
-        ctx.fillStyle = "#000";
-        ctx.fillRect(e.x + 6, e.y + 8, 6, 6);
-        ctx.fillRect(e.x + e.w - 12, e.y + 8, 6, 6);
-        ctx.fillRect(e.x + 8, e.y + e.h - 10, e.w - 16, 4);
-      }
-
-      // Game over text
-      if (gameOver) {
-        ctx.fillStyle = "rgba(0,0,0,0.6)";
-        ctx.fillRect(0, 0, W, H);
-        ctx.fillStyle = "#fff";
-        ctx.font = "32px sans-serif";
+        ctx.font = "28px Wingdings, Webdings, sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText("GAME OVER", W / 2, H / 2 - 10);
-        ctx.font = "18px sans-serif";
-        ctx.fillText("Score: " + score, W / 2, H / 2 + 20);
-        ctx.fillText("Click Restart below to play again", W / 2, H / 2 + 50);
+        ctx.textBaseline = "middle";
+        ctx.fillText(e.symbol, e.x + e.w / 2, e.y + e.h / 2);
+        ctx.restore();
       }
     }
 
-    // ====== MAIN LOOP ======
+    function drawBlasters() {
+      for (const b of blasters) {
+        if (b.state === "charge") {
+          ctx.save();
+          ctx.fillStyle = "#fff";
+          ctx.beginPath();
+          ctx.ellipse(b.x, b.y, 18, 12, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = "#000";
+          const eyeOffset = b.dir === 1 ? 4 : -4;
+          ctx.beginPath();
+          ctx.arc(b.x + eyeOffset, b.y, 3, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        } else if (b.state === "beam") {
+          ctx.save();
+          ctx.fillStyle = "#fff";
+          ctx.beginPath();
+          ctx.ellipse(b.x, b.y, 18, 12, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = "#000";
+          const eyeOffset = b.dir === 1 ? 4 : -4;
+          ctx.beginPath();
+          ctx.arc(b.x + eyeOffset, b.y, 3, 0, Math.PI * 2);
+          ctx.fill();
+
+          const beamWidth = 260;
+          const beamHeight = 40;
+          const bx = b.dir === 1 ? b.x : b.x - beamWidth;
+          const by = b.y - beamHeight / 2;
+
+          const grad = ctx.createLinearGradient(bx, by, bx + beamWidth, by);
+          grad.addColorStop(0, "rgba(255,255,255,0.1)");
+          grad.addColorStop(0.3, "#00ffff");
+          grad.addColorStop(0.7, "#ffffff");
+          grad.addColorStop(1, "rgba(0,255,255,0.1)");
+
+          ctx.fillStyle = grad;
+          ctx.fillRect(bx, by, beamWidth, beamHeight);
+          ctx.restore();
+        }
+      }
+    }
+
+    function drawMisses() {
+      ctx.save();
+      ctx.fillStyle = "#fff";
+      ctx.font = "16px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      for (const m of misses) {
+        const alpha = Math.max(0, m.life / 0.6);
+        ctx.globalAlpha = alpha;
+        ctx.fillText("MISS", m.x, m.y);
+      }
+      ctx.restore();
+    }
+
+    function drawGameOver() {
+      ctx.fillStyle = "rgba(0,0,0,0.6)";
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = "#fff";
+      ctx.font = "32px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("GAME OVER", W / 2, H / 2 - 10);
+      ctx.font = "18px sans-serif";
+      ctx.fillText("Score: " + score, W / 2, H / 2 + 20);
+      ctx.fillText("Click Restart below to play again", W / 2, H / 2 + 50);
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      drawBackground();
+      drawPlayer();
+      drawBones();
+      drawEnemies();
+      drawBlasters();
+      drawMisses();
+      if (gameOver) {
+        drawGameOver();
+      }
+    }
+
     function loop(timestamp) {
       if (!lastTime) lastTime = timestamp;
       const dt = (timestamp - lastTime) / 1000;
@@ -376,7 +553,6 @@
       requestAnimationFrame(loop);
     }
 
-    // Start
     resetGame();
     requestAnimationFrame(loop);
   </script>

@@ -53,7 +53,7 @@ function battleKeyDown(e) {
     }
 
     if (battleSubState === "actMenu") {
-        if (key === "a" || key === "d") {
+        if (key === "w" || key === "s") {
             actIndex = (actIndex + 1) % 2;
             renderBattle();
         } else if (key === "z") {
@@ -116,20 +116,16 @@ function battleKeyDown(e) {
 
 function handleBattleMenuConfirm() {
     if (battleMenuIndex === 0) {
-        // FIGHT
         startAttackBar();
     } else if (battleMenuIndex === 1) {
-        // ACT
         battleSubState = "actMenu";
         actIndex = 0;
         renderBattle();
     } else if (battleMenuIndex === 2) {
-        // ITEM
         battleSubState = "itemMenu";
         itemIndex = 0;
         renderBattle();
     } else if (battleMenuIndex === 3) {
-        // MERCY
         if (canSpare) {
             battleText = "* You spared the enemy.";
             endBattleMercy();
@@ -149,9 +145,9 @@ function startAttackBar() {
     fightMarkerDir = 1;
     if (fightInterval) clearInterval(fightInterval);
     fightInterval = setInterval(() => {
-        fightMarkerPos += fightMarkerDir * 6;
-        if (fightMarkerPos >= 296) {
-            fightMarkerPos = 296;
+        fightMarkerPos += fightMarkerDir * 8;
+        if (fightMarkerPos >= 316) {
+            fightMarkerPos = 316;
             fightMarkerDir = -1;
         }
         if (fightMarkerPos <= 0) {
@@ -165,7 +161,7 @@ function startAttackBar() {
 
 function finishAttackBar() {
     if (fightInterval) clearInterval(fightInterval);
-    const center = 150;
+    const center = 158;
     const dist = Math.abs(fightMarkerPos - center);
     const multiplier = Math.max(0.3, 1 - dist / 160);
     const base = currentPlayer.AT + 3;
@@ -180,17 +176,15 @@ function finishAttackBar() {
 
 function handleActConfirm() {
     if (actIndex === 0) {
-        // CHECK
         battleSubState = "text";
         battleText = `* ${currentEnemy.name} - ATK ${currentEnemy.AT} DEF ${currentEnemy.DF}`;
     } else {
-        // TALK
         talksDone++;
         if (talksDone >= currentEnemy.spareTalks) {
             canSpare = true;
-            battleText = "* You talk to the DUMMY.\n* It seems satisfied with your words.";
+            battleText = "* You talk to the enemy.\n* It seems satisfied with your words.";
         } else {
-            battleText = "* You talk to the DUMMY.\n* It doesn't seem much for conversation.";
+            battleText = "* You talk to the enemy.\n* It doesn't seem much for conversation.";
         }
         battleSubState = "text";
     }
@@ -225,7 +219,6 @@ function startEnemyTurn() {
     bulletX = 0;
     bulletY = 80;
     bulletVX = 4;
-    bulletVY = 0;
     enemyTurnTicks = 0;
     if (enemyInterval) clearInterval(enemyInterval);
     enemyInterval = setInterval(() => {
@@ -246,7 +239,7 @@ function startEnemyTurn() {
                 endBattleLose();
             } else {
                 battleSubState = "menu";
-                battleText = "* The DUMMY is staring into the distance.";
+                battleText = "* The enemy is watching you.";
                 renderBattle();
             }
         } else {
@@ -322,27 +315,33 @@ function endBattleMercy() {
 function renderBattle() {
     const g = document.getElementById("game");
     const hpPercent = (currentPlayer.HP / currentPlayer.maxHP) * 100;
-    const enemyHPPercent = (currentEnemy.HP / currentEnemy.maxHP) * 100;
 
-    let extra = "";
+    let subBoxHTML = "";
 
     if (battleSubState === "attackBar") {
-        extra += `
+        subBoxHTML = `
             <div class="fight-bar">
                 <div class="fight-marker" style="left:${fightMarkerPos}px;"></div>
             </div>
         `;
     } else if (battleSubState === "actMenu") {
         const opts = ["CHECK", "TALK"];
-        extra += `<p>* ACT: ${opts[actIndex]}</p>`;
+        subBoxHTML = `
+            <div class="sub-box">
+                <div class="sub-option">${actIndex === 0 ? '<span class="heart">♥</span>' : '&nbsp;&nbsp;'}CHECK</div>
+                <div class="sub-option">${actIndex === 1 ? '<span class="heart">♥</span>' : '&nbsp;&nbsp;'}TALK</div>
+            </div>
+        `;
     } else if (battleSubState === "itemMenu") {
         if (currentPlayer.inventory.length === 0) {
-            extra += `<p>* You have no items.</p>`;
+            subBoxHTML = `<div class="sub-box"><p>* You have no items.</p></div>`;
         } else {
-            extra += `<p>* ITEMS:</p>`;
+            let itemsHTML = `<div class="sub-box"><p>* ITEMS</p>`;
             currentPlayer.inventory.forEach((it, i) => {
-                extra += `<p class="${i === itemIndex ? "selected" : ""}">${it}</p>`;
+                itemsHTML += `<div class="sub-option">${i === itemIndex ? '<span class="heart">♥</span>' : '&nbsp;&nbsp;'}${it}</div>`;
             });
+            itemsHTML += `</div>`;
+            subBoxHTML = itemsHTML;
         }
     }
 
@@ -359,18 +358,14 @@ function renderBattle() {
     g.innerHTML = `
         <div class="center">
             <div class="battle-box">
+                <div class="enemy-area">
+                    <div class="enemy-sprite"></div>
+                </div>
                 <div class="battle-text">
                     <p>${battleText.replace(/\n/g,"<br>")}</p>
                 </div>
-                <div class="battle-info">
-                    <p>${currentEnemy.name}
-                        <span class="hp-bar">
-                            <span class="hp-fill" style="width:${enemyHPPercent}%;"></span>
-                        </span>
-                    </p>
-                    ${soulBoxHTML}
-                    ${extra}
-                </div>
+                ${soulBoxHTML}
+                ${subBoxHTML}
             </div>
             <div class="bottom-menu">
                 <div>
@@ -383,6 +378,7 @@ function renderBattle() {
                     <span>${currentPlayer.name || "HUMAN"}</span>
                     <span>LV ${currentPlayer.LV}</span>
                     <span>HP ${currentPlayer.HP}/${currentPlayer.maxHP}</span>
+                    <span class="hp-bar"><span class="hp-fill" style="width:${hpPercent}%;"></span></span>
                 </div>
             </div>
         </div>

@@ -1,3 +1,5 @@
+// main.js - game states, menus, shop and rendering
+
 loadSaves();
 gameState = "title";
 currentMenuIndex = 0;
@@ -46,7 +48,7 @@ function handleKeyDown(e) {
     }
 
     if (gameState === "mainMenu") {
-        const max = 5; // MONSTERS, SHOP, ITEM, STATS, SETTINGS, CREDITS
+        const max = 5;
         if (key === "w") {
             currentMenuIndex = (currentMenuIndex + max) % (max + 1);
             render();
@@ -149,6 +151,7 @@ function handleKeyDown(e) {
 
 function render() {
     const g = document.getElementById("game");
+    document.body.classList.remove("file-select-bg-active");
 
     if (gameState === "title") {
         g.innerHTML = `
@@ -161,7 +164,8 @@ function render() {
     }
 
     if (gameState === "fileSelect") {
-        let html = `<div class="center" style="margin-top:40px;">
+        document.body.classList.add("file-select-bg-active");
+        let html = `<div class="file-select-static-layer"></div><div class="center" style="margin-top:40px;">
             <div class="undertale-box" style="width:80%;">
                 <p>SELECT A SAVE:</p>
                 <div class="file-container">
@@ -303,8 +307,6 @@ function render() {
     }
 }
 
-/* ---------- NAME ENTRY ---------- */
-
 let nameGrid = [];
 let nameCursor = { row: 0, col: 0 };
 let chosenName = "";
@@ -406,9 +408,7 @@ function renderNameEntry() {
     g.innerHTML = html;
 }
 
-/* ---------- SHOP ---------- */
-
-let shopSectionIndex = 0; // 0 weapon, 1 armor, 2 heal
+let shopSectionIndex = 0;
 let shopItemIndex = 0;
 
 function handleShopKey(key) {

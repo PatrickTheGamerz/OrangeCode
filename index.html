@@ -2,18 +2,35 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Last Corridor – Sans vs Chara</title>
+<title>Last Corridor – Sans Sandbox</title>
 <style>
 html,body{margin:0;padding:0;background:#000;color:#fff;font-family:Arial,Helvetica,sans-serif;overflow:hidden}
-#ui{position:fixed;top:10px;left:10px;z-index:10;font-size:14px;text-shadow:0 0 4px #000}
-#ui span{margin-right:18px}
+#topbar{position:fixed;top:6px;left:6px;right:6px;z-index:20;display:flex;align-items:center;gap:10px;font-size:13px;text-shadow:0 0 4px #000}
+#topbar button{padding:4px 10px;background:#333;border:1px solid #666;color:#fff;cursor:pointer}
+#topbar button.active{background:#666}
+#topbar button:hover{background:#555}
+#ui{margin-left:10px;flex:1}
+#ui span{margin-right:14px}
+#editorPanel{position:fixed;right:6px;top:40px;bottom:6px;width:260px;background:rgba(0,0,0,.9);border:1px solid #444;padding:8px;font-size:12px;overflow:auto;z-index:15;display:none}
+#editorPanel h3{margin:4px 0 6px;font-size:13px}
+#editorPanel label{display:block;margin-top:4px}
+#editorPanel input,#editorPanel select{width:100%;box-sizing:border-box;margin-top:2px;background:#111;border:1px solid #444;color:#fff;font-size:11px;padding:2px 3px}
+#editorPanel small{color:#aaa}
+#editorPanel .row{display:flex;gap:4px}
+#editorPanel .row>div{flex:1}
+#editorPanel button{margin-top:6px;width:100%;padding:4px 0;background:#333;border:1px solid #666;color:#fff;cursor:pointer;font-size:12px}
+#editorPanel button:hover{background:#555}
 #gameCanvas{display:block;margin:0 auto;background:#000;border:2px solid #444}
-#overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.9);color:#fff;font-size:22px;flex-direction:column;z-index:20}
-button{padding:8px 18px;margin-top:12px;background:#444;border:none;color:#fff;cursor:pointer;font-size:14px}
-button:hover{background:#666}
+#overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.9);color:#fff;font-size:20px;flex-direction:column;z-index:30}
+#overlay button{padding:8px 18px;margin-top:12px;background:#444;border:none;color:#fff;cursor:pointer;font-size:14px}
+#overlay button:hover{background:#666}
 </style>
 </head>
 <body>
+<div id="topbar">
+<button id="modeBattleBtn" class="active">Battle</button>
+<button id="modeSoloBtn">Solo</button>
+<button id="toggleEditorBtn">Edit</button>
 <div id="ui">
 <span>Sans HP: <span id="sansHpText">100</span></span>
 <span>Stamina: <span id="stamText">100</span></span>
@@ -21,12 +38,78 @@ button:hover{background:#666}
 <span>KR: <span id="krText">0</span></span>
 <span>DT: <span id="dtText">0</span></span>
 <span>Phase: <span id="phaseText">1</span></span>
-<span>Controls: A/D move, W jump, J dodge</span>
+<span>Controls: A/D move, W jump, J dodge, attack keys from config</span>
+</div>
+</div>
+<div id="editorPanel">
+<h3>Attack Editor</h3>
+<label>Save slot
+<select id="slotSelect">
+<option value="0">Slot 1</option>
+<option value="1">Slot 2</option>
+<option value="2">Slot 3</option>
+</select>
+</label>
+<label>Map floor color
+<input id="mapFloor" type="text" value="#2a1a0a">
+</label>
+<label>Map corridor width (0.5–0.9)
+<input id="mapWidth" type="number" min="0.5" max="0.9" step="0.05" value="0.75">
+</label>
+<hr>
+<label>Attack type
+<select id="atkType">
+<option value="boneRain">Bone Rain</option>
+<option value="blaster">Gaster Blaster Chain</option>
+<option value="boneJump">Bone Jump Wave</option>
+<option value="gravityZone">Gravity Bone Zone</option>
+</select>
+</label>
+<label>Key (single letter)
+<input id="atkKey" maxlength="1" value="e">
+</label>
+<div class="row">
+<div>
+<label>Cooldown ms
+<input id="atkCooldown" type="number" value="2200">
+</label>
+</div>
+<div>
+<label>Stamina cost
+<input id="atkCost" type="number" value="15">
+</label>
+</div>
+</div>
+<div class="row">
+<div>
+<label>Power (KR gain)
+<input id="atkPower" type="number" step="0.05" value="0.2">
+</label>
+</div>
+<div>
+<label>Count / size
+<input id="atkCount" type="number" value="8">
+</label>
+</div>
+</div>
+<label>Blue chance (0–1, for bones)
+<input id="atkBlue" type="number" step="0.05" value="0.35">
+</label>
+<small>Different types use these fields differently.</small>
+<button id="addAttackBtn">Add / Replace Attack</button>
+<label>Current attacks
+<select id="attackList" size="6"></select>
+</label>
+<button id="deleteAttackBtn">Delete Selected</button>
+<hr>
+<button id="saveSlotBtn">Save to slot</button>
+<button id="loadSlotBtn">Load from slot</button>
+<small>Slots are stored in your browser (localStorage).</small>
 </div>
 <canvas id="gameCanvas" width="960" height="540"></canvas>
 <div id="overlay">
 <div id="overlayText">Last Corridor – Play as Sans</div>
-<div style="font-size:14px;margin-top:6px">Move Sans, dodge Chara, let your attacks stack KR. Chara can revive with enough DT.</div>
+<div style="font-size:14px;margin-top:6px">Battle: Sans vs smart Chara. Solo: sandbox with no AI pressure. Use editor to design attacks.</div>
 <button id="startBtn">Start</button>
 </div>
 <script>
@@ -41,10 +124,32 @@ const phaseText=document.getElementById("phaseText");
 const overlay=document.getElementById("overlay");
 const overlayText=document.getElementById("overlayText");
 const startBtn=document.getElementById("startBtn");
+const modeBattleBtn=document.getElementById("modeBattleBtn");
+const modeSoloBtn=document.getElementById("modeSoloBtn");
+const toggleEditorBtn=document.getElementById("toggleEditorBtn");
+const editorPanel=document.getElementById("editorPanel");
+const slotSelect=document.getElementById("slotSelect");
+const mapFloorInput=document.getElementById("mapFloor");
+const mapWidthInput=document.getElementById("mapWidth");
+const atkTypeInput=document.getElementById("atkType");
+const atkKeyInput=document.getElementById("atkKey");
+const atkCooldownInput=document.getElementById("atkCooldown");
+const atkCostInput=document.getElementById("atkCost");
+const atkPowerInput=document.getElementById("atkPower");
+const atkCountInput=document.getElementById("atkCount");
+const atkBlueInput=document.getElementById("atkBlue");
+const addAttackBtn=document.getElementById("addAttackBtn");
+const deleteAttackBtn=document.getElementById("deleteAttackBtn");
+const attackList=document.getElementById("attackList");
+const saveSlotBtn=document.getElementById("saveSlotBtn");
+const loadSlotBtn=document.getElementById("loadSlotBtn");
 const keys={};
 let lastTime=0;
 let sans,chara,boneRains,blasters,boneJumps,boneZones,phase,phaseTimer,gameOver,started,shakeTime,shakeIntensity;
-let boneRainTimer,blasterTimer,boneJumpTimer,gravityTimer,blasterChainTimer,blasterChainCount;
+let mode="battle";
+let attacks=[];
+let attackState={};
+let mapConfig={floor:"#2a1a0a",corridorWidth:0.75};
 const GROUND_Y=400;
 const SANS_SPEED=4.2;
 const SANS_JUMP=-13;
@@ -54,15 +159,10 @@ const MAX_STAMINA=100;
 const STAMINA_REGEN=8;
 const DODGE_COST=22;
 const DODGE_COOLDOWN=450;
-const CHARA_SPEED=3.4;
+const CHARA_SPEED=3.6;
 const CHARA_JUMP=-11.5;
 const CHARA_GRAVITY=0.7;
 const MAX_CHARA_HP=92;
-const PHASE_DURATION=26000;
-const BONE_RAIN_INTERVAL_BASE=2200;
-const BLASTER_INTERVAL_BASE=6200;
-const BONE_JUMP_INTERVAL_BASE=5200;
-const GRAVITY_INTERVAL_BASE=9000;
 const BLUE_BONE_TIME=1600;
 const WHITE_BONE_RISE_TIME=500;
 const BONE_ZONE_TIME=500;
@@ -70,7 +170,93 @@ const SHAKE_DECAY=0.9;
 window.addEventListener("keydown",e=>{keys[e.key.toLowerCase()]=true;if([" ","arrowup","arrowdown","arrowleft","arrowright"].includes(e.key.toLowerCase()))e.preventDefault()});
 window.addEventListener("keyup",e=>{keys[e.key.toLowerCase()]=false});
 startBtn.onclick=()=>{startGame()};
+modeBattleBtn.onclick=()=>{mode="battle";modeBattleBtn.classList.add("active");modeSoloBtn.classList.remove("active")};
+modeSoloBtn.onclick=()=>{mode="solo";modeSoloBtn.classList.add("active");modeBattleBtn.classList.remove("active")};
+toggleEditorBtn.onclick=()=>{editorPanel.style.display=editorPanel.style.display==="none"?"block":"none"};
+addAttackBtn.onclick=()=>{addOrReplaceAttack()};
+deleteAttackBtn.onclick=()=>{deleteSelectedAttack()};
+saveSlotBtn.onclick=()=>{saveSlot()};
+loadSlotBtn.onclick=()=>{loadSlot()};
+attackList.onchange=()=>{loadAttackToForm()};
+function defaultConfig(){
+attacks=[
+{type:"boneRain",key:"e",cooldown:2200,cost:15,power:0.18,count:8,blueChance:0.35},
+{type:"blaster",key:"r",cooldown:4200,cost:24,power:0.25,count:3,blueChance:0},
+{type:"boneJump",key:"f",cooldown:3200,cost:18,power:0.2,count:3,blueChance:0.5},
+{type:"gravityZone",key:"g",cooldown:5200,cost:20,power:0.22,count:1,blueChance:0}
+];
+mapConfig={floor:"#2a1a0a",corridorWidth:0.75};
+syncEditorFromConfig();
+}
+function syncEditorFromConfig(){
+mapFloorInput.value=mapConfig.floor;
+mapWidthInput.value=mapConfig.corridorWidth;
+refreshAttackList();
+}
+function refreshAttackList(){
+attackList.innerHTML="";
+attacks.forEach((a,i)=>{
+const opt=document.createElement("option");
+opt.value=i;
+opt.textContent=a.key.toUpperCase()+" – "+a.type+" cd:"+a.cooldown+" cost:"+a.cost;
+attackList.appendChild(opt);
+});
+}
+function addOrReplaceAttack(){
+const key=atkKeyInput.value.trim().toLowerCase()||"e";
+const obj={
+type:atkTypeInput.value,
+key:key,
+cooldown:Math.max(200,parseInt(atkCooldownInput.value)||2000),
+cost:Math.max(0,parseInt(atkCostInput.value)||10),
+power:parseFloat(atkPowerInput.value)||0.2,
+count:Math.max(1,parseInt(atkCountInput.value)||3),
+blueChance:Math.max(0,Math.min(1,parseFloat(atkBlueInput.value)||0))
+};
+const idx=attacks.findIndex(a=>a.key===key&&a.type===obj.type);
+if(idx>=0)attacks[idx]=obj;else attacks.push(obj);
+refreshAttackList();
+}
+function deleteSelectedAttack(){
+const idx=parseInt(attackList.value);
+if(isNaN(idx))return;
+attacks.splice(idx,1);
+refreshAttackList();
+}
+function loadAttackToForm(){
+const idx=parseInt(attackList.value);
+if(isNaN(idx))return;
+const a=attacks[idx];
+atkTypeInput.value=a.type;
+atkKeyInput.value=a.key;
+atkCooldownInput.value=a.cooldown;
+atkCostInput.value=a.cost;
+atkPowerInput.value=a.power;
+atkCountInput.value=a.count;
+atkBlueInput.value=a.blueChance;
+}
+function saveSlot(){
+const slot=parseInt(slotSelect.value);
+mapConfig.floor=mapFloorInput.value||"#2a1a0a";
+mapConfig.corridorWidth=Math.max(0.5,Math.min(0.9,parseFloat(mapWidthInput.value)||0.75));
+const data={attacks:attacks,map:mapConfig};
+localStorage.setItem("sans_slot_"+slot,JSON.stringify(data));
+}
+function loadSlot(){
+const slot=parseInt(slotSelect.value);
+const raw=localStorage.getItem("sans_slot_"+slot);
+if(!raw)return;
+try{
+const data=JSON.parse(raw);
+attacks=data.attacks||[];
+mapConfig=data.map||mapConfig;
+syncEditorFromConfig();
+}catch(e){}
+}
 function startGame(){
+if(attacks.length===0)defaultConfig();
+mapConfig.floor=mapFloorInput.value||mapConfig.floor;
+mapConfig.corridorWidth=Math.max(0.5,Math.min(0.9,parseFloat(mapWidthInput.value)||mapConfig.corridorWidth));
 sans={x:canvas.width*0.7,y:GROUND_Y-70,w:40,h:70,vx:0,vy:0,onGround:false,hp:MAX_SANS_HP,stamina:MAX_STAMINA,lastDodge:0,face:-1};
 chara={x:canvas.width*0.3,y:GROUND_Y-60,w:34,h:60,vx:0,vy:0,onGround:false,hp:MAX_CHARA_HP,face:1,attackTimer:0,attackCooldown:650,aiJumpTimer:0,aiDir:1,kr:0,dt:0,dtGainPerHit:10,revives:0,gravityDir:1,gravityTime:0};
 boneRains=[];
@@ -79,16 +265,12 @@ boneJumps=[];
 boneZones=[];
 phase=1;
 phaseTimer=0;
-boneRainTimer=0;
-blasterTimer=0;
-boneJumpTimer=0;
-gravityTimer=0;
-blasterChainTimer=0;
-blasterChainCount=0;
 gameOver=false;
 started=true;
 shakeTime=0;
 shakeIntensity=0;
+attackState={};
+attacks.forEach(a=>{attackState[a.key+"_"+a.type]=0});
 overlay.style.display="none";
 lastTime=performance.now();
 requestAnimationFrame(loop);
@@ -103,7 +285,7 @@ if(!gameOver)requestAnimationFrame(loop);
 }
 function update(dt){
 phaseTimer+=dt;
-if(phaseTimer>PHASE_DURATION){
+if(phaseTimer>26000){
 phaseTimer=0;
 phase++;
 if(phase>4)phase=4;
@@ -115,7 +297,7 @@ charaHpText.textContent=Math.max(0,Math.floor(chara.hp));
 krText.textContent=chara.kr.toFixed(1);
 dtText.textContent=Math.floor(chara.dt);
 handleSans(dt);
-handleCharaAI(dt);
+if(mode==="battle")handleCharaAI(dt);else handleCharaSolo(dt);
 updateBoneRain(dt);
 updateBlasters(dt);
 updateBoneJumps(dt);
@@ -127,6 +309,12 @@ sans.hp=0;
 endGame(false);
 }
 if(chara.hp<=0){
+if(mode==="solo"){
+chara.hp=MAX_CHARA_HP;
+chara.kr=0;
+chara.x=canvas.width*0.3;
+chara.y=GROUND_Y-60;
+}else{
 if(chara.dt>=100){
 chara.dt-=100;
 chara.revives++;
@@ -140,6 +328,7 @@ shakeIntensity=6;
 }else{
 chara.hp=0;
 endGame(true);
+}
 }
 }
 if(shakeTime>0){
@@ -177,43 +366,18 @@ sans.stamina+=STAMINA_REGEN*dt/1000;
 if(sans.stamina>MAX_STAMINA)sans.stamina=MAX_STAMINA;
 }
 if(keys["j"])trySansDodge();
-boneRainTimer+=dt;
-blasterTimer+=dt;
-boneJumpTimer+=dt;
-gravityTimer+=dt;
-const boneRainInterval=Math.max(BONE_RAIN_INTERVAL_BASE-200*phase,1200);
-const blasterInterval=Math.max(BLASTER_INTERVAL_BASE-350*phase,3200);
-const boneJumpInterval=Math.max(BONE_JUMP_INTERVAL_BASE-260*phase,2200);
-const gravityInterval=Math.max(GRAVITY_INTERVAL_BASE-400*phase,4200);
-if(boneRainTimer>boneRainInterval&&sans.stamina>15){
-boneRainTimer=0;
-spawnBoneRain();
-sans.stamina-=10;
-}
-if(blasterTimer>blasterInterval&&sans.stamina>25){
-blasterTimer=0;
-blasterChainTimer=0;
-blasterChainCount=0;
-spawnBlasterChainStart();
-sans.stamina-=18;
-}
-if(boneJumpTimer>boneJumpInterval&&sans.stamina>18){
-boneJumpTimer=0;
-spawnBoneJumpWave();
-sans.stamina-=14;
-}
-if(gravityTimer>gravityInterval&&sans.stamina>20){
-gravityTimer=0;
-triggerGravitySlam();
-sans.stamina-=16;
-}
-if(blasterChainCount>0&&blasterChainCount<3){
-blasterChainTimer+=dt;
-if(blasterChainTimer>500){
-blasterChainTimer=0;
-spawnNextBlasterInChain();
+attacks.forEach(a=>{
+const id=a.key+"_"+a.type;
+attackState[id]-=dt;
+if(attackState[id]<0)attackState[id]=0;
+if(keys[a.key]){
+if(attackState[id]===0&&sans.stamina>=a.cost){
+sans.stamina-=a.cost;
+attackState[id]=a.cooldown;
+triggerAttack(a);
 }
 }
+});
 }
 function trySansDodge(){
 const now=performance.now();
@@ -221,8 +385,8 @@ if(now-sans.lastDodge<DODGE_COOLDOWN)return;
 if(sans.stamina<DODGE_COST)return;
 sans.lastDodge=now;
 sans.stamina-=DODGE_COST;
-const dir=Math.random()<0.5?-1:1;
-sans.x+=dir*120;
+const dir=(chara.x+chara.w/2)<(sans.x+sans.w/2)?1:-1;
+sans.x+=dir*140;
 if(sans.x<120)sans.x=120;
 if(sans.x+sans.w>canvas.width-120)sans.x=canvas.width-120-sans.w;
 shakeTime=220;
@@ -235,14 +399,28 @@ chara.aiJumpTimer-=dt;
 if(chara.aiJumpTimer<0)chara.aiJumpTimer=0;
 let targetX=sans.x+sans.w/2;
 let dx=targetX-(chara.x+chara.w/2);
-if(Math.abs(dx)>40){
-chara.vx=dx>0?CHARA_SPEED:-CHARA_SPEED;
-}else{
-chara.vx=0;
+let dangerLeft=false,dangerRight=false;
+boneRains.forEach(b=>{
+if(b.y>chara.y-40&&b.y<chara.y+80){
+if(b.x<chara.x)dangerLeft=true;
+if(b.x>chara.x)dangerRight=true;
+}
+});
+boneJumps.forEach(b=>{
+if(b.y<GROUND_Y&&b.y+b.h>chara.y){
+if(b.x<chara.x)dangerLeft=true;
+if(b.x>chara.x)dangerRight=true;
+}
+});
+if(dangerLeft&&!dangerRight)chara.vx=CHARA_SPEED;
+else if(dangerRight&&!dangerLeft)chara.vx=-CHARA_SPEED;
+else{
+if(Math.abs(dx)>40)chara.vx=dx>0?CHARA_SPEED:-CHARA_SPEED;
+else chara.vx=0;
 }
 if(chara.vx>0)chara.face=1;
 else if(chara.vx<0)chara.face=-1;
-if(chara.aiJumpTimer===0&&Math.random()<0.004){
+if(chara.aiJumpTimer===0&&(dangerLeft||dangerRight||Math.random()<0.004)){
 chara.aiJumpTimer=900;
 if(chara.onGround){
 chara.vy=CHARA_JUMP*chara.gravityDir;
@@ -277,9 +455,7 @@ if(chara.x<120)chara.x=120;
 if(chara.x+chara.w>canvas.width-120)chara.x=canvas.width-120-chara.w;
 if(chara.gravityTime>0){
 chara.gravityTime-=dt;
-if(chara.gravityTime<=0){
-chara.gravityDir=1;
-}
+if(chara.gravityTime<=0)chara.gravityDir=1;
 }
 if(chara.attackTimer===0){
 const dist=Math.abs((chara.x+chara.w/2)-(sans.x+sans.w/2));
@@ -287,6 +463,25 @@ if(dist<70&&Math.abs(chara.y-sans.y)<40){
 chara.attackTimer=chara.attackCooldown;
 performCharaSlash();
 }
+}
+}
+function handleCharaSolo(dt){
+chara.vx=0;
+chara.vy+=CHARA_GRAVITY*chara.gravityDir;
+chara.x+=chara.vx;
+chara.y+=chara.vy;
+if(chara.y+chara.h>GROUND_Y){
+chara.y=GROUND_Y-chara.h;
+chara.vy=0;
+chara.onGround=true;
+}
+if(chara.y<120){
+chara.y=120;
+chara.vy=0;
+}
+if(chara.gravityTime>0){
+chara.gravityTime-=dt;
+if(chara.gravityTime<=0)chara.gravityDir=1;
 }
 }
 function performCharaSlash(){
@@ -300,13 +495,20 @@ chara.dt+=chara.dtGainPerHit;
 if(chara.dt>999)chara.dt=999;
 }
 }
-function spawnBoneRain(){
-const count=7+phase*2;
+function triggerAttack(a){
+if(a.type==="boneRain")spawnBoneRainCustom(a);
+else if(a.type==="blaster")spawnBlasterChainCustom(a);
+else if(a.type==="boneJump")spawnBoneJumpWaveCustom(a);
+else if(a.type==="gravityZone")triggerGravitySlamCustom(a);
+}
+let blasterChainQueue=[];
+function spawnBoneRainCustom(a){
+const count=a.count;
 for(let i=0;i<count;i++){
-const delay=i*80;
+const delay=i*70;
 const x=140+Math.random()*(canvas.width-280);
-const blue=Math.random()<0.35;
-boneRains.push({x:x,y:-40,w:18,h:40,vy:3+Math.random()*1.5+phase*0.4,delay:delay,life:6000,blue:blue});
+const blue=Math.random()<a.blueChance;
+boneRains.push({x:x,y:-40,w:18,h:40,vy:3+Math.random()*1.5+phase*0.4,delay:delay,life:6000,blue:blue,power:a.power});
 }
 shakeTime=220;
 shakeIntensity=4;
@@ -323,30 +525,9 @@ b.life-=dt;
 if(b.life<=0||b.y>canvas.height+80)boneRains.splice(i,1);
 }
 }
-function spawnBlasterChainStart(){
-blasterChainCount=1;
-spawnBlasterAtIndex(0);
-}
-function spawnNextBlasterInChain(){
-blasterChainCount++;
-spawnBlasterAtIndex(blasterChainCount-1);
-if(blasterChainCount>=3)blasterChainCount=3;
-}
-function spawnBlasterAtIndex(index){
-const px=chara.x+chara.w/2;
-const py=chara.y+chara.h/2;
-const sx=sans.x+sans.w/2;
-const sy=sans.y+sans.h/2;
-const baseAngle=Math.atan2(py-sy,px-sx);
-const spread=0.35;
-const offsets=[-spread,0,spread];
-const a=baseAngle+offsets[index];
-const dist=140;
-const bx=sx+Math.cos(a)*dist;
-const by=sy+Math.sin(a)*dist;
-blasters.push({x:bx,y:by,angle:a,time:0,warning:true,appearTime:260});
-shakeTime=260;
-shakeIntensity=5;
+function spawnBlasterChainCustom(a){
+blasterChainQueue=[];
+for(let i=0;i<a.count;i++)blasterChainQueue.push({delay:i*500,config:a});
 }
 function updateBlasters(dt){
 for(let i=blasters.length-1;i>=0;i--){
@@ -363,14 +544,41 @@ blasters.splice(i,1);
 }
 }
 }
+for(let i=blasterChainQueue.length-1;i>=0;i--){
+const q=blasterChainQueue[i];
+q.delay-=dt;
+if(q.delay<=0){
+spawnSingleBlaster(q.config);
+blasterChainQueue.splice(i,1);
 }
-function spawnBoneJumpWave(){
+}
+}
+function spawnSingleBlaster(a){
+const px=chara.x+chara.w/2;
+const py=chara.y+chara.h/2;
+const sx=sans.x+sans.w/2;
+const sy=sans.y+sans.h/2;
+const baseAngle=Math.atan2(py-sy,px-sx);
+const spread=0.35;
+const idx=Math.floor(Math.random()*3)-1;
+const ang=baseAngle+spread*idx;
+const dist=140;
+const bx=sx+Math.cos(ang)*dist;
+const by=sy+Math.sin(ang)*dist;
+blasters.push({x:bx,y:by,angle:ang,time:0,warning:true,appearTime:260,power:a.power});
+shakeTime=260;
+shakeIntensity=5;
+}
+function spawnBoneJumpWaveCustom(a){
 const side=Math.random()<0.5?"left":"right";
 const baseX=side==="left"?130:canvas.width-150;
 const dir=side==="left"?1:-1;
-boneJumps.push({x:baseX,y:GROUND_Y-20,w:20,h:20,phase:"white",time:0,dir:dir});
-setTimeout(()=>{boneJumps.push({x:baseX,y:GROUND_Y-20,w:20,h:20,phase:"blue",time:0,dir:dir});},1000);
-setTimeout(()=>{boneJumps.push({x:baseX,y:GROUND_Y-20,w:20,h:20,phase:"white",time:0,dir:dir});},3000);
+for(let i=0;i<a.count;i++){
+const delay=i*1000;
+setTimeout(()=>{
+boneJumps.push({x:baseX,y:GROUND_Y-20,w:20,h:20,phase:i%2===0?"white":"blue",time:0,dir:dir,power:a.power});
+},delay);
+}
 }
 function updateBoneJumps(dt){
 for(let i=boneJumps.length-1;i>=0;i--){
@@ -396,11 +604,11 @@ continue;
 if(b.x<-200||b.x>canvas.width+200)boneJumps.splice(i,1);
 }
 }
-function triggerGravitySlam(){
+function triggerGravitySlamCustom(a){
 chara.gravityDir*=-1;
 chara.gravityTime=2200+phase*200;
 const zoneY=chara.gravityDir===1?GROUND_Y-40:120;
-boneZones.push({x:chara.x-40,y:zoneY,width:chara.w+80,height:40,life:BONE_ZONE_TIME,time:0,dir:chara.gravityDir});
+boneZones.push({x:chara.x-40,y:zoneY,width:chara.w+80,height:40,life:BONE_ZONE_TIME,time:0,dir:chara.gravityDir,power:a.power});
 shakeTime=260;
 shakeIntensity=5;
 }
@@ -424,29 +632,28 @@ function rectOverlap(a,b){
 return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
 }
 function checkCollisions(){
-for(let i=boneRains.length-1;i>=0;i--){
-const b=boneRains[i];
-if(b.delay>0)continue;
+boneRains.forEach(b=>{
+if(b.delay>0)return;
 const hitBox={x:b.x,y:b.y,w:b.w,h:b.h};
 if(rectOverlap(hitBox,chara)){
 if(b.blue){
 const moving=Math.abs(chara.vx)+Math.abs(chara.vy)>0.4;
 if(moving){
 chara.hp-=1;
-chara.kr+=0.18;
+chara.kr+=b.power;
 shakeTime=220;
 shakeIntensity=4;
 }
 }else{
 chara.hp-=1;
-chara.kr+=0.12;
+chara.kr+=b.power*0.7;
 shakeTime=220;
 shakeIntensity=4;
 }
 }
-}
-for(const bl of blasters){
-if(bl.warning)continue;
+});
+blasters.forEach(bl=>{
+if(bl.warning)return;
 const beamLen=2000;
 const bw=26;
 const bx=bl.x;
@@ -461,41 +668,41 @@ const cy=by+(ey-by)*t;
 const beamBox={x:cx-bw/2,y:cy-bw/2,w:bw,h:bw};
 if(rectOverlap(beamBox,chara)){
 chara.hp-=1;
-chara.kr+=0.2;
+chara.kr+=bl.power;
 shakeTime=260;
 shakeIntensity=5;
 break;
 }
 }
-}
-for(const b of boneJumps){
+});
+boneJumps.forEach(b=>{
 const hitBox={x:b.x,y:b.y,w:b.w,h:b.h};
 if(rectOverlap(hitBox,chara)){
 if(b.phase==="white"){
 chara.hp-=1;
-chara.kr+=0.14;
+chara.kr+=b.power*0.7;
 shakeTime=220;
 shakeIntensity=4;
 }else{
 const moving=Math.abs(chara.vx)+Math.abs(chara.vy)>0.4;
 if(moving){
 chara.hp-=1;
-chara.kr+=0.2;
+chara.kr+=b.power;
 shakeTime=260;
 shakeIntensity=5;
 }
 }
 }
-}
-for(const z of boneZones){
+});
+boneZones.forEach(z=>{
 const hitBox={x:z.x,y:z.y-z.dir*10,w:z.width,h:z.height};
 if(rectOverlap(hitBox,chara)){
 chara.hp-=1;
-chara.kr+=0.16;
+chara.kr+=z.power;
 shakeTime=220;
 shakeIntensity=4;
 }
-}
+});
 }
 function endGame(win){
 gameOver=true;
@@ -532,8 +739,11 @@ grad.addColorStop(0.5,"#151515");
 grad.addColorStop(1,"#202020");
 ctx.fillStyle=grad;
 ctx.fillRect(0,0,canvas.width,GROUND_Y);
-ctx.fillStyle="#2a1a0a";
+ctx.fillStyle=mapConfig.floor;
 ctx.fillRect(0,GROUND_Y,canvas.width,canvas.height-GROUND_Y);
+const wFrac=mapConfig.corridorWidth;
+const left=canvas.width*(1-wFrac)/2;
+const right=canvas.width-left;
 ctx.fillStyle="#d9c9a3";
 ctx.fillRect(canvas.width/2-70,80,140,260);
 ctx.fillStyle="#f7f0d0";
@@ -548,14 +758,14 @@ ctx.closePath();
 ctx.fill();
 ctx.fillStyle="#3b2b1a";
 for(let i=0;i<4;i++){
-const x=160+i*160;
+const x=left+60+i*((right-left-120)/3);
 ctx.fillRect(x,120,40,GROUND_Y-120);
 }
 ctx.strokeStyle="#444";
 ctx.lineWidth=3;
-ctx.strokeRect(120,100,canvas.width-240,GROUND_Y-120);
+ctx.strokeRect(left,100,right-left,GROUND_Y-120);
 ctx.fillStyle="#111";
-ctx.fillRect(120,100,canvas.width-240,GROUND_Y-120);
+ctx.fillRect(left,100,right-left,GROUND_Y-120);
 }
 function drawSans(){
 ctx.save();
@@ -675,6 +885,7 @@ ctx.fillText("SANS",140,34);
 ctx.fillText("STAMINA",140,52);
 ctx.fillText("CHARA",canvas.width-400,34);
 }
+defaultConfig();
 </script>
 </body>
 </html>

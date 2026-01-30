@@ -17,7 +17,8 @@ const defaultPlayer = () => ({
     weapon: "STICK",
     armor: "BANDAGE",
     kills: 0,
-    inventory: ["MONSTER CANDY"]
+    hardMode: false,
+    inventory: [{ name: "MONSTER CANDY", type: "heal" }]
 });
 
 function totalAT(p) {
@@ -73,7 +74,7 @@ const enemies = [
         spareTalks: 2,
         soulType: "red",
         pattern: "simpleHorizontal",
-        patterns: ["simpleHorizontal", "dummySpiral", "dummyRain"]
+        patterns: ["simpleHorizontal"]
     },
     {
         id: "mad_dummy",
@@ -86,7 +87,7 @@ const enemies = [
         spareTalks: 3,
         soulType: "red",
         pattern: "multiHorizontal",
-        patterns: ["multiHorizontal", "dummySpiral", "dummyRain"]
+        patterns: ["multiHorizontal", "dummyAim", "dummyAimBurst"]
     },
     {
         id: "toriel",
@@ -99,7 +100,7 @@ const enemies = [
         spareTalks: 3,
         soulType: "red",
         pattern: "fallingFire",
-        patterns: ["fallingFire", "fallingFireWave"]
+        patterns: ["fallingFire", "torielSideFire", "torielWaveFire"]
     },
     {
         id: "papyrus",
@@ -152,12 +153,29 @@ function loadSaves() {
             const parsed = JSON.parse(raw);
             const base = defaultPlayer();
             const merged = Object.assign(base, parsed);
+            if (!Array.isArray(merged.inventory)) {
+                merged.inventory = base.inventory.slice();
+            } else {
+                merged.inventory = merged.inventory.map(it => {
+                    if (typeof it === "string") {
+                        const heal = shopData.heal.find(h => h.name === it);
+                        if (heal) return { name: it, type: "heal" };
+                        const w = shopData.weapon.find(w => w.name === it);
+                        if (w) return { name: it, type: "weapon" };
+                        const a = shopData.armor.find(a => a.name === it);
+                        if (a) return { name: it, type: "armor" };
+                        return { name: it, type: "heal" };
+                    }
+                    return it;
+                });
+            }
             if (typeof merged.weaponBonus !== "number") merged.weaponBonus = 0;
             if (typeof merged.armorBonus !== "number") merged.armorBonus = 0;
             if (typeof merged.baseAT !== "number") merged.baseAT = 5;
             if (typeof merged.baseDF !== "number") merged.baseDF = 0;
             if (typeof merged.maxHP !== "number") merged.maxHP = 20;
             if (typeof merged.HP !== "number") merged.HP = merged.maxHP;
+            if (typeof merged.hardMode !== "boolean") merged.hardMode = false;
             saves.push(merged);
         } else {
             saves.push(null);

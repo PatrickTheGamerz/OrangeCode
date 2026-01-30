@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Sans vs Wingdings</title>
+  <title>Sans Fight</title>
   <style>
     html, body {
       margin: 0;
@@ -53,13 +53,14 @@
       <div id="info">
         HP: <span id="hp">1</span> |
         Stamina: <span id="stamina">100</span> |
+        Stress: <span id="stress">0</span>% |
         Score: <span id="score">0</span>
       </div>
       <div id="controls">
         Move: A / D or ← / → &nbsp;|&nbsp;
         Jump: W or ↑ or Space &nbsp;|&nbsp;
-        Shoot bone: J &nbsp;|&nbsp;
-        Teleport: Q &nbsp;|&nbsp;
+        Bones: J &nbsp;|&nbsp;
+        Shortcut: Q &nbsp;|&nbsp;
         Gaster Blaster: E
       </div>
       <button id="restartBtn" style="display:none;">Restart</button>
@@ -72,6 +73,7 @@
 
     const hpEl = document.getElementById("hp");
     const staminaEl = document.getElementById("stamina");
+    const stressEl = document.getElementById("stress");
     const scoreEl = document.getElementById("score");
     const restartBtn = document.getElementById("restartBtn");
 
@@ -92,14 +94,24 @@
     const ENEMY_SPEED_MAX = 160;
     const ENEMY_SPAWN_INTERVAL = 1.2;
 
-    const WINGDING_SYMBOLS = ["✞", "✐", "✸", "✡", "✖", "✦", "✷", "✺"];
+    const WINGDING_SYMBOLS = ["☞", "☜", "☟", "☝", "✋", "☛", "☚", "☜"];
+
+    const STAMINA_COST_BONE = 4;
+    const STAMINA_COST_BLASTER = 10;
+    const STRESS_PER_DODGE = 6;
+    const STRESS_PER_ATTACK = 3;
+    const REST_THRESHOLD = 5;
+    const REST_STAMINA_REGEN = 8;
+    const REST_STRESS_DRAIN = 6;
+    const BADTIME_STRESS_DRAIN = 10;
+    const BADTIME_STAMINA_DRAIN = 12;
 
     let enemySpawnTimer = 0;
     let score = 0;
 
     const player = {
       x: 80,
-      y: H - 120,
+      y: H - 140,
       w: 28,
       h: 44,
       vx: 0,
@@ -107,13 +119,18 @@
       onGround: false,
       facing: 1,
       hp: 1,
-      stamina: 100
+      stamina: 100,
+      stress: 0,
+      badTime: false
     };
 
     const bones = [];
+    const boneRain = [];
     const enemies = [];
     const misses = [];
     const blasters = [];
+
+    let lastActionTime = 0;
 
     window.addEventListener("keydown", (e) => {
       keys[e.key.toLowerCase()] = true;
@@ -124,10 +141,10 @@
         shootBone();
       }
       if (e.key.toLowerCase() === "q" && !gameOver) {
-        teleportShortcut();
+        shortcutTeleport();
       }
       if (e.key.toLowerCase() === "e" && !gameOver) {
-        fireGasterBlaster();
+        triggerBlaster();
       }
     });
 
@@ -141,14 +158,17 @@
 
     function resetGame() {
       player.x = 80;
-      player.y = H - 120;
+      player.y = H - 140;
       player.vx = 0;
       player.vy = 0;
       player.hp = 1;
       player.stamina = 100;
+      player.stress = 0;
+      player.badTime = false;
       player.onGround = false;
       player.facing = 1;
       bones.length = 0;
+      boneRain.length = 0;
       enemies.length = 0;
       misses.length = 0;
       blasters.length = 0;
@@ -157,47 +177,160 @@
       gameOver = false;
       restartBtn.style.display = "none";
       hpEl.textContent = player.hp;
-      staminaEl.textContent = player.stamina;
+      staminaEl.textContent = Math.round(player.stamina);
+      stressEl.textContent = Math.round(player.stress);
       scoreEl.textContent = score;
+      lastActionTime = performance.now() / 1000;
+    }
+
+    function markAction() {
+      lastActionTime = performance.now() / 1000;
     }
 
     function shootBone() {
-      const boneWidth = 18;
-      const boneHeight = 6;
+      if (!player.badTime) {
+        if (player.stamina < STAMINA_COST_BONE) return;
+        player.stamina -= STAMINA_COST_BONE;
+        player.stress = Math.min(100, player.stress + STRESS_PER_ATTACK);
+      }
+      markAction();
       const dir = player.facing || 1;
-      bones.push({
-        x: player.x + player.w / 2 + dir * 10,
-        y: player.y + player.h / 2,
-        w: boneWidth,
-        h: boneHeight,
-        vx: dir * BONE_SPEED
-      });
+      if (player.badTime) {
+        spawnBoneRain(dir);
+      } else {
+        const boneWidth = 18;
+        const boneHeight = 6;
+        bones.push({
+          x: player.x + player.w / 2 + dir * 10,
+          y: player.y + player.h / 2,
+          w: boneWidth,
+          h: boneHeight,
+          vx: dir * BONE_SPEED
+        });
+      }
+      staminaEl.textContent = Math.round(player.stamina);
+      stressEl.textContent = Math.round(player.stress);
     }
 
-    function teleportShortcut() {
-      const margin = 40;
-      const newX = margin + Math.random() * (W - 2 * margin - player.w);
-      player.x = newX;
+    function spawnBoneRain(dir) {
+      const count = 14;
+      for (let i = 0; i < count; i++) {
+        const bx = Math.random() * W;
+        const by = -Math.random() * 200 - 40;
+        boneRain.push({
+          x: bx,
+          y: by,
+          w: 10,
+          h: 26,
+          vy: 0,
+          bounces: 0
+        });
+      }
     }
 
-    function fireGasterBlaster() {
+    function shortcutTeleport() {
+      const distance = 160;
       const dir = player.facing || 1;
-      const bx = dir === 1 ? player.x + 80 : player.x - 80;
-      const by = player.y - 20;
+      let targetX = player.x + dir * distance;
+      if (targetX < 0) targetX = 0;
+      if (targetX + player.w > W) targetX = W - player.w;
+      player.x = targetX;
+      markAction();
+    }
+
+    function triggerBlaster() {
+      markAction();
+      if (!player.badTime) {
+        if (player.stamina < STAMINA_COST_BLASTER) return;
+        player.stamina -= STAMINA_COST_BLASTER;
+        player.stress = Math.min(100, player.stress + STRESS_PER_ATTACK);
+        spawnAutoBlaster();
+      } else {
+        spawnBadTimeBlasters();
+      }
+      staminaEl.textContent = Math.round(player.stamina);
+      stressEl.textContent = Math.round(player.stress);
+    }
+
+    function nearestEnemy() {
+      if (enemies.length === 0) return null;
+      let best = null;
+      let bestDist = Infinity;
+      for (const e of enemies) {
+        const cx = e.x + e.w / 2;
+        const cy = e.y + e.h / 2;
+        const dx = cx - (player.x + player.w / 2);
+        const dy = cy - (player.y + player.h / 2);
+        const d2 = dx * dx + dy * dy;
+        if (d2 < bestDist) {
+          bestDist = d2;
+          best = { enemy: e, cx, cy };
+        }
+      }
+      return best;
+    }
+
+    function spawnAutoBlaster() {
+      const target = nearestEnemy();
+      let angle;
+      let bx;
+      let by;
+      if (target) {
+        angle = Math.atan2(target.cy - player.y, target.cx - player.x);
+        bx = player.x + player.w / 2 + Math.cos(angle) * 80;
+        by = player.y + player.h / 2 + Math.sin(angle) * 40;
+      } else {
+        angle = player.facing === 1 ? 0 : Math.PI;
+        bx = player.x + player.w / 2 + (player.facing === 1 ? 80 : -80);
+        by = player.y;
+      }
       blasters.push({
         x: bx,
         y: by,
-        dir: dir,
-        chargeTime: 0.4,
-        beamTime: 0.35,
-        state: "charge"
+        angle: angle,
+        chargeTime: 0.35,
+        beamTime: 0.4,
+        state: "appear",
+        scale: 0
       });
+    }
+
+    function spawnBadTimeBlasters() {
+      const targets = [];
+      const shuffled = enemies.slice().sort(() => Math.random() - 0.5);
+      for (let i = 0; i < Math.min(6, shuffled.length); i++) {
+        const e = shuffled[i];
+        const cx = e.x + e.w / 2;
+        const cy = e.y + e.h / 2;
+        targets.push({ cx, cy });
+      }
+      if (targets.length === 0) {
+        for (let i = 0; i < 6; i++) {
+          const cx = Math.random() * W;
+          const cy = Math.random() * (H - 120);
+          targets.push({ cx, cy });
+        }
+      }
+      for (const t of targets) {
+        const angle = Math.atan2(t.cy - player.y, t.cx - player.x);
+        const bx = t.cx - Math.cos(angle) * 80;
+        const by = t.cy - Math.sin(angle) * 40;
+        blasters.push({
+          x: bx,
+          y: by,
+          angle: angle,
+          chargeTime: 0.25,
+          beamTime: 0.45,
+          state: "appear",
+          scale: 0
+        });
+      }
     }
 
     function spawnEnemy() {
       const size = 32;
       const side = Math.random() < 0.5 ? "left" : "right";
-      const y = H - 80;
+      const y = H - 110;
       const speed =
         ENEMY_SPEED_MIN +
         Math.random() * (ENEMY_SPEED_MAX - ENEMY_SPEED_MIN);
@@ -234,6 +367,8 @@
     function update(dt) {
       if (gameOver) return;
 
+      const now = performance.now() / 1000;
+
       let moveLeft = keys["a"] || keys["arrowleft"];
       let moveRight = keys["d"] || keys["arrowright"];
       let jumpKey = keys["w"] || keys["arrowup"] || keys[" "];
@@ -241,9 +376,11 @@
       if (moveLeft && !moveRight) {
         player.vx = -MOVE_SPEED;
         player.facing = -1;
+        markAction();
       } else if (moveRight && !moveLeft) {
         player.vx = MOVE_SPEED;
         player.facing = 1;
+        markAction();
       } else {
         player.vx *= FRICTION;
         if (Math.abs(player.vx) < 5) player.vx = 0;
@@ -252,6 +389,7 @@
       if (jumpKey && player.onGround) {
         player.vy = JUMP_SPEED;
         player.onGround = false;
+        markAction();
       }
 
       player.vy += GRAVITY * dt;
@@ -259,7 +397,7 @@
       player.x += player.vx * dt;
       player.y += player.vy * dt;
 
-      const floorY = H - 60;
+      const floorY = H - 70;
       if (player.y + player.h > floorY) {
         player.y = floorY - player.h;
         player.vy = 0;
@@ -277,6 +415,25 @@
         }
       }
 
+      for (let i = boneRain.length - 1; i >= 0; i--) {
+        const b = boneRain[i];
+        b.vy += GRAVITY * dt;
+        b.y += b.vy * dt;
+        const floor = H - 70;
+        if (b.y + b.h > floor) {
+          b.y = floor - b.h;
+          b.vy = -Math.abs(b.vy) * 0.55;
+          b.bounces++;
+          if (b.bounces > 3 || Math.abs(b.vy) < 80) {
+            boneRain.splice(i, 1);
+            continue;
+          }
+        }
+        if (b.y > H + 80) {
+          boneRain.splice(i, 1);
+        }
+      }
+
       enemySpawnTimer += dt;
       if (enemySpawnTimer >= ENEMY_SPAWN_INTERVAL) {
         enemySpawnTimer = 0;
@@ -286,7 +443,7 @@
       for (let i = enemies.length - 1; i >= 0; i--) {
         const e = enemies[i];
         e.x += e.vx * dt;
-        if (e.x < -120 || e.x > W + 120) {
+        if (e.x < -140 || e.x > W + 140) {
           enemies.splice(i, 1);
           continue;
         }
@@ -314,11 +471,14 @@
         if (rectsOverlap(e, player)) {
           if (player.stamina >= 5) {
             player.stamina -= 5;
-            staminaEl.textContent = player.stamina;
+            player.stress = Math.min(100, player.stress + STRESS_PER_DODGE);
+            staminaEl.textContent = Math.round(player.stamina);
+            stressEl.textContent = Math.round(player.stress);
             addMiss();
             const push = e.vx > 0 ? 60 : -60;
             player.x += push;
             enemies.splice(i, 1);
+            markAction();
           } else {
             enemies.splice(i, 1);
             player.hp -= 1;
@@ -331,26 +491,71 @@
         }
       }
 
+      for (let i = boneRain.length - 1; i >= 0; i--) {
+        const b = boneRain[i];
+        const rectB = { x: b.x, y: b.y, w: b.w, h: b.h };
+        if (rectsOverlap(rectB, player)) {
+          if (player.stamina >= 5) {
+            player.stamina -= 5;
+            player.stress = Math.min(100, player.stress + STRESS_PER_DODGE);
+            staminaEl.textContent = Math.round(player.stamina);
+            stressEl.textContent = Math.round(player.stress);
+            addMiss();
+            boneRain.splice(i, 1);
+            markAction();
+          } else {
+            boneRain.splice(i, 1);
+            player.hp -= 1;
+            hpEl.textContent = player.hp;
+            if (player.hp <= 0) {
+              gameOver = true;
+              restartBtn.style.display = "inline-block";
+            }
+          }
+        }
+      }
+
       for (let i = blasters.length - 1; i >= 0; i--) {
         const b = blasters[i];
-        if (b.state === "charge") {
+        if (b.state === "appear") {
+          b.scale += dt * 4;
+          if (b.scale >= 1) {
+            b.scale = 1;
+            b.state = "charge";
+          }
+        } else if (b.state === "charge") {
           b.chargeTime -= dt;
           if (b.chargeTime <= 0) {
             b.state = "beam";
           }
         } else if (b.state === "beam") {
           b.beamTime -= dt;
-          const beamWidth = 260;
-          const beamHeight = 40;
-          const bx = b.dir === 1 ? b.x : b.x - beamWidth;
-          const by = b.y - beamHeight / 2;
-          const beamRect = { x: bx, y: by, w: beamWidth, h: beamHeight };
-          for (let j = enemies.length - 1; j >= 0; j--) {
-            const e = enemies[j];
-            if (rectsOverlap(beamRect, e)) {
-              enemies.splice(j, 1);
-              score += 15;
-              scoreEl.textContent = score;
+          const beamLen = 320;
+          const beamWidth = 40;
+          const bx = b.x;
+          const by = b.y;
+          const dx = Math.cos(b.angle);
+          const dy = Math.sin(b.angle);
+          const px = bx - dx * 20;
+          const py = by - dy * 20;
+          const steps = 12;
+          for (let s = 0; s <= steps; s++) {
+            const t = (beamLen / steps) * s;
+            const cx = px + dx * t;
+            const cy = py + dy * t;
+            const beamRect = {
+              x: cx - beamWidth / 2,
+              y: cy - beamWidth / 2,
+              w: beamWidth,
+              h: beamWidth
+            };
+            for (let j = enemies.length - 1; j >= 0; j--) {
+              const e = enemies[j];
+              if (rectsOverlap(beamRect, e)) {
+                enemies.splice(j, 1);
+                score += 15;
+                scoreEl.textContent = score;
+              }
             }
           }
           if (b.beamTime <= 0) {
@@ -367,43 +572,79 @@
           misses.splice(i, 1);
         }
       }
+
+      if (!player.badTime && player.stress >= 100) {
+        player.badTime = true;
+      }
+
+      if (!player.badTime) {
+        const idleTime = now - lastActionTime;
+        if (idleTime >= REST_THRESHOLD) {
+          player.stamina = Math.min(100, player.stamina + REST_STAMINA_REGEN * dt);
+          player.stress = Math.max(0, player.stress - REST_STRESS_DRAIN * dt);
+          staminaEl.textContent = Math.round(player.stamina);
+          stressEl.textContent = Math.round(player.stress);
+        }
+      } else {
+        player.stress = Math.max(0, player.stress - BADTIME_STRESS_DRAIN * dt);
+        player.stamina = Math.max(0, player.stamina - BADTIME_STAMINA_DRAIN * dt);
+        staminaEl.textContent = Math.round(player.stamina);
+        stressEl.textContent = Math.round(player.stress);
+        if (player.stress <= 0 && player.stamina <= 0) {
+          gameOver = true;
+          restartBtn.style.display = "inline-block";
+        }
+      }
     }
 
     function drawBackground() {
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, W, H);
 
-      ctx.fillStyle = "#fff";
-      ctx.fillRect(0, H - 40, W, 40);
+      const grad = ctx.createLinearGradient(0, H - 120, 0, H);
+      grad.addColorStop(0, "#222");
+      grad.addColorStop(1, "#fff");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, H - 60, W, 60);
 
-      ctx.fillStyle = "#111";
-      ctx.fillRect(0, H - 42, W, 2);
+      ctx.fillStyle = "#444";
+      for (let i = 0; i < 5; i++) {
+        const x = 40 + i * 120;
+        ctx.fillRect(x, H - 160, 24, 100);
+      }
 
       ctx.save();
       ctx.globalAlpha = 0.08;
       ctx.fillStyle = "#fff";
       ctx.font = "32px Wingdings, Webdings, sans-serif";
-      for (let i = 0; i < 18; i++) {
+      for (let i = 0; i < 26; i++) {
         const s = WINGDING_SYMBOLS[Math.floor(Math.random() * WINGDING_SYMBOLS.length)];
         const x = Math.random() * W;
-        const y = Math.random() * (H - 80);
+        const y = Math.random() * (H - 120);
         ctx.fillText(s, x, y);
       }
       ctx.restore();
 
       ctx.save();
-      ctx.globalAlpha = 0.18;
+      ctx.globalAlpha = 0.2;
       ctx.fillStyle = "#fff";
       ctx.beginPath();
-      ctx.ellipse(W - 120, H - 140, 40, 70, 0, 0, Math.PI * 2);
+      ctx.ellipse(W - 120, H - 150, 40, 70, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = "#000";
       ctx.beginPath();
-      ctx.arc(W - 135, H - 155, 6, 0, Math.PI * 2);
-      ctx.arc(W - 105, H - 155, 6, 0, Math.PI * 2);
+      ctx.arc(W - 135, H - 165, 6, 0, Math.PI * 2);
+      ctx.arc(W - 105, H - 165, 6, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillRect(W - 135, H - 135, 30, 4);
+      ctx.fillRect(W - 135, H - 145, 30, 4);
       ctx.restore();
+
+      if (player.badTime) {
+        ctx.save();
+        ctx.fillStyle = "rgba(0, 0, 80, 0.25)";
+        ctx.fillRect(0, 0, W, H);
+        ctx.restore();
+      }
     }
 
     function drawPlayer() {
@@ -447,11 +688,22 @@
       }
     }
 
+    function drawBoneRain() {
+      for (const b of boneRain) {
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(b.x + 3, b.y + 6, 4, b.h - 12);
+        ctx.beginPath();
+        ctx.arc(b.x + 5, b.y + 6, 5, 0, Math.PI * 2);
+        ctx.arc(b.x + 5, b.y + b.h - 6, 5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
     function drawEnemies() {
       for (const e of enemies) {
         ctx.save();
-        ctx.fillStyle = "#f33";
-        ctx.font = "28px Wingdings, Webdings, sans-serif";
+        ctx.fillStyle = "#fff";
+        ctx.font = "30px Wingdings, Webdings, sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(e.symbol, e.x + e.w / 2, e.y + e.h / 2);
@@ -461,45 +713,39 @@
 
     function drawBlasters() {
       for (const b of blasters) {
-        if (b.state === "charge") {
-          ctx.save();
-          ctx.fillStyle = "#fff";
-          ctx.beginPath();
-          ctx.ellipse(b.x, b.y, 18, 12, 0, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = "#000";
-          const eyeOffset = b.dir === 1 ? 4 : -4;
-          ctx.beginPath();
-          ctx.arc(b.x + eyeOffset, b.y, 3, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.restore();
-        } else if (b.state === "beam") {
-          ctx.save();
-          ctx.fillStyle = "#fff";
-          ctx.beginPath();
-          ctx.ellipse(b.x, b.y, 18, 12, 0, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = "#000";
-          const eyeOffset = b.dir === 1 ? 4 : -4;
-          ctx.beginPath();
-          ctx.arc(b.x + eyeOffset, b.y, 3, 0, Math.PI * 2);
-          ctx.fill();
+        ctx.save();
+        ctx.translate(b.x, b.y);
+        ctx.rotate(b.angle);
+        const scale = b.scale || 1;
+        ctx.scale(scale, scale);
 
-          const beamWidth = 260;
-          const beamHeight = 40;
-          const bx = b.dir === 1 ? b.x : b.x - beamWidth;
-          const by = b.y - beamHeight / 2;
+        ctx.fillStyle = "#fff";
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 26, 18, 0, 0, Math.PI * 2);
+        ctx.fill();
 
-          const grad = ctx.createLinearGradient(bx, by, bx + beamWidth, by);
+        ctx.fillStyle = "#000";
+        ctx.beginPath();
+        ctx.arc(-8, -4, 3, 0, Math.PI * 2);
+        ctx.arc(-8, 4, 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = "#000";
+        ctx.fillRect(-4, -2, 10, 4);
+
+        if (b.state === "beam") {
+          const beamLen = 320;
+          const beamWidth = 40;
+          const grad = ctx.createLinearGradient(0, -beamWidth / 2, beamLen, beamWidth / 2);
           grad.addColorStop(0, "rgba(255,255,255,0.1)");
           grad.addColorStop(0.3, "#00ffff");
           grad.addColorStop(0.7, "#ffffff");
           grad.addColorStop(1, "rgba(0,255,255,0.1)");
-
           ctx.fillStyle = grad;
-          ctx.fillRect(bx, by, beamWidth, beamHeight);
-          ctx.restore();
+          ctx.fillRect(0, -beamWidth / 2, beamLen, beamWidth);
         }
+
+        ctx.restore();
       }
     }
 
@@ -518,15 +764,16 @@
     }
 
     function drawGameOver() {
-      ctx.fillStyle = "rgba(0,0,0,0.6)";
+      ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, W, H);
       ctx.fillStyle = "#fff";
-      ctx.font = "32px sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText("GAME OVER", W / 2, H / 2 - 10);
-      ctx.font = "18px sans-serif";
-      ctx.fillText("Score: " + score, W / 2, H / 2 + 20);
-      ctx.fillText("Click Restart below to play again", W / 2, H / 2 + 50);
+      ctx.textBaseline = "middle";
+      ctx.font = "40px monospace";
+      ctx.fillText("GAME OVER", W / 2, H / 2 - 30);
+      ctx.font = "20px monospace";
+      ctx.fillText("Roksana!", W / 2, H / 2 + 10);
+      ctx.fillText("Stay determined...", W / 2, H / 2 + 40);
     }
 
     function draw() {
@@ -534,6 +781,7 @@
       drawBackground();
       drawPlayer();
       drawBones();
+      drawBoneRain();
       drawEnemies();
       drawBlasters();
       drawMisses();

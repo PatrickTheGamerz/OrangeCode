@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Mini Bonetale Sans vs Chara</title>
+  <title>Bonetale-style Sans vs Chara – Corridor</title>
   <style>
     html, body {
       margin: 0;
@@ -89,6 +89,9 @@
     const JUMP_SPEED = -550;
     const FRICTION = 0.85;
 
+    const EXHAUSTED_MOVE_SPEED = 60;   // super slow when 0 stamina
+    const EXHAUSTED_JUMP_SPEED = -280;
+
     const BONE_SPEED = 520;
     const BONE_COST = 8;
     const JUMP_COST = 5;
@@ -97,10 +100,11 @@
     const STAM_MAX = 100;
     const STAM_REGEN_IDLE = 15; // per second when not doing actions
 
-    const FLOOR_Y = H - 60;
+    const FLOOR_Y = H - 70;
 
-    const KNIFE_SPEED = 260;
-    const KNIFE_INTERVAL = 1.0; // seconds
+    const PROJ_SPEED_MIN = 220;
+    const PROJ_SPEED_MAX = 320;
+    const PROJ_INTERVAL = 0.6; // seconds
 
     // ===== GAME STATE =====
     let keys = {};
@@ -119,19 +123,21 @@
       facing: 1,
       hp: 1,
       stamina: STAM_MAX,
-      dashing: false
+      dashing: false,
+      exhausted: false
     };
 
     const chara = {
       x: W / 2 - 16,
-      y: 40,
+      y: 80,
       w: 32,
-      h: 48
+      h: 48,
+      t: 0 // for movement pattern
     };
 
     const bones = [];
-    const knives = [];
-    let knifeTimer = 0;
+    const projectiles = [];
+    let projTimer = 0;
 
     // ===== INPUT =====
     window.addEventListener("keydown", (e) => {
@@ -163,10 +169,15 @@
       player.hp = 1;
       player.stamina = STAM_MAX;
       player.dashing = false;
+      player.exhausted = false;
+
+      chara.x = W / 2 - 16;
+      chara.y = 80;
+      chara.t = 0;
 
       bones.length = 0;
-      knives.length = 0;
-      knifeTimer = 0;
+      projectiles.length = 0;
+      projTimer = 0;
       elapsed = 0;
       gameOver = false;
       restartBtn.style.display = "none";
@@ -188,6 +199,7 @@
 
     // ===== ACTIONS =====
     function shootBone() {
+      if (player.exhausted) return; // too tired
       if (player.stamina <= BONE_COST || gameOver) return;
       player.stamina -= BONE_COST;
       const dir = player.facing || 1;
@@ -200,16 +212,18 @@
       });
     }
 
-    function spawnKnife() {
-      // Chara throws a knife from random x at top towards bottom
+    function spawnProjectile() {
+      // projectiles fall from the air, not from Chara directly
       const size = 16;
-      const x = Math.random() * (W - size);
-      knives.push({
+      const x = 40 + Math.random() * (W - 80);
+      const speed =
+        PROJ_SPEED_MIN + Math.random() * (PROJ_SPEED_MAX - PROJ_SPEED_MIN);
+      projectiles.push({
         x: x,
-        y: chara.y + chara.h,
+        y: 0 - size,
         w: size,
         h: size,
-        vy: KNIFE_SPEED
+        vy: speed
       });
     }
 
@@ -227,13 +241,24 @@
 
       let doingAction = false;
 
+      // Exhausted state check
+      player.exhausted = player.stamina <= 0.1;
+
       // Horizontal movement
       if (moveLeft && !moveRight) {
-        player.vx = -MOVE_SPEED;
+        if (player.exhausted) {
+          player.vx = -EXHAUSTED_MOVE_SPEED;
+        } else {
+          player.vx = -MOVE_SPEED;
+        }
         player.facing = -1;
         doingAction = true;
       } else if (moveRight && !moveLeft) {
-        player.vx = MOVE_SPEED;
+        if (player.exhausted) {
+          player.vx = EXHAUSTED_MOVE_SPEED;
+        } else {
+          player.vx = MOVE_SPEED;
+        }
         player.facing = 1;
         doingAction = true;
       } else {
@@ -241,8 +266,8 @@
         if (Math.abs(player.vx) < 5) player.vx = 0;
       }
 
-      // Dash
-      if (dashKey && player.stamina > 0) {
+      // Dash (only if not exhausted)
+      if (dashKey && !player.exhausted && player.stamina > 0) {
         player.dashing = true;
         const dashDir = player.facing || 1;
         player.vx = dashDir * DASH_SPEED;
@@ -253,11 +278,16 @@
       }
 
       // Jump
-      if (jumpKey && player.onGround && player.stamina > JUMP_COST) {
-        player.vy = JUMP_SPEED;
+      if (jumpKey && player.onGround) {
+        if (player.exhausted) {
+          // weak jump, no stamina cost
+          player.vy = EXHAUSTED_JUMP_SPEED;
+        } else if (player.stamina > JUMP_COST) {
+          player.vy = JUMP_SPEED;
+          player.stamina -= JUMP_COST;
+          doingAction = true;
+        }
         player.onGround = false;
-        player.stamina -= JUMP_COST;
-        doingAction = true;
       }
 
       // Gravity
@@ -274,21 +304,18 @@
         player.onGround = true;
       }
 
-      // Walls
-      if (player.x < 0) player.x = 0;
-      if (player.x + player.w > W) player.x = W - player.w;
+      // Walls (corridor)
+      const leftWall = 80;
+      const rightWall = W - 80;
+      if (player.x < leftWall) player.x = leftWall;
+      if (player.x + player.w > rightWall) player.x = rightWall - player.w;
 
-      // Stamina regen when idle
+      // Stamina regen when idle (and not exhausted forever)
       if (!doingAction && player.stamina < STAM_MAX) {
         player.stamina += STAM_REGEN_IDLE * dt;
       }
       if (player.stamina > STAM_MAX) player.stamina = STAM_MAX;
-
-      // If stamina runs out → Sans is done
-      if (player.stamina <= 0) {
-        player.stamina = 0;
-        endGame("Sans ran out of stamina...");
-      }
+      if (player.stamina < 0) player.stamina = 0;
 
       // Update bones
       for (let i = bones.length - 1; i >= 0; i--) {
@@ -299,38 +326,42 @@
         }
       }
 
-      // Knife spawn
-      knifeTimer += dt;
-      if (knifeTimer >= KNIFE_INTERVAL) {
-        knifeTimer = 0;
-        spawnKnife();
+      // Chara floating movement (just vibe)
+      chara.t += dt;
+      chara.x = W / 2 - 16 + Math.sin(chara.t * 0.8) * 80;
+      chara.y = 70 + Math.sin(chara.t * 1.3) * 10;
+
+      // Projectile spawn
+      projTimer += dt;
+      if (projTimer >= PROJ_INTERVAL) {
+        projTimer = 0;
+        spawnProjectile();
       }
 
-      // Update knives
-      for (let i = knives.length - 1; i >= 0; i--) {
-        const k = knives[i];
-        k.y += k.vy * dt;
-        if (k.y > H + 40) {
-          knives.splice(i, 1);
+      // Update projectiles
+      for (let i = projectiles.length - 1; i >= 0; i--) {
+        const p = projectiles[i];
+        p.y += p.vy * dt;
+        if (p.y > H + 40) {
+          projectiles.splice(i, 1);
           continue;
         }
       }
 
-      // Bones vs Chara (just for fun, no HP)
+      // Bones vs Chara (just knockback visual)
       for (let i = bones.length - 1; i >= 0; i--) {
         const b = bones[i];
         if (rectsOverlap(b, chara)) {
-          // small knockback visual effect: move chara slightly
           chara.x += (b.vx > 0 ? 1 : -1) * 4;
           bones.splice(i, 1);
         }
       }
 
-      // Knives vs player
-      for (let i = knives.length - 1; i >= 0; i--) {
-        const k = knives[i];
-        if (rectsOverlap(k, player)) {
-          knives.splice(i, 1);
+      // Projectiles vs player
+      for (let i = projectiles.length - 1; i >= 0; i--) {
+        const p = projectiles[i];
+        if (rectsOverlap(p, player)) {
+          projectiles.splice(i, 1);
           player.hp -= 1;
           hpEl.textContent = player.hp;
           if (player.hp <= 0) {
@@ -339,9 +370,10 @@
         }
       }
 
-      // Clamp chara position
-      if (chara.x < 20) chara.x = 20;
-      if (chara.x + chara.w > W - 20) chara.x = W - 20 - chara.w;
+      // Clamp chara inside corridor
+      if (chara.x < leftWall + 10) chara.x = leftWall + 10;
+      if (chara.x + chara.w > rightWall - 10)
+        chara.x = rightWall - 10 - chara.w;
 
       // Update UI
       stamEl.textContent = Math.round(player.stamina);
@@ -351,21 +383,49 @@
       if (gameOver) return;
       gameOver = true;
       restartBtn.style.display = "inline-block";
-      // You can log reason if you want to debug:
       // console.log(reason);
     }
 
     // ===== DRAW =====
-    function draw() {
-      ctx.clearRect(0, 0, W, H);
-
-      // Background
+    function drawCorridorBackground() {
+      // Dark walls
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, W, H);
 
-      // Floor
-      ctx.fillStyle = "#222";
+      // Floor (golden-ish like last corridor)
+      ctx.fillStyle = "#c9a24b";
       ctx.fillRect(0, FLOOR_Y, W, H - FLOOR_Y);
+
+      // Side walls
+      ctx.fillStyle = "#444";
+      ctx.fillRect(0, 0, 80, H);
+      ctx.fillRect(W - 80, 0, 80, H);
+
+      // Back wall line
+      ctx.fillStyle = "#555";
+      ctx.fillRect(80, FLOOR_Y, W - 160, 4);
+
+      // Simple perspective lines on floor
+      ctx.strokeStyle = "#b58b3a";
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 6; i++) {
+        const y = FLOOR_Y + i * 12;
+        ctx.beginPath();
+        ctx.moveTo(80, y);
+        ctx.lineTo(W - 80, y);
+        ctx.stroke();
+      }
+
+      // Pillars (very simple)
+      ctx.fillStyle = "#777";
+      ctx.fillRect(90, 40, 20, FLOOR_Y - 40);
+      ctx.fillRect(W - 110, 40, 20, FLOOR_Y - 40);
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+
+      drawCorridorBackground();
 
       // Sans (player)
       ctx.save();
@@ -381,17 +441,22 @@
       ctx.arc(0, -26, 10, 0, Math.PI * 2);
       ctx.fill();
 
-      // Eyes
+      // Eyes (one tired if exhausted)
       ctx.fillStyle = "#000";
-      ctx.fillRect(-5, -30, 3, 3);
-      ctx.fillRect(2, -30, 3, 3);
+      if (player.exhausted) {
+        ctx.fillRect(-5, -28, 3, 2);
+        ctx.fillRect(2, -30, 3, 3);
+      } else {
+        ctx.fillRect(-5, -30, 3, 3);
+        ctx.fillRect(2, -30, 3, 3);
+      }
 
       // Mouth
       ctx.fillRect(-4, -22, 8, 2);
 
       ctx.restore();
 
-      // Chara
+      // Chara (floating)
       ctx.fillStyle = "#f33";
       ctx.fillRect(chara.x, chara.y, chara.w, chara.h);
       ctx.fillStyle = "#000";
@@ -399,7 +464,7 @@
       ctx.fillRect(chara.x + chara.w - 12, chara.y + 10, 6, 6);
       ctx.fillRect(chara.x + 8, chara.y + chara.h - 10, chara.w - 16, 4);
 
-      // Bones
+      // Bones (Sans attack)
       for (const b of bones) {
         ctx.fillStyle = "#fff";
         ctx.fillRect(b.x, b.y, b.w, b.h);
@@ -407,16 +472,16 @@
         ctx.fillRect(b.x + b.w, b.y - 2, 4, 10);
       }
 
-      // Knives
-      for (const k of knives) {
+      // Projectiles from air
+      for (const p of projectiles) {
         ctx.fillStyle = "#f00";
-        ctx.fillRect(k.x, k.y, k.w, k.h);
+        ctx.fillRect(p.x, p.y, p.w, p.h);
         ctx.fillStyle = "#900";
-        ctx.fillRect(k.x + 4, k.y + 4, k.w - 8, k.h - 8);
+        ctx.fillRect(p.x + 4, p.y + 4, p.w - 8, p.h - 8);
       }
 
       // UI bars (HP and stamina)
-      // HP bar (1 HP, just visual)
+      // HP bar
       ctx.fillStyle = "#444";
       ctx.fillRect(20, 20, 100, 10);
       ctx.fillStyle = player.hp > 0 ? "#0f0" : "#400";
@@ -425,7 +490,7 @@
       // Stamina bar
       ctx.fillStyle = "#444";
       ctx.fillRect(20, 40, 150, 10);
-      ctx.fillStyle = "#0ff";
+      ctx.fillStyle = player.exhausted ? "#088" : "#0ff";
       ctx.fillRect(20, 40, (player.stamina / STAM_MAX) * 150, 10);
 
       // Game over overlay

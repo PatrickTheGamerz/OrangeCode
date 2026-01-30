@@ -11,9 +11,15 @@ let fightMarkerPos = 0;
 let fightMarkerDir = 1;
 let fightInterval = null;
 
-// soul box
+// soul box movement
 let soulX = 120, soulY = 100;
-let bulletX = 0, bulletY = 0, bulletVX = 3, bulletVY = 0;
+let soulVX = 0, soulVY = 0;
+let keyState = {};
+let gravity = 0;
+let onGround = false;
+
+// bullets
+let bullets = [];
 let enemyInterval = null;
 let enemyTurnTicks = 0;
 
@@ -102,17 +108,19 @@ function battleKeyDown(e) {
     }
 
     if (battleSubState === "enemyTurn") {
-        const speed = 4;
-        if (key === "w") soulY -= speed;
-        if (key === "s") soulY += speed;
-        if (key === "a") soulX -= speed;
-        if (key === "d") soulX += speed;
-        soulX = Math.max(10, Math.min(240, soulX));
-        soulY = Math.max(10, Math.min(140, soulY));
-        renderBattle();
+        keyState[key] = true;
         return;
     }
 }
+
+function battleKeyUp(e) {
+    const key = e.key.toLowerCase();
+    if (battleSubState === "enemyTurn") {
+        keyState[key] = false;
+    }
+}
+
+document.addEventListener("keyup", battleKeyUp);
 
 function handleBattleMenuConfirm() {
     if (battleMenuIndex === 0) {
@@ -163,8 +171,8 @@ function finishAttackBar() {
     if (fightInterval) clearInterval(fightInterval);
     const center = 158;
     const dist = Math.abs(fightMarkerPos - center);
-    const multiplier = Math.max(0.3, 1 - dist / 160);
-    const base = currentPlayer.AT + 3;
+    const multiplier = Math.max(0.2, 1 - dist / 160);
+    const base = totalAT(currentPlayer) + 3;
     const damage = Math.max(1, Math.round(base * multiplier));
     currentEnemy.HP = Math.max(0, currentEnemy.HP - damage);
     battleSubState = "text";
@@ -202,6 +210,9 @@ function useBattleItem() {
     } else if (item === "SPIDER DONUT") {
         currentPlayer.HP = Math.min(currentPlayer.maxHP, currentPlayer.HP + 12);
         battleText = "* You ate the SPIDER DONUT.\n* You recovered 12 HP.";
+    } else if (item === "BUTTERSCOTCH PIE") {
+        currentPlayer.HP = currentPlayer.maxHP;
+        battleText = "* You ate the BUTTERSCOTCH PIE.\n* Your HP was maxed out.";
     } else {
         battleText = `* You used ${item}.`;
     }
@@ -216,24 +227,22 @@ function startEnemyTurn() {
     battleSubState = "enemyTurn";
     soulX = 120;
     soulY = 100;
-    bulletX = 0;
-    bulletY = 80;
-    bulletVX = 4;
+    soulVX = 0;
+    soulVY = 0;
+    bullets = [];
     enemyTurnTicks = 0;
+    gravity = currentEnemy.soulType === "blue" ? 0.5 : 0;
+    onGround = false;
+
+    spawnPattern(currentEnemy.pattern);
+
     if (enemyInterval) clearInterval(enemyInterval);
     enemyInterval = setInterval(() => {
         enemyTurnTicks++;
-        bulletX += bulletVX;
-        if (bulletX < 0 || bulletX > 252) {
-            bulletVX *= -1;
-        }
-        const dx = soulX - bulletX;
-        const dy = soulY - bulletY;
-        if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
-            const damage = Math.max(1, currentEnemy.AT - currentPlayer.DF);
-            currentPlayer.HP = Math.max(0, currentPlayer.HP - damage);
-        }
-        if (enemyTurnTicks > 60) {
+        updateSoul();
+        updateBullets();
+        checkBulletCollisions();
+        if (enemyTurnTicks > 120) {
             clearInterval(enemyInterval);
             if (currentPlayer.HP <= 0) {
                 endBattleLose();
@@ -245,8 +254,89 @@ function startEnemyTurn() {
         } else {
             renderBattle();
         }
-    }, 60);
+    }, 40);
     renderBattle();
+}
+
+function updateSoul() {
+    const speed = 3;
+    if (currentEnemy.soulType === "red") {
+        if (keyState["w"]) soulY -= speed;
+        if (keyState["s"]) soulY += speed;
+        if (keyState["a"]) soulX -= speed;
+        if (keyState["d"]) soulX += speed;
+    } else {
+        // blue soul: gravity + jump
+        if (keyState["a"]) soulX -= speed;
+        if (keyState["d"]) soulX += speed;
+        if (keyState["w"] && onGround) {
+            soulVY = -6;
+            onGround = false;
+        }
+        soulVY += gravity;
+        soulY += soulVY;
+        if (soulY >= 140) {
+            soulY = 140;
+            soulVY = 0;
+            onGround = true;
+        }
+    }
+
+    soulX = Math.max(10, Math.min(240, soulX));
+    soulY = Math.max(10, Math.min(140, soulY));
+}
+
+function updateBullets() {
+    bullets.forEach(b => {
+        b.x += b.vx;
+        b.y += b.vy;
+    });
+    bullets = bullets.filter(b => b.x > -10 && b.x < 270 && b.y > -10 && b.y < 170);
+}
+
+function checkBulletCollisions() {
+    bullets.forEach(b => {
+        const dx = soulX - b.x;
+        const dy = soulY - b.y;
+        if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
+            const dmg = Math.max(1, currentEnemy.AT - totalDF(currentPlayer));
+            currentPlayer.HP = Math.max(0, currentPlayer.HP - dmg);
+        }
+    });
+}
+
+/* patterns */
+
+function spawnPattern(pattern) {
+    bullets = [];
+    if (pattern === "simpleHorizontal") {
+        for (let i = 0; i < 4; i++) {
+            bullets.push({ x: -10 - i * 40, y: 80, vx: 4, vy: 0 });
+        }
+    } else if (pattern === "multiHorizontal") {
+        for (let y = 40; y <= 120; y += 20) {
+            for (let i = 0; i < 4; i++) {
+                bullets.push({ x: -10 - i * 40, y, vx: 4, vy: 0 });
+            }
+        }
+    } else if (pattern === "fallingFire") {
+        for (let x = 20; x <= 240; x += 30) {
+            bullets.push({ x, y: -10, vx: 0, vy: 3 });
+        }
+    } else if (pattern === "bonesHorizontal") {
+        for (let x = 0; x <= 240; x += 30) {
+            bullets.push({ x, y: 140, vx: 0, vy: -3 });
+        }
+    } else if (pattern === "fastBones") {
+        for (let x = 0; x <= 240; x += 20) {
+            bullets.push({ x, y: 140, vx: 0, vy: -5 });
+        }
+    } else if (pattern === "mixedBones") {
+        for (let x = 0; x <= 240; x += 30) {
+            bullets.push({ x, y: 140, vx: 0, vy: -4 });
+            bullets.push({ x, y: 0, vx: 0, vy: 4 });
+        }
+    }
 }
 
 /* ---- ENDINGS ---- */
@@ -265,8 +355,8 @@ function endBattleWin() {
         currentPlayer.NEXT += 10;
         currentPlayer.maxHP += 4;
         currentPlayer.HP = currentPlayer.maxHP;
-        currentPlayer.AT += 1;
-        currentPlayer.DF += 1;
+        currentPlayer.baseAT += 1;
+        currentPlayer.baseDF += 1;
     }
     saves[currentSlot] = currentPlayer;
     saveSlot(currentSlot);
@@ -312,6 +402,19 @@ function endBattleMercy() {
 
 /* ---- RENDER ---- */
 
+function enemySpriteClass() {
+    if (!currentEnemy) return "";
+    switch (currentEnemy.id) {
+        case "dummy": return "enemy-dummy";
+        case "mad_dummy": return "enemy-mad-dummy";
+        case "toriel": return "enemy-toriel";
+        case "papyrus": return "enemy-papyrus";
+        case "p_sans": return "enemy-p-sans";
+        case "us_sans": return "enemy-us-sans";
+        default: return "";
+    }
+}
+
 function renderBattle() {
     const g = document.getElementById("game");
     const hpPercent = (currentPlayer.HP / currentPlayer.maxHP) * 100;
@@ -321,6 +424,7 @@ function renderBattle() {
     if (battleSubState === "attackBar") {
         subBoxHTML = `
             <div class="fight-bar">
+                <div class="fight-crit"></div>
                 <div class="fight-marker" style="left:${fightMarkerPos}px;"></div>
             </div>
         `;
@@ -347,10 +451,15 @@ function renderBattle() {
 
     let soulBoxHTML = "";
     if (battleSubState === "enemyTurn") {
+        const soulClass = currentEnemy.soulType === "blue" ? "soul blue" : "soul";
+        let bulletsHTML = "";
+        bullets.forEach(b => {
+            bulletsHTML += `<div class="bullet" style="left:${b.x}px; top:${b.y}px;"></div>`;
+        });
         soulBoxHTML = `
             <div class="soul-box">
-                <div class="soul" style="left:${soulX}px; top:${soulY}px;"></div>
-                <div class="bullet" style="left:${bulletX}px; top:${bulletY}px;"></div>
+                <div class="${soulClass}" style="left:${soulX}px; top:${soulY}px;"></div>
+                ${bulletsHTML}
             </div>
         `;
     }
@@ -359,7 +468,7 @@ function renderBattle() {
         <div class="center">
             <div class="battle-box">
                 <div class="enemy-area">
-                    <div class="enemy-sprite"></div>
+                    <div class="enemy-sprite ${enemySpriteClass()}"></div>
                 </div>
                 <div class="battle-text">
                     <p>${battleText.replace(/\n/g,"<br>")}</p>

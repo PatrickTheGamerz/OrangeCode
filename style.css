@@ -52,7 +52,8 @@ body::before {
 }
 
 .menu-option {
-    margin: 6px 0;
+    margin: 10px 0;
+    font-size: 20px;
 }
 
 .menu-option span {
@@ -66,9 +67,10 @@ body::before {
 
 .button-box {
     border: 2px solid white;
-    padding: 6px 14px;
+    padding: 6px 18px;
     display: inline-block;
-    margin: 6px;
+    margin: 6px 10px;
+    font-size: 18px;
 }
 
 .button-box.selected {
@@ -94,6 +96,7 @@ body::before {
 
 .battle-text {
     padding: 8px;
+    height: 80px;
 }
 
 .battle-info {
@@ -110,24 +113,35 @@ body::before {
 }
 
 .hp-fill {
-    background: #ff0000;
+    background: #ff8000;
     height: 100%;
     width: 100%;
 }
 
+/* SAVE slots */
+
+.file-container {
+    width: 70%;
+    margin: 0 auto;
+}
+
 .file-slot {
-    margin: 10px 0;
+    margin: 6px 0;
+    padding: 6px 10px;
+    border: 2px solid white;
 }
 
-.file-slot .undertale-box {
-    width: 90%;
-    text-align: left;
-}
-
-.file-slot.selected .undertale-box {
+.file-slot.selected {
     border-color: #ffff00;
     color: #ffff00;
 }
+
+.file-row {
+    display: flex;
+    justify-content: space-between;
+}
+
+/* name entry */
 
 .name-grid {
     display: inline-block;
@@ -153,14 +167,7 @@ body::before {
     margin-top: 12px;
 }
 
-.small-text {
-    font-size: 12px;
-}
-
-.shop-section-title {
-    margin-top: 8px;
-    text-decoration: underline;
-}
+/* shop */
 
 .stats-box {
     width: 80%;
@@ -174,9 +181,10 @@ body::before {
 }
 
 /* fight bar */
+
 .fight-bar {
-    width: 300px;
-    height: 12px;
+    width: 320px;
+    height: 14px;
     border: 2px solid white;
     margin: 12px auto;
     position: relative;
@@ -186,11 +194,12 @@ body::before {
     position: absolute;
     top: -4px;
     width: 4px;
-    height: 20px;
+    height: 22px;
     background: #ffff00;
 }
 
 /* soul box */
+
 .soul-box {
     border: 4px solid white;
     width: 260px;
@@ -211,4 +220,69 @@ body::before {
     height: 8px;
     background: #ffffff;
     position: absolute;
+}
+
+/* enemy sprite */
+
+.enemy-area {
+    width: 100%;
+    height: 120px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.enemy-sprite {
+    width: 60px;
+    height: 80px;
+    border: 2px solid white;
+    border-radius: 4px;
+    position: relative;
+}
+
+.enemy-sprite::before {
+    content: "";
+    position: absolute;
+    left: 18px;
+    top: 20px;
+    width: 8px;
+    height: 8px;
+    background: white;
+}
+
+.enemy-sprite::after {
+    content: "";
+    position: absolute;
+    right: 18px;
+    top: 20px;
+    width: 8px;
+    height: 8px;
+    background: white;
+}
+
+/* sub-box for ACT / ITEM */
+
+.sub-box {
+    border: 4px solid white;
+    width: 260px;
+    margin: 8px auto 0;
+    padding: 8px;
+    text-align: left;
+}
+
+.sub-option {
+    margin: 2px 0;
+}
+
+.heart {
+    color: #ff0000;
+    margin-right: 6px;
+}
+
+/* monster select */
+
+.monster-list {
+    width: 60%;
+    margin: 0 auto;
+    text-align: left;
 }

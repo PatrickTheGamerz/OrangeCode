@@ -22,6 +22,13 @@ let currentPlayer = null;
 let gameState = "title";
 let currentMenuIndex = 0;
 
+// monster list for MONSTERS menu
+const monsterList = [
+    { id: "dummy", name: "TRAINING DUMMY", reqLV: 1 },
+    { id: "ghost", name: "LONELY GHOST", reqLV: 2 },
+    { id: "golem", name: "STONE GOLEM", reqLV: 4 }
+];
+
 // shop
 const shopData = {
     weapon: [
@@ -38,7 +45,7 @@ const shopData = {
     ]
 };
 
-// enemy
+// enemies
 const enemies = [
     {
         id: "dummy",
@@ -49,6 +56,26 @@ const enemies = [
         gold: 5,
         exp: 5,
         spareTalks: 2
+    },
+    {
+        id: "ghost",
+        name: "GHOST",
+        maxHP: 40,
+        AT: 5,
+        DF: 1,
+        gold: 8,
+        exp: 7,
+        spareTalks: 3
+    },
+    {
+        id: "golem",
+        name: "GOLEM",
+        maxHP: 60,
+        AT: 8,
+        DF: 3,
+        gold: 15,
+        exp: 12,
+        spareTalks: 4
     }
 ];
 

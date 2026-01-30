@@ -6,7 +6,7 @@ let battleText = "";
 let actIndex = 0;
 let itemIndex = 0;
 let talksDone = 0;
-let canSpare = false;
+let canSpare = fals;
 
 let fightMarkerPos = 0;
 let fightMarkerDir = 1;

@@ -2,156 +2,868 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Sans AU Simulator</title>
+  <title>Sans AU Simulator - Advanced</title>
   <style>
+    * {
+      box-sizing: border-box;
+    }
     body {
       margin: 0;
       background: black;
       color: white;
-      font-family: 'Courier New', monospace;
+      font-family: "Courier New", monospace;
       overflow: hidden;
-    }
-    #game {
-      width: 100vw;
-      height: 100vh;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
+      height: 100vh;
     }
-    canvas {
+    #game {
+      width: 900px;
+      height: 600px;
       border: 4px solid white;
       background: #111;
+      display: grid;
+      grid-template-rows: 360px 120px 120px;
+      grid-template-columns: 1fr;
     }
-    .menu {
-      margin-top: 20px;
+    #battleArea {
+      position: relative;
+      border-bottom: 2px solid white;
+    }
+    #canvas {
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+    }
+    #infoBar {
+      border-bottom: 2px solid white;
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      padding: 8px 12px;
+      font-size: 14px;
+    }
+    #playerInfo, #enemyInfo {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .hpBarContainer {
+      width: 100%;
+      height: 14px;
+      border: 1px solid white;
+      background: #222;
+      position: relative;
+    }
+    .hpBar {
+      height: 100%;
+      background: #0f0;
+      transition: width 0.2s;
+    }
+    .hpText {
+      position: absolute;
+      top: -18px;
+      left: 0;
+      font-size: 12px;
+    }
+    #menu {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: flex-start;
+      padding: 8px 12px;
+      gap: 8px;
     }
     button {
       background: black;
       color: white;
       border: 2px solid white;
-      padding: 10px 20px;
-      margin: 5px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-    .log {
-      margin-top: 10px;
-      max-height: 150px;
-      overflow-y: auto;
-      width: 600px;
-      text-align: left;
+      padding: 6px 14px;
       font-size: 14px;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, transform 0.05s;
+    }
+    button:hover {
+      background: white;
+      color: black;
+    }
+    button:active {
+      transform: translateY(1px);
+    }
+    #log {
+      font-size: 13px;
+      padding: 4px 12px;
+      overflow-y: auto;
+      max-height: 110px;
+    }
+    #log p {
+      margin: 2px 0;
+    }
+    .centerText {
+      width: 100%;
+      text-align: center;
+    }
+    .title {
+      font-size: 22px;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+    .subtitle {
+      font-size: 14px;
+      margin-bottom: 12px;
+      text-align: center;
+      color: #ccc;
+    }
+    .auButton {
+      min-width: 160px;
+    }
+    .small {
+      font-size: 11px;
+      color: #aaa;
     }
   </style>
 </head>
 <body>
   <div id="game">
-    <canvas id="battle" width="600" height="300"></canvas>
-    <div class="menu" id="menu"></div>
-    <div class="log" id="log"></div>
+    <div id="battleArea">
+      <canvas id="canvas" width="900" height="360"></canvas>
+    </div>
+    <div id="infoBar">
+      <div id="playerInfo">
+        <div><strong>PLAYER:</strong> <span id="playerName">-</span></div>
+        <div class="hpBarContainer">
+          <div class="hpBar" id="playerHpBar"></div>
+          <div class="hpText" id="playerHpText"></div>
+        </div>
+        <div id="playerStats"></div>
+      </div>
+      <div id="enemyInfo">
+        <div><strong>ENEMY:</strong> <span id="enemyName">-</span></div>
+        <div class="hpBarContainer">
+          <div class="hpBar" id="enemyHpBar"></div>
+          <div class="hpText" id="enemyHpText"></div>
+        </div>
+        <div id="enemyStats"></div>
+      </div>
+    </div>
+    <div id="menu"></div>
+    <div id="log"></div>
   </div>
 
   <script>
-    const canvas = document.getElementById('battle');
-    const ctx = canvas.getContext('2d');
-    const menu = document.getElementById('menu');
-    const log = document.getElementById('log');
+    // ====== BASIC SETUP ======
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
 
+    const menu = document.getElementById("menu");
+    const logDiv = document.getElementById("log");
+
+    const playerNameEl = document.getElementById("playerName");
+    const enemyNameEl = document.getElementById("enemyName");
+    const playerHpBar = document.getElementById("playerHpBar");
+    const enemyHpBar = document.getElementById("enemyHpBar");
+    const playerHpText = document.getElementById("playerHpText");
+    const enemyHpText = document.getElementById("enemyHpText");
+    const playerStatsEl = document.getElementById("playerStats");
+    const enemyStatsEl = document.getElementById("enemyStats");
+
+    const GAME_WIDTH = canvas.width;
+    const GAME_HEIGHT = canvas.height;
+
+    // ====== GAME DATA ======
     const AUs = {
-      "Classic Sans": { hp: 100, atk: 15, dodge: 0.2, color: "white" },
-      "Underfell Sans": { hp: 120, atk: 20, dodge: 0.1, color: "red" },
-      "Dusttale Sans": { hp: 80, atk: 30, dodge: 0.15, color: "darkred" },
-      "Ink Sans": { hp: 90, atk: 18, dodge: 0.25, color: "cyan" },
-      "Error Sans": { hp: 110, atk: 22, dodge: 0.2, color: "purple" }
+      "Classic Sans": {
+        maxHp: 120,
+        atk: 18,
+        dodge: 0.18,
+        crit: 0.15,
+        color: "white",
+        specialName: "Gaster Blaster",
+        specialDesc: "High damage beam, low accuracy.",
+        specialPower: 40,
+        specialHit: 0.65,
+        healPower: 25
+      },
+      "Underfell Sans": {
+        maxHp: 140,
+        atk: 22,
+        dodge: 0.10,
+        crit: 0.25,
+        color: "red",
+        specialName: "Ruthless Barrage",
+        specialDesc: "Multi-hit attack, each hit weaker.",
+        specialPower: 3,
+        specialHit: 0.85,
+        healPower: 15
+      },
+      "Dusttale Sans": {
+        maxHp: 90,
+        atk: 30,
+        dodge: 0.20,
+        crit: 0.30,
+        color: "darkred",
+        specialName: "Murderous Intent",
+        specialDesc: "Massive damage, but hurts you too.",
+        specialPower: 55,
+        specialHit: 0.8,
+        recoil: 12,
+        healPower: 10
+      },
+      "Ink Sans": {
+        maxHp: 110,
+        atk: 20,
+        dodge: 0.28,
+        crit: 0.18,
+        color: "cyan",
+        specialName: "Ink Storm",
+        specialDesc: "Randomized damage, high variance.",
+        specialPower: 50,
+        specialHit: 0.9,
+        healPower: 20
+      },
+      "Error Sans": {
+        maxHp: 130,
+        atk: 24,
+        dodge: 0.22,
+        crit: 0.2,
+        color: "purple",
+        specialName: "String Break",
+        specialDesc: "Ignores dodge, but can miss.",
+        specialPower: 38,
+        specialHit: 0.75,
+        ignoreDodge: true,
+        healPower: 18
+      },
+      "Horror Sans": {
+        maxHp: 160,
+        atk: 26,
+        dodge: 0.08,
+        crit: 0.2,
+        color: "#884400",
+        specialName: "Cleaver Crush",
+        specialDesc: "Slow, heavy hit with big crit chance.",
+        specialPower: 45,
+        specialHit: 0.7,
+        healPower: 20
+      }
     };
 
     let player = null;
     let enemy = null;
 
-    function logMsg(msg) {
-      const p = document.createElement('p');
+    // ====== LOGGING ======
+    function log(msg) {
+      const p = document.createElement("p");
       p.textContent = msg;
-      log.appendChild(p);
-      log.scrollTop = log.scrollHeight;
+      logDiv.appendChild(p);
+      logDiv.scrollTop = logDiv.scrollHeight;
     }
 
-    function drawBattle() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    function clearLog() {
+      logDiv.innerHTML = "";
+    }
+
+    // ====== HP BAR UPDATE ======
+    function updateBars() {
+      if (!player || !enemy) return;
+      const pRatio = Math.max(player.hp, 0) / player.maxHp;
+      const eRatio = Math.max(enemy.hp, 0) / enemy.maxHp;
+
+      playerHpBar.style.width = (pRatio * 100) + "%";
+      enemyHpBar.style.width = (eRatio * 100) + "%";
+
+      playerHpBar.style.background = pRatio > 0.4 ? "#0f0" : pRatio > 0.2 ? "#ff0" : "#f00";
+      enemyHpBar.style.background = eRatio > 0.4 ? "#0f0" : eRatio > 0.2 ? "#ff0" : "#f00";
+
+      playerHpText.textContent = `HP: ${Math.max(0, Math.floor(player.hp))}/${player.maxHp}`;
+      enemyHpText.textContent = `HP: ${Math.max(0, Math.floor(enemy.hp))}/${enemy.maxHp}`;
+
+      playerStatsEl.textContent = `ATK: ${player.atk} | DODGE: ${(player.dodge * 100).toFixed(0)}% | CRIT: ${(player.crit * 100).toFixed(0)}%`;
+      enemyStatsEl.textContent = `ATK: ${enemy.atk} | DODGE: ${(enemy.dodge * 100).toFixed(0)}% | CRIT: ${(enemy.crit * 100).toFixed(0)}%`;
+    }
+
+    // ====== DRAWING ======
+    function clearCanvas() {
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+    }
+
+    function drawCharacters() {
+      clearCanvas();
+      if (!player || !enemy) return;
+
+      // Player box
       ctx.fillStyle = player.color;
-      ctx.fillRect(50, 200, 50, 50);
-      ctx.fillStyle = enemy.color;
-      ctx.fillRect(500, 50, 50, 50);
+      ctx.fillRect(120, 220, 80, 80);
+      ctx.strokeStyle = "white";
+      ctx.strokeRect(120, 220, 80, 80);
       ctx.fillStyle = "white";
       ctx.font = "16px Courier New";
-      ctx.fillText(`${player.name} HP: ${player.hp}`, 20, 20);
-      ctx.fillText(`${enemy.name} HP: ${enemy.hp}`, 400, 20);
+      ctx.fillText(player.name, 110, 210);
+
+      // Enemy box
+      ctx.fillStyle = enemy.color;
+      ctx.fillRect(700, 60, 80, 80);
+      ctx.strokeStyle = "white";
+      ctx.strokeRect(700, 60, 80, 80);
+      ctx.fillStyle = "white";
+      ctx.fillText(enemy.name, 680, 50);
+
+      // Battle box (for dodge phase)
+      ctx.strokeStyle = "white";
+      ctx.strokeRect(260, 140, 380, 180);
+      ctx.font = "14px Courier New";
+      ctx.fillText("DODGE ZONE", 260, 135);
     }
 
-    function attack(attacker, defender) {
-      if (Math.random() < defender.dodge) {
-        logMsg(`${defender.name} dodged the attack!`);
+    // ====== DAMAGE CALC ======
+    function calcDamage(attacker, basePower = attacker.atk, allowCrit = true) {
+      let dmg = basePower + (Math.random() * 6 - 3); // small random
+      let crit = false;
+      if (allowCrit && Math.random() < attacker.crit) {
+        dmg *= 1.7;
+        crit = true;
+      }
+      dmg = Math.max(1, Math.round(dmg));
+      return { dmg, crit };
+    }
+
+    function tryHit(attacker, defender, basePower, hitChance = 1, ignoreDodge = false) {
+      if (Math.random() > hitChance) {
+        return { type: "miss" };
+      }
+      let dodgeChance = ignoreDodge ? 0 : defender.dodge;
+      if (Math.random() < dodgeChance) {
+        return { type: "dodge" };
+      }
+      const { dmg, crit } = calcDamage(attacker, basePower);
+      defender.hp -= dmg;
+      return { type: "hit", dmg, crit };
+    }
+
+    // ====== STATE MACHINE ======
+    let state = "chooseAU"; // chooseAU, playerTurn, enemyTurn, dodgePhase, end
+    let turn = 1;
+
+    // ====== DODGE PHASE ======
+    const dodgeBox = { x: 260, y: 140, w: 380, h: 180 };
+    let soul = { x: 260 + 190, y: 140 + 90, r: 8, speed: 4 };
+    let keys = {};
+    let bullets = [];
+    let dodgeTimer = 0;
+    let dodgeDuration = 2500; // ms
+    let lastFrameTime = 0;
+    let dodgeActive = false;
+    let dodgeCallback = null;
+
+    window.addEventListener("keydown", (e) => {
+      keys[e.key] = true;
+    });
+    window.addEventListener("keyup", (e) => {
+      keys[e.key] = false;
+    });
+
+    function spawnBullets(patternType) {
+      bullets = [];
+      const bx = dodgeBox.x;
+      const by = dodgeBox.y;
+      const bw = dodgeBox.w;
+      const bh = dodgeBox.h;
+
+      if (patternType === "horizontal") {
+        for (let i = 0; i < 8; i++) {
+          bullets.push({
+            x: bx - 20 - i * 60,
+            y: by + 20 + (i % 4) * 40,
+            w: 20,
+            h: 10,
+            vx: 3 + Math.random() * 1.5,
+            vy: 0
+          });
+        }
+      } else if (patternType === "vertical") {
+        for (let i = 0; i < 8; i++) {
+          bullets.push({
+            x: bx + 20 + (i % 4) * 80,
+            y: by - 20 - i * 40,
+            w: 10,
+            h: 20,
+            vx: 0,
+            vy: 3 + Math.random() * 1.5
+          });
+        }
+      } else if (patternType === "cross") {
+        for (let i = 0; i < 6; i++) {
+          bullets.push({
+            x: bx - 20 - i * 60,
+            y: by + bh / 2 - 5,
+            w: 20,
+            h: 10,
+            vx: 3.5,
+            vy: 0
+          });
+          bullets.push({
+            x: bx + bw / 2 - 5,
+            y: by - 20 - i * 40,
+            w: 10,
+            h: 20,
+            vx: 0,
+            vy: 3.5
+          });
+        }
+      } else {
+        // random
+        for (let i = 0; i < 10; i++) {
+          const side = Math.floor(Math.random() * 4);
+          let x, y, vx, vy;
+          if (side === 0) { // left
+            x = bx - 20;
+            y = by + Math.random() * bh;
+            vx = 2 + Math.random() * 2;
+            vy = 0;
+          } else if (side === 1) { // right
+            x = bx + bw + 20;
+            y = by + Math.random() * bh;
+            vx = -2 - Math.random() * 2;
+            vy = 0;
+          } else if (side === 2) { // top
+            x = bx + Math.random() * bw;
+            y = by - 20;
+            vx = 0;
+            vy = 2 + Math.random() * 2;
+          } else { // bottom
+            x = bx + Math.random() * bw;
+            y = by + bh + 20;
+            vx = 0;
+            vy = -2 - Math.random() * 2;
+          }
+          bullets.push({
+            x, y, w: 14, h: 14, vx, vy
+          });
+        }
+      }
+    }
+
+    function startDodgePhase(attacker, defender, baseDamage, onEnd) {
+      state = "dodgePhase";
+      dodgeActive = true;
+      dodgeCallback = onEnd;
+      dodgeTimer = 0;
+      lastFrameTime = performance.now();
+      soul.x = dodgeBox.x + dodgeBox.w / 2;
+      soul.y = dodgeBox.y + dodgeBox.h / 2;
+
+      const patterns = ["horizontal", "vertical", "cross", "random"];
+      const pattern = patterns[Math.floor(Math.random() * patterns.length)];
+      spawnBullets(pattern);
+
+      log(`${attacker.name} is attacking! Use arrow keys to dodge!`);
+      animateDodge(attacker, defender, baseDamage);
+    }
+
+    function animateDodge(attacker, defender, baseDamage) {
+      if (!dodgeActive) return;
+      const now = performance.now();
+      const dt = now - lastFrameTime;
+      lastFrameTime = now;
+      dodgeTimer += dt;
+
+      // Move soul
+      let dx = 0, dy = 0;
+      if (keys["ArrowLeft"]) dx -= 1;
+      if (keys["ArrowRight"]) dx += 1;
+      if (keys["ArrowUp"]) dy -= 1;
+      if (keys["ArrowDown"]) dy += 1;
+      const len = Math.hypot(dx, dy) || 1;
+      soul.x += (dx / len) * soul.speed;
+      soul.y += (dy / len) * soul.speed;
+
+      // Clamp to dodge box
+      soul.x = Math.max(dodgeBox.x + soul.r, Math.min(dodgeBox.x + dodgeBox.w - soul.r, soul.x));
+      soul.y = Math.max(dodgeBox.y + soul.r, Math.min(dodgeBox.y + dodgeBox.h - soul.r, soul.y));
+
+      // Move bullets
+      bullets.forEach(b => {
+        b.x += b.vx;
+        b.y += b.vy;
+      });
+
+      // Collision
+      let hits = 0;
+      bullets.forEach(b => {
+        if (rectCircleCollide(b.x, b.y, b.w, b.h, soul.x, soul.y, soul.r)) {
+          hits++;
+          // move bullet off-screen to avoid multi-hit
+          b.x = -9999;
+          b.y = -9999;
+        }
+      });
+
+      // Apply damage per hit
+      if (hits > 0) {
+        const perHit = baseDamage / 4;
+        const total = perHit * hits;
+        defender.hp -= total;
+        log(`${defender.name} was hit ${hits} time(s) for ${Math.round(total)} damage!`);
+        updateBars();
+        if (defender.hp <= 0) {
+          endBattle(attacker === player ? "player" : "enemy");
+          dodgeActive = false;
+          return;
+        }
+      }
+
+      // Draw
+      clearCanvas();
+      drawCharacters();
+      // Draw dodge box again
+      ctx.strokeStyle = "white";
+      ctx.strokeRect(dodgeBox.x, dodgeBox.y, dodgeBox.w, dodgeBox.h);
+
+      // Draw bullets
+      ctx.fillStyle = "#ddd";
+      bullets.forEach(b => {
+        ctx.fillRect(b.x, b.y, b.w, b.h);
+      });
+
+      // Draw soul
+      ctx.fillStyle = "red";
+      ctx.beginPath();
+      ctx.arc(soul.x, soul.y, soul.r, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Timer bar
+      const remaining = Math.max(0, dodgeDuration - dodgeTimer);
+      const ratio = remaining / dodgeDuration;
+      ctx.fillStyle = "yellow";
+      ctx.fillRect(dodgeBox.x, dodgeBox.y - 10, dodgeBox.w * ratio, 6);
+
+      if (dodgeTimer >= dodgeDuration) {
+        dodgeActive = false;
+        if (dodgeCallback) dodgeCallback();
         return;
       }
-      const damage = Math.floor(attacker.atk + Math.random() * 10 - 5);
-      defender.hp -= damage;
-      logMsg(`${attacker.name} hits ${defender.name} for ${damage} damage!`);
+
+      requestAnimationFrame(() => animateDodge(attacker, defender, baseDamage));
     }
 
-    function checkWin() {
+    function rectCircleCollide(rx, ry, rw, rh, cx, cy, cr) {
+      const testX = Math.max(rx, Math.min(cx, rx + rw));
+      const testY = Math.max(ry, Math.min(cy, ry + rh));
+      const dist = Math.hypot(cx - testX, cy - testY);
+      return dist <= cr;
+    }
+
+    // ====== BATTLE FLOW ======
+    function endBattle(winner) {
+      state = "end";
+      menu.innerHTML = "";
+      if (winner === "player") {
+        log("You won the battle! Refresh or press F5 to play again.");
+      } else {
+        log("You lost the battle... Refresh or press F5 to try again.");
+      }
+    }
+
+    function checkEnd() {
       if (player.hp <= 0) {
-        logMsg("You lost! Refresh to try again.");
-        menu.innerHTML = '';
+        player.hp = 0;
+        updateBars();
+        endBattle("enemy");
         return true;
       }
       if (enemy.hp <= 0) {
-        logMsg("You won! Refresh to try again.");
-        menu.innerHTML = '';
+        enemy.hp = 0;
+        updateBars();
+        endBattle("player");
         return true;
       }
       return false;
     }
 
-    function playerTurn() {
-      drawBattle();
-      menu.innerHTML = '';
-      const attackBtn = document.createElement('button');
-      attackBtn.textContent = "Attack";
+    function showPlayerMenu() {
+      if (state === "end") return;
+      state = "playerTurn";
+      menu.innerHTML = "";
+
+      const info = document.createElement("div");
+      info.className = "centerText";
+      info.innerHTML = `<div>Turn ${turn}</div><div>Choose your action:</div>`;
+      menu.appendChild(info);
+
+      const attackBtn = document.createElement("button");
+      attackBtn.textContent = "ATTACK";
       attackBtn.onclick = () => {
-        attack(player, enemy);
-        if (!checkWin()) setTimeout(enemyTurn, 1000);
+        playerAttack();
       };
       menu.appendChild(attackBtn);
+
+      const specialBtn = document.createElement("button");
+      specialBtn.textContent = `SPECIAL (${player.specialName})`;
+      specialBtn.title = player.specialDesc;
+      specialBtn.onclick = () => {
+        playerSpecial();
+      };
+      menu.appendChild(specialBtn);
+
+      const healBtn = document.createElement("button");
+      healBtn.textContent = "HEAL";
+      healBtn.onclick = () => {
+        playerHeal();
+      };
+      menu.appendChild(healBtn);
+
+      const infoSmall = document.createElement("div");
+      infoSmall.className = "small";
+      infoSmall.textContent = "Tip: After your action, the enemy will attack. During their attack, use arrow keys to dodge in the white box.";
+      menu.appendChild(infoSmall);
     }
 
-    function enemyTurn() {
-      attack(enemy, player);
-      if (!checkWin()) setTimeout(playerTurn, 1000);
-    }
-
-    function startBattle() {
-      drawBattle();
-      logMsg(`Battle Start! ${player.name} vs ${enemy.name}`);
-      setTimeout(playerTurn, 1000);
-    }
-
-    function chooseAU() {
-      menu.innerHTML = '<p>Choose your Sans:</p>';
-      for (let name in AUs) {
-        const btn = document.createElement('button');
-        btn.textContent = name;
-        btn.onclick = () => {
-          player = { ...AUs[name], name };
-          const enemyNames = Object.keys(AUs).filter(n => n !== name);
-          const enemyName = enemyNames[Math.floor(Math.random() * enemyNames.length)];
-          enemy = { ...AUs[enemyName], name: enemyName };
-          startBattle();
-        };
-        menu.appendChild(btn);
+    function playerAttack() {
+      menu.innerHTML = "";
+      log(`${player.name} attacks!`);
+      const result = tryHit(player, enemy, player.atk, 1, false);
+      if (result.type === "miss") {
+        log(`${player.name}'s attack missed!`);
+      } else if (result.type === "dodge") {
+        log(`${enemy.name} dodged the attack!`);
+      } else if (result.type === "hit") {
+        log(`${player.name} hits ${enemy.name} for ${result.dmg} damage${result.crit ? " (CRIT!)" : ""}.`);
+      }
+      updateBars();
+      if (!checkEnd()) {
+        setTimeout(enemyTurn, 700);
       }
     }
 
-    chooseAU();
+    function playerSpecial() {
+      menu.innerHTML = "";
+      log(`${player.name} uses SPECIAL: ${player.specialName}!`);
+
+      if (player.name === "Underfell Sans") {
+        // multi-hit
+        let hits = 3;
+        let total = 0;
+        for (let i = 0; i < hits; i++) {
+          const r = tryHit(player, enemy, player.specialPower, player.specialHit, false);
+          if (r.type === "hit") {
+            total += r.dmg;
+          }
+        }
+        if (total === 0) {
+          log(`${enemy.name} avoided the entire barrage!`);
+        } else {
+          log(`${enemy.name} is hit by the barrage for ${total} total damage!`);
+        }
+      } else if (player.name === "Dusttale Sans") {
+        const r = tryHit(player, enemy, player.specialPower, player.specialHit, false);
+        if (r.type === "miss") {
+          log("The murderous strike missed!");
+        } else if (r.type === "dodge") {
+          log(`${enemy.name} barely dodged the murderous strike!`);
+        } else {
+          log(`${enemy.name} takes ${r.dmg} massive damage!`);
+        }
+        if (player.recoil) {
+          player.hp -= player.recoil;
+          log(`${player.name} is hurt by recoil for ${player.recoil} HP!`);
+        }
+      } else if (player.name === "Ink Sans") {
+        const variance = Math.random() * player.specialPower;
+        const base = player.atk + variance;
+        const r = tryHit(player, enemy, base, player.specialHit, false);
+        if (r.type === "miss") {
+          log("The ink storm whiffs completely!");
+        } else if (r.type === "dodge") {
+          log(`${enemy.name} dances through the ink storm!`);
+        } else {
+          log(`${enemy.name} is splattered for ${r.dmg} chaotic damage!`);
+        }
+      } else if (player.name === "Error Sans") {
+        const r = tryHit(player, enemy, player.specialPower, player.specialHit, true);
+        if (r.type === "miss") {
+          log("The strings fail to connect!");
+        } else {
+          log(`${enemy.name}'s defenses are ignored! ${r.dmg} damage dealt${r.crit ? " (CRIT!)" : ""}.`);
+        }
+      } else {
+        // default special (Classic, Horror, etc.)
+        const r = tryHit(player, enemy, player.specialPower, player.specialHit, false);
+        if (r.type === "miss") {
+          log("The special attack missed!");
+        } else if (r.type === "dodge") {
+          log(`${enemy.name} dodged the special attack!`);
+        } else {
+          log(`${enemy.name} is blasted for ${r.dmg} damage${r.crit ? " (CRIT!)" : ""}.`);
+        }
+      }
+
+      updateBars();
+      if (!checkEnd()) {
+        setTimeout(enemyTurn, 900);
+      }
+    }
+
+    function playerHeal() {
+      menu.innerHTML = "";
+      const healAmount = player.healPower + Math.random() * 8 - 4;
+      const healed = Math.round(Math.max(5, healAmount));
+      player.hp = Math.min(player.maxHp, player.hp + healed);
+      log(`${player.name} heals for ${healed} HP.`);
+      updateBars();
+      setTimeout(enemyTurn, 700);
+    }
+
+    function enemyTurn() {
+      if (state === "end") return;
+      state = "enemyTurn";
+      turn++;
+      log(`${enemy.name}'s turn!`);
+
+      // Decide enemy action
+      const roll = Math.random();
+      if (roll < 0.6) {
+        enemyBasicAttack();
+      } else if (roll < 0.85) {
+        enemySpecialAttack();
+      } else {
+        enemyHeal();
+      }
+    }
+
+    function enemyBasicAttack() {
+      const base = enemy.atk;
+      const baseDamage = base * 1.4; // used for dodge phase
+      startDodgePhase(enemy, player, baseDamage, () => {
+        if (!checkEnd()) {
+          showPlayerMenu();
+        }
+      });
+    }
+
+    function enemySpecialAttack() {
+      let baseDamage = enemy.specialPower || (enemy.atk * 1.8);
+      if (enemy.name === "Underfell Sans") {
+        baseDamage *= 1.2;
+      } else if (enemy.name === "Dusttale Sans") {
+        baseDamage *= 1.3;
+      }
+      startDodgePhase(enemy, player, baseDamage, () => {
+        if (!checkEnd()) {
+          showPlayerMenu();
+        }
+      });
+    }
+
+    function enemyHeal() {
+      const healAmount = enemy.healPower + Math.random() * 6 - 3;
+      const healed = Math.round(Math.max(5, healAmount));
+      enemy.hp = Math.min(enemy.maxHp, enemy.hp + healed);
+      log(`${enemy.name} heals for ${healed} HP.`);
+      updateBars();
+      setTimeout(() => {
+        if (!checkEnd()) {
+          showPlayerMenu();
+        }
+      }, 700);
+    }
+
+    // ====== AU SELECTION ======
+    function showAUSelection() {
+      state = "chooseAU";
+      clearCanvas();
+      clearLog();
+      menu.innerHTML = "";
+
+      const title = document.createElement("div");
+      title.className = "title";
+      title.textContent = "SANS AU SIMULATOR";
+      menu.appendChild(title);
+
+      const subtitle = document.createElement("div");
+      subtitle.className = "subtitle";
+      subtitle.textContent = "Choose your Sans AU to begin the battle.";
+      menu.appendChild(subtitle);
+
+      Object.keys(AUs).forEach(name => {
+        const data = AUs[name];
+        const btn = document.createElement("button");
+        btn.className = "auButton";
+        btn.textContent = name;
+        btn.style.borderColor = data.color;
+        btn.onclick = () => {
+          startGameWithAU(name);
+        };
+        menu.appendChild(btn);
+      });
+
+      const hint = document.createElement("div");
+      hint.className = "small centerText";
+      hint.textContent = "Controls during dodge: Arrow keys to move the red SOUL inside the white box.";
+      menu.appendChild(hint);
+
+      playerNameEl.textContent = "-";
+      enemyNameEl.textContent = "-";
+      playerHpBar.style.width = "0%";
+      enemyHpBar.style.width = "0%";
+      playerHpText.textContent = "";
+      enemyHpText.textContent = "";
+      playerStatsEl.textContent = "";
+      enemyStatsEl.textContent = "";
+    }
+
+    function startGameWithAU(playerAUName) {
+      const pData = AUs[playerAUName];
+      player = {
+        name: playerAUName,
+        maxHp: pData.maxHp,
+        hp: pData.maxHp,
+        atk: pData.atk,
+        dodge: pData.dodge,
+        crit: pData.crit,
+        color: pData.color,
+        specialName: pData.specialName,
+        specialDesc: pData.specialDesc,
+        specialPower: pData.specialPower,
+        specialHit: pData.specialHit,
+        recoil: pData.recoil || 0,
+        ignoreDodge: pData.ignoreDodge || false,
+        healPower: pData.healPower || 18
+      };
+
+      const enemyNames = Object.keys(AUs).filter(n => n !== playerAUName);
+      const enemyName = enemyNames[Math.floor(Math.random() * enemyNames.length)];
+      const eData = AUs[enemyName];
+      enemy = {
+        name: enemyName,
+        maxHp: eData.maxHp,
+        hp: eData.maxHp,
+        atk: eData.atk,
+        dodge: eData.dodge,
+        crit: eData.crit,
+        color: eData.color,
+        specialName: eData.specialName,
+        specialDesc: eData.specialDesc,
+        specialPower: eData.specialPower,
+        specialHit: eData.specialHit,
+        recoil: eData.recoil || 0,
+        ignoreDodge: eData.ignoreDodge || false,
+        healPower: eData.healPower || 18
+      };
+
+      playerNameEl.textContent = player.name;
+      enemyNameEl.textContent = enemy.name;
+
+      turn = 1;
+      clearLog();
+      log(`A new timeline opens... ${player.name} vs ${enemy.name}!`);
+      drawCharacters();
+      updateBars();
+      setTimeout(showPlayerMenu, 800);
+    }
+
+    // ====== START ======
+    showAUSelection();
   </script>
 </body>
 </html>

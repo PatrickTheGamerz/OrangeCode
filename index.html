@@ -2,72 +2,85 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Mini Bonetale HTML</title>
+<title>Sans vs Chara Corridor</title>
 <style>
 html,body{margin:0;padding:0;background:#000;color:#fff;font-family:Arial,Helvetica,sans-serif;overflow:hidden}
-#ui{position:fixed;top:10px;left:10px;z-index:10;font-size:14px}
-#ui span{margin-right:15px}
-#gameCanvas{background:linear-gradient(#111 60%,#333 60%);display:block;margin:0 auto;border:2px solid #444}
-#overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.8);color:#fff;font-size:20px;flex-direction:column}
-button{padding:8px 16px;margin-top:10px;background:#444;border:none;color:#fff;cursor:pointer}
+#ui{position:fixed;top:10px;left:10px;z-index:10;font-size:14px;text-shadow:0 0 4px #000}
+#ui span{margin-right:18px}
+#gameCanvas{display:block;margin:0 auto;background:#000;border:2px solid #444}
+#overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.9);color:#fff;font-size:22px;flex-direction:column;z-index:20}
+button{padding:8px 18px;margin-top:12px;background:#444;border:none;color:#fff;cursor:pointer;font-size:14px}
 button:hover{background:#666}
 </style>
 </head>
 <body>
 <div id="ui">
-<span>HP: <span id="hpText">100</span></span>
+<span>Chara HP: <span id="hpText">100</span></span>
+<span>Heals: <span id="healText">3</span></span>
+<span>Sans HP: <span id="sansHpText">200</span></span>
+<span>Sans Stamina: <span id="stamText">100</span></span>
 <span>Phase: <span id="phaseText">1</span></span>
-<span>Score: <span id="scoreText">0</span></span>
-<span>Controls: A/D move, W jump, J bones, K blaster, L gravity</span>
+<span>Controls: A/D move, W jump, J slash, H heal</span>
 </div>
 <canvas id="gameCanvas" width="960" height="540"></canvas>
 <div id="overlay">
-<div id="overlayText">Mini Bonetale-like Arena</div>
-<div style="font-size:14px;margin-top:6px">Survive and hit the human soul. Phases get harder.</div>
+<div id="overlayText">Last Corridor - Sans vs Chara</div>
+<div style="font-size:14px;margin-top:6px">Survive Sans' attacks and defeat him. Move during blue bones to take damage.</div>
 <button id="startBtn">Start</button>
 </div>
 <script>
 const canvas=document.getElementById("gameCanvas");
 const ctx=canvas.getContext("2d");
 const hpText=document.getElementById("hpText");
+const healText=document.getElementById("healText");
+const sansHpText=document.getElementById("sansHpText");
+const stamText=document.getElementById("stamText");
 const phaseText=document.getElementById("phaseText");
-const scoreText=document.getElementById("scoreText");
 const overlay=document.getElementById("overlay");
 const overlayText=document.getElementById("overlayText");
 const startBtn=document.getElementById("startBtn");
 const keys={};
 let lastTime=0;
-let player,enemy,projectiles,bones,enemyAttacks,gravityDir,phase,score,gameOver,started,phaseTimer,blasterBeams,shakeTime,shakeIntensity;
-const GROUND_Y=420;
-const GRAVITY=0.7;
-const PLAYER_SPEED=4;
-const JUMP_FORCE=-13;
-const MAX_HP=100;
-const ENEMY_SOUL_SIZE=26;
-const BONE_SPEED=9;
-const ENEMY_ATTACK_INTERVAL_BASE=1600;
-const BLASTER_COOLDOWN=2600;
-const BONE_COOLDOWN=260;
-const GRAVITY_COOLDOWN=4500;
+let player,sans,boneRains,blasters,boneJumps,phase,phaseTimer,gameOver,started,shakeTime,shakeIntensity,gravityAttackTimer;
+const GROUND_Y=400;
+const PLAYER_SPEED=4.2;
+const PLAYER_JUMP=-13;
+const PLAYER_GRAVITY=0.7;
+const MAX_PLAYER_HP=100;
+const MAX_SANS_HP=220;
+const MAX_STAMINA=100;
+const STAMINA_REGEN=4;
+const SLASH_COOLDOWN=550;
+const HEAL_COOLDOWN=6000;
+const HEAL_AMOUNT=35;
+const MAX_HEALS=3;
 const PHASE_DURATION=26000;
-const BLASTER_BEAM_TIME=550;
+const BONE_RAIN_INTERVAL_BASE=1800;
+const BLASTER_INTERVAL_BASE=5200;
+const BONE_JUMP_INTERVAL_BASE=4200;
+const GRAVITY_ATTACK_INTERVAL_BASE=9000;
+const BLUE_BONE_TIME=1600;
+const WHITE_BONE_RISE_TIME=600;
 const SHAKE_DECAY=0.9;
+let boneRainTimer,blasterTimer,boneJumpTimer,gravityTimer;
 window.addEventListener("keydown",e=>{keys[e.key.toLowerCase()]=true;if([" ","arrowup","arrowdown","arrowleft","arrowright"].includes(e.key.toLowerCase()))e.preventDefault()});
 window.addEventListener("keyup",e=>{keys[e.key.toLowerCase()]=false});
 startBtn.onclick=()=>{startGame()};
 function startGame(){
-player={x:canvas.width*0.25,y:GROUND_Y-60,w:40,h:60,vx:0,vy:0,onGround:false,hp:MAX_HP,face:1,lastBone:0,lastBlaster:0,lastGravity:0};
-enemy={x:canvas.width*0.7,y:GROUND_Y-ENEMY_SOUL_SIZE,vx:0,vy:0,w:ENEMY_SOUL_SIZE,h:ENEMY_SOUL_SIZE,hp:200,dir:-1,patternTime:0};
-projectiles=[];
-bones=[];
-enemyAttacks=[];
-blasterBeams=[];
-gravityDir=1;
+player={x:canvas.width*0.25,y:GROUND_Y-60,w:34,h:60,vx:0,vy:0,onGround:false,hp:MAX_PLAYER_HP,face:1,slashTimer:0,heals:MAX_HEALS,lastHeal:-1,gravityDir:1,gravityStateTime:0};
+sans={x:canvas.width*0.7,y:GROUND_Y-70,w:40,h:70,hp:MAX_SANS_HP,stamina:MAX_STAMINA,lastDodge:0};
+boneRains=[];
+blasters=[];
+boneJumps=[];
 phase=1;
-score=0;
+phaseTimer=0;
+boneRainTimer=0;
+blasterTimer=0;
+boneJumpTimer=0;
+gravityTimer=0;
+gravityAttackTimer=0;
 gameOver=false;
 started=true;
-phaseTimer=0;
 shakeTime=0;
 shakeIntensity=0;
 overlay.style.display="none";
@@ -89,22 +102,24 @@ phaseTimer=0;
 phase++;
 if(phase>4)phase=4;
 }
-hpText.textContent=Math.max(0,Math.floor(player.hp));
 phaseText.textContent=phase;
-scoreText.textContent=score;
+hpText.textContent=Math.max(0,Math.floor(player.hp));
+healText.textContent=player.heals;
+sansHpText.textContent=Math.max(0,Math.floor(sans.hp));
+stamText.textContent=Math.max(0,Math.floor(sans.stamina));
 handlePlayer(dt);
-handleEnemy(dt);
-handleProjectiles(dt);
-handleEnemyAttacks(dt);
-handleBlasterBeams(dt);
+handleSansAI(dt);
+updateBoneRain(dt);
+updateBlasters(dt);
+updateBoneJumps(dt);
+handleGravityAttack(dt);
 checkCollisions();
 if(player.hp<=0){
 player.hp=0;
 endGame(false);
 }
-if(enemy.hp<=0){
-enemy.hp=0;
-score+=500;
+if(sans.hp<=0){
+sans.hp=0;
 endGame(true);
 }
 if(shakeTime>0){
@@ -118,25 +133,25 @@ player.vx=0;
 if(keys["a"])player.vx=-PLAYER_SPEED;
 if(keys["d"])player.vx=PLAYER_SPEED;
 if(keys["w"]&&player.onGround){
-player.vy=JUMP_FORCE*gravityDir;
+player.vy=PLAYER_JUMP*player.gravityDir;
 player.onGround=false;
 }
-player.vy+=GRAVITY*gravityDir;
+player.vy+=PLAYER_GRAVITY*player.gravityDir;
 player.x+=player.vx;
 player.y+=player.vy;
-if(gravityDir===1){
+if(player.gravityDir===1){
 if(player.y+player.h>GROUND_Y){
 player.y=GROUND_Y-player.h;
 player.vy=0;
 player.onGround=true;
 }
-if(player.y<40){
-player.y=40;
+if(player.y<120){
+player.y=120;
 player.vy=0;
 }
 }else{
-if(player.y<40){
-player.y=40;
+if(player.y<120){
+player.y=120;
 player.vy=0;
 player.onGround=true;
 }
@@ -145,163 +160,233 @@ player.y=GROUND_Y-player.h;
 player.vy=0;
 }
 }
-if(player.x<40)player.x=40;
-if(player.x+player.w>canvas.width-40)player.x=canvas.width-40-player.w;
+if(player.x<120)player.x=120;
+if(player.x+player.w>canvas.width-120)player.x=canvas.width-120-player.w;
 if(player.vx>0)player.face=1;
 else if(player.vx<0)player.face=-1;
-if(keys["j"])tryShootBone();
-if(keys["k"])tryBlaster();
-if(keys["l"])tryGravityFlip();
+player.slashTimer-=dt;
+if(player.slashTimer<0)player.slashTimer=0;
+if(keys["j"])trySlash();
+if(keys["h"])tryHeal();
+if(player.gravityStateTime>0){
+player.gravityStateTime-=dt;
+if(player.gravityStateTime<=0){
+player.gravityDir=1;
 }
-function tryShootBone(){
-const now=performance.now();
-if(now-player.lastBone<BONE_COOLDOWN)return;
-player.lastBone=now;
+}
+}
+function trySlash(){
+if(player.slashTimer>0)return;
+player.slashTimer=SLASH_COOLDOWN;
+const range=60;
+const slashWidth=40;
 const dir=player.face||1;
-bones.push({x:player.x+player.w/2,y:player.y+player.h*0.35,w:26,h:10,vx:BONE_SPEED*dir,vy:0,life:1600});
-}
-function tryBlaster(){
+const sx=dir===1?player.x+player.w:sans.x-player.w;
+const hitBox={x:player.x+(dir===1?player.w: -range),y:player.y+10,w:range,h:player.h-20};
+if(rectOverlap(hitBox,sans)){
+if(sans.stamina>0){
 const now=performance.now();
-if(now-player.lastBlaster<BLASTER_COOLDOWN)return;
-player.lastBlaster=now;
-const dir=player.face||1;
-const bx=dir===1?player.x+80:player.x-80;
-const by=player.y-40;
-blasterBeams.push({x:bx,y:by,w:60,h:120,dir:dir,time:0,warning:true});
-shakeTime=400;
-shakeIntensity=6;
+if(now-sans.lastDodge>350){
+sans.lastDodge=now;
+sans.stamina-=22;
+if(sans.stamina<0)sans.stamina=0;
+const dodgeDir=Math.random()<0.5?-1:1;
+sans.x+=dodgeDir*70;
+if(sans.x<canvas.width*0.55)sans.x=canvas.width*0.55;
+if(sans.x>canvas.width*0.9)sans.x=canvas.width*0.9;
+shakeTime=200;
+shakeIntensity=3;
 }
-function tryGravityFlip(){
-const now=performance.now();
-if(now-player.lastGravity<GRAVITY_COOLDOWN)return;
-player.lastGravity=now;
-gravityDir*=-1;
-player.onGround=false;
-shakeTime=300;
+}else{
+sans.hp-=14+phase*2;
+shakeTime=260;
 shakeIntensity=4;
 }
-function handleEnemy(dt){
-enemy.patternTime+=dt;
-const speedBase=1.4+phase*0.3;
-const targetX=canvas.width*0.6+Math.sin(enemy.patternTime*0.0015)*220;
-if(targetX>enemy.x)enemy.vx=speedBase;
-else enemy.vx=-speedBase;
-enemy.x+=enemy.vx;
-if(enemy.x<canvas.width*0.45)enemy.x=canvas.width*0.45;
-if(enemy.x>canvas.width*0.9)enemy.x=canvas.width*0.9;
-enemy.y=GROUND_Y-ENEMY_SOUL_SIZE-40-Math.sin(enemy.patternTime*0.002)*80;
-const interval=Math.max(ENEMY_ATTACK_INTERVAL_BASE-220*phase,550);
-if(enemy.patternTime>interval){
-enemy.patternTime=0;
-spawnEnemyPattern();
 }
 }
-function spawnEnemyPattern(){
-const pattern=Math.floor(Math.random()*3);
-if(pattern===0)spawnBoneRain();
-else if(pattern===1)spawnSoulChase();
-else spawnHorizontalBones();
+function tryHeal(){
+const now=performance.now();
+if(player.heals<=0)return;
+if(player.hp>MAX_PLAYER_HP*0.45)return;
+if(player.lastHeal>0&&now-player.lastHeal<HEAL_COOLDOWN)return;
+player.lastHeal=now;
+player.heals--;
+player.hp+=HEAL_AMOUNT;
+if(player.hp>MAX_PLAYER_HP)player.hp=MAX_PLAYER_HP;
+shakeTime=200;
+shakeIntensity=3;
+}
+function handleSansAI(dt){
+if(sans.stamina<MAX_STAMINA){
+sans.stamina+=STAMINA_REGEN*dt/1000;
+if(sans.stamina>MAX_STAMINA)sans.stamina=MAX_STAMINA;
+}
+boneRainTimer+=dt;
+blasterTimer+=dt;
+boneJumpTimer+=dt;
+gravityTimer+=dt;
+const boneRainInterval=Math.max(BONE_RAIN_INTERVAL_BASE-160*phase,900);
+const blasterInterval=Math.max(BLASTER_INTERVAL_BASE-260*phase,2600);
+const boneJumpInterval=Math.max(BONE_JUMP_INTERVAL_BASE-200*phase,1800);
+const gravityInterval=Math.max(GRAVITY_ATTACK_INTERVAL_BASE-400*phase,4200);
+if(boneRainTimer>boneRainInterval){
+boneRainTimer=0;
+spawnBoneRain();
+}
+if(blasterTimer>blasterInterval){
+blasterTimer=0;
+spawnBlasters();
+}
+if(boneJumpTimer>boneJumpInterval){
+boneJumpTimer=0;
+spawnBoneJump();
+}
+if(gravityTimer>gravityInterval){
+gravityTimer=0;
+triggerGravityAttack();
+}
 }
 function spawnBoneRain(){
 const count=6+phase*2;
 for(let i=0;i<count;i++){
 const delay=i*90;
-enemyAttacks.push({type:"fallBone",x:80+Math.random()*(canvas.width-160),y:-40,w:18,h:40,vx:0,vy:3+Math.random()*1.5+phase*0.4,delay:delay,life:6000});
+const x=140+Math.random()*(canvas.width-280);
+boneRains.push({x:x,y:-40,w:18,h:40,vy:3+Math.random()*1.5+phase*0.4,delay:delay,life:6000});
 }
 }
-function spawnSoulChase(){
-const dir=player.x>enemy.x?1:-1;
-const speed=3.2+phase*0.5;
-enemyAttacks.push({type:"chaser",x:enemy.x+enemy.w/2,y:enemy.y+enemy.h/2,w:20,h:20,vx:speed*dir,vy:0,life:5000});
-}
-function spawnHorizontalBones(){
-const lanes=3+Math.min(phase,2);
-for(let i=0;i<lanes;i++){
-const fromLeft=i%2===0;
-const y=GROUND_Y-40-i*40*gravityDir;
-const vx=(3.2+phase*0.6)*(fromLeft?1:-1);
-enemyAttacks.push({type:"hBone",x:fromLeft?0:canvas.width,y:y,w:30,h:14,vx:vx,vy:0,life:6000});
-}
-}
-function handleProjectiles(dt){
-for(let i=projectiles.length-1;i>=0;i--){
-const p=projectiles[i];
-p.x+=p.vx;
-p.y+=p.vy;
-p.life-=dt;
-if(p.life<=0||p.x<-100||p.x>canvas.width+100||p.y<-100||p.y>canvas.height+100)projectiles.splice(i,1);
-}
-for(let i=bones.length-1;i>=0;i--){
-const b=bones[i];
-b.x+=b.vx;
-b.y+=b.vy;
-b.life-=dt;
-if(b.life<=0||b.x<-120||b.x>canvas.width+120)bones.splice(i,1);
-}
-}
-function handleEnemyAttacks(dt){
-for(let i=enemyAttacks.length-1;i>=0;i--){
-const a=enemyAttacks[i];
-if(a.delay&&a.delay>0){
-a.delay-=dt;
+function updateBoneRain(dt){
+for(let i=boneRains.length-1;i>=0;i--){
+const b=boneRains[i];
+if(b.delay>0){
+b.delay-=dt;
 continue;
 }
-a.x+=a.vx;
-a.y+=a.vy;
-a.life-=dt;
-if(a.type==="fallBone"){
-if(a.y<40)a.y=40;
-}
-if(a.life<=0||a.x<-160||a.x>canvas.width+160||a.y<-160||a.y>canvas.height+160)enemyAttacks.splice(i,1);
+b.y+=b.vy;
+b.life-=dt;
+if(b.life<=0||b.y>canvas.height+80)boneRains.splice(i,1);
 }
 }
-function handleBlasterBeams(dt){
-for(let i=blasterBeams.length-1;i>=0;i--){
-const b=blasterBeams[i];
+function spawnBlasters(){
+const px=player.x+player.w/2;
+const py=player.y+player.h/2;
+const sx=sans.x+sans.w/2;
+const sy=sans.y+sans.h/2;
+const baseAngle=Math.atan2(py-sy,px-sx);
+const spread=0.35;
+const angles=[baseAngle-spread,baseAngle,baseAngle+spread];
+for(let i=0;i<3;i++){
+const a=angles[i];
+const dist=120;
+const bx=sx+Math.cos(a)*dist;
+const by=sy+Math.sin(a)*dist;
+blasters.push({x:bx,y:by,angle:a,time:0,warning:true});
+}
+shakeTime=350;
+shakeIntensity=5;
+}
+function updateBlasters(dt){
+for(let i=blasters.length-1;i>=0;i--){
+const b=blasters[i];
 b.time+=dt;
-if(b.warning&&b.time>260){
+if(b.warning&&b.time>450){
 b.warning=false;
 b.time=0;
 }
-if(!b.warning&&b.time>BLASTER_BEAM_TIME){
-blasterBeams.splice(i,1);
+if(!b.warning&&b.time>650){
+blasters.splice(i,1);
 }
 }
 }
-function rectsOverlap(a,b){
-return a.x<a.x+a.w&&b.x<b.x+b.w&&a.x+a.w>b.x&&a.y+a.h>b.y&&b.y+b.h>a.y;
+function spawnBoneJump(){
+const lanes=2+phase;
+for(let i=0;i<lanes;i++){
+const x=160+Math.random()*(canvas.width-320);
+boneJumps.push({x:x,y:GROUND_Y-10,w:20,h:10,phase:"white",time:0});
+}
+}
+function updateBoneJumps(dt){
+for(let i=boneJumps.length-1;i>=0;i--){
+const b=boneJumps[i];
+b.time+=dt;
+if(b.phase==="white"){
+b.h=10+40*(b.time/WHITE_BONE_RISE_TIME);
+b.y=GROUND_Y-b.h;
+if(b.time>WHITE_BONE_RISE_TIME){
+b.phase="blue";
+b.time=0;
+b.h=180;
+b.y=GROUND_Y-b.h;
+}
+}else if(b.phase==="blue"){
+if(b.time>BLUE_BONE_TIME){
+boneJumps.splice(i,1);
+}
+}
+}
+}
+function triggerGravityAttack(){
+player.gravityDir=-1;
+player.gravityStateTime=2200+phase*200;
+shakeTime=260;
+shakeIntensity=4;
+}
+function handleGravityAttack(dt){
+if(player.gravityStateTime>0){
+}
+}
+function rectOverlap(a,b){
+return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
 }
 function checkCollisions(){
-for(let i=bones.length-1;i>=0;i--){
-const b=bones[i];
-if(b.x<b.x+b.w){
-if(b.x<enemy.x+enemy.w&&b.x+b.w>enemy.x&&b.y<enemy.y+enemy.h&&b.y+b.h>enemy.y){
-enemy.hp-=8+phase*2;
-score+=10;
-bones.splice(i,1);
-shakeTime=200;
-shakeIntensity=3;
+for(let i=boneRains.length-1;i>=0;i--){
+const b=boneRains[i];
+const hitBox={x:b.x,y:b.y,w:b.w,h:b.h};
+if(rectOverlap(hitBox,player)){
+player.hp-=6+phase*2;
+boneRains.splice(i,1);
+shakeTime=220;
+shakeIntensity=4;
+}
+}
+for(let i=blasters.length-1;i>=0;i--){
+const b=blasters[i];
+if(b.warning)continue;
+const beamLen=260;
+const bw=26;
+const bx=b.x-Math.cos(b.angle)*20;
+const by=b.y-Math.sin(b.angle)*20;
+const ex=bx+Math.cos(b.angle)*beamLen;
+const ey=by+Math.sin(b.angle)*beamLen;
+const steps=16;
+for(let s=0;s<steps;s++){
+const t=s/steps;
+const cx=bx+(ex-bx)*t;
+const cy=by+(ey-by)*t;
+const beamBox={x:cx-bw/2,y:cy-bw/2,w:bw,h:bw};
+if(rectOverlap(beamBox,player)){
+player.hp-=14+phase*3;
+shakeTime=260;
+shakeIntensity=5;
+break;
 }
 }
 }
-for(let i=enemyAttacks.length-1;i>=0;i--){
-const a=enemyAttacks[i];
-if(a.delay&&a.delay>0)continue;
-if(a.x<player.x+player.w&&a.x+a.w>player.x&&a.y<player.y+player.h&&a.y+a.h>player.y){
-const dmg=6+phase*2;
-player.hp-=dmg;
-enemyAttacks.splice(i,1);
+for(let i=boneJumps.length-1;i>=0;i--){
+const b=boneJumps[i];
+const hitBox={x:b.x,y:b.y,w:b.w,h:b.h};
+if(rectOverlap(hitBox,player)){
+if(b.phase==="white"){
+player.hp-=8+phase*2;
+shakeTime=220;
+shakeIntensity=4;
+}else if(b.phase==="blue"){
+const moving=Math.abs(player.vx)+Math.abs(player.vy)>0.4;
+if(moving){
+player.hp-=10+phase*3;
 shakeTime=260;
 shakeIntensity=5;
 }
 }
-for(let i=blasterBeams.length-1;i>=0;i--){
-const b=blasterBeams[i];
-if(b.warning)continue;
-const hitBox={x:b.dir===1?b.x:b.x-b.w,y:b.y,w:b.w,h:b.h};
-if(hitBox.x<enemy.x+enemy.w&&hitBox.x+hitBox.w>enemy.x&&hitBox.y<enemy.y+enemy.h&&hitBox.y+hitBox.h>enemy.y){
-enemy.hp-=22+phase*4;
-score+=40;
 }
 }
 }
@@ -309,7 +394,7 @@ function endGame(win){
 gameOver=true;
 started=false;
 overlay.style.display="flex";
-overlayText.textContent=win?"You won. Human stopped.":"You died. Genocide succeeded.";
+overlayText.textContent=win?"You defeated Sans.":"You died. You felt your sins crawling.";
 startBtn.textContent="Play again";
 }
 function draw(){
@@ -321,134 +406,160 @@ offsetY=(Math.random()*2-1)*shakeIntensity;
 ctx.save();
 ctx.clearRect(0,0,canvas.width,canvas.height);
 ctx.translate(offsetX,offsetY);
-drawBackground();
+drawCorridor();
+drawBoneRain();
+drawBoneJumps();
+drawBlasters();
+drawSans();
 drawPlayer();
-drawEnemy();
-drawBones();
-drawEnemyAttacks();
-drawBlasterBeams();
-drawUIBars();
+drawBars();
 ctx.restore();
 }
-function drawBackground(){
-ctx.fillStyle="#111";
-ctx.fillRect(0,0,canvas.width,canvas.height);
-ctx.fillStyle="#222";
-ctx.fillRect(0,GROUND_Y,canvas.width,canvas.height-GROUND_Y);
-ctx.strokeStyle="#333";
-ctx.lineWidth=2;
-for(let i=0;i<6;i++){
-const x=80+i*140;
-ctx.beginPath();
-ctx.moveTo(x,GROUND_Y);
-ctx.lineTo(x,GROUND_Y-80);
-ctx.stroke();
-}
+function drawCorridor(){
 ctx.fillStyle="#000";
-ctx.fillRect(60,60,canvas.width-120,GROUND_Y-100);
-ctx.strokeStyle="#555";
-ctx.strokeRect(60,60,canvas.width-120,GROUND_Y-100);
+ctx.fillRect(0,0,canvas.width,canvas.height);
+const grad=ctx.createLinearGradient(0,0,0,GROUND_Y);
+grad.addColorStop(0,"#111");
+grad.addColorStop(0.5,"#151515");
+grad.addColorStop(1,"#202020");
+ctx.fillStyle=grad;
+ctx.fillRect(0,0,canvas.width,GROUND_Y);
+ctx.fillStyle="#2a1a0a";
+ctx.fillRect(0,GROUND_Y,canvas.width,canvas.height-GROUND_Y);
+ctx.fillStyle="#d9c9a3";
+ctx.fillRect(canvas.width/2-70,80,140,260);
+ctx.fillStyle="#f7f0d0";
+ctx.fillRect(canvas.width/2-40,100,80,220);
+ctx.fillStyle="rgba(255,255,220,0.18)";
+ctx.beginPath();
+ctx.moveTo(canvas.width/2-120,80);
+ctx.lineTo(canvas.width/2+120,80);
+ctx.lineTo(canvas.width/2+260,GROUND_Y);
+ctx.lineTo(canvas.width/2-260,GROUND_Y);
+ctx.closePath();
+ctx.fill();
+ctx.fillStyle="#3b2b1a";
+for(let i=0;i<4;i++){
+const x=160+i*160;
+ctx.fillRect(x,120,40,GROUND_Y-120);
+}
+ctx.strokeStyle="#444";
+ctx.lineWidth=3;
+ctx.strokeRect(120,100,canvas.width-240,GROUND_Y-120);
+ctx.fillStyle="#111";
+ctx.fillRect(120,100,canvas.width-240,GROUND_Y-120);
 }
 function drawPlayer(){
 ctx.save();
 ctx.translate(player.x+player.w/2,player.y+player.h/2);
-ctx.scale(1,gravityDir);
+ctx.scale(1,player.gravityDir);
 ctx.translate(-player.w/2,-player.h/2);
-ctx.fillStyle="#fff";
-ctx.fillRect(8,0,24,30);
-ctx.fillRect(4,26,32,26);
-ctx.fillStyle="#00f";
-ctx.fillRect(4,26,32,16);
-ctx.fillStyle="#fff";
-ctx.fillRect(6,28,10,14);
-ctx.fillRect(22,28,10,14);
+ctx.fillStyle="#3b0000";
+ctx.fillRect(4,0,26,30);
+ctx.fillStyle="#5c0000";
+ctx.fillRect(2,28,30,18);
+ctx.fillStyle="#2b2b2b";
+ctx.fillRect(4,44,10,16);
+ctx.fillRect(20,44,10,16);
+ctx.fillStyle="#f0e0d0";
+ctx.fillRect(6,4,22,18);
 ctx.fillStyle="#000";
-ctx.fillRect(10,10,6,4);
-ctx.fillRect(24,10,6,4);
-ctx.fillRect(16,18,8,3);
+ctx.fillRect(10,10,4,3);
+ctx.fillRect(20,10,4,3);
+ctx.fillRect(14,16,6,2);
+ctx.fillStyle="#0f0";
+if(player.slashTimer>SLASH_COOLDOWN-160){
+const dir=player.face||1;
+ctx.fillRect(dir===1?26:-18,10,18,6);
+}
 ctx.restore();
 }
-function drawEnemy(){
+function drawSans(){
 ctx.save();
-ctx.translate(enemy.x+enemy.w/2,enemy.y+enemy.h/2);
-ctx.fillStyle="#f00";
-ctx.beginPath();
-ctx.arc(0,0,enemy.w/2,0,Math.PI*2);
-ctx.fill();
+ctx.translate(sans.x+sans.w/2,sans.y+sans.h/2);
 ctx.fillStyle="#fff";
 ctx.beginPath();
-ctx.arc(-5,-4,3,0,Math.PI*2);
-ctx.arc(5,-4,3,0,Math.PI*2);
+ctx.arc(0,-20,16,0,Math.PI*2);
 ctx.fill();
 ctx.fillStyle="#000";
-ctx.fillRect(-4,2,8,2);
+ctx.fillRect(-8,-24,4,3);
+ctx.fillRect(4,-24,4,3);
+ctx.fillRect(-4,-16,8,2);
+ctx.fillStyle="#4aa";
+ctx.fillRect(-14,-2,28,26);
+ctx.fillStyle="#fff";
+ctx.fillRect(-12,0,10,18);
+ctx.fillRect(2,0,10,18);
+ctx.fillStyle="#333";
+ctx.fillRect(-10,18,8,18);
+ctx.fillRect(2,18,8,18);
 ctx.restore();
 }
-function drawBones(){
+function drawBoneRain(){
 ctx.fillStyle="#fff";
-for(const b of bones){
-ctx.save();
-ctx.translate(b.x,b.y);
-ctx.fillRect(0,0,b.w,b.h);
-ctx.restore();
-}
-}
-function drawEnemyAttacks(){
-for(const a of enemyAttacks){
-if(a.delay&&a.delay>0)continue;
-if(a.type==="fallBone"||a.type==="hBone"){
-ctx.fillStyle="#fff";
-ctx.fillRect(a.x,a.y,a.w,a.h);
+for(const b of boneRains){
+ctx.fillRect(b.x,b.y,b.w,b.h);
 ctx.fillStyle="#ccc";
-ctx.fillRect(a.x,a.y,a.w,4);
-ctx.fillRect(a.x,a.y+a.h-4,a.w,4);
-}else if(a.type==="chaser"){
-ctx.fillStyle="#0ff";
-ctx.beginPath();
-ctx.arc(a.x,a.y,a.w/2,0,Math.PI*2);
-ctx.fill();
-}
-}
-}
-function drawBlasterBeams(){
-for(const b of blasterBeams){
-ctx.save();
-ctx.translate(b.x,b.y);
-ctx.scale(b.dir,1);
+ctx.fillRect(b.x,b.y,b.w,4);
+ctx.fillRect(b.x,b.y+b.h-4,b.w,4);
 ctx.fillStyle="#fff";
-ctx.fillRect(-20,-40,40,40);
-ctx.fillStyle="#000";
-ctx.fillRect(-12,-28,8,6);
-ctx.fillRect(4,-28,8,6);
-ctx.fillRect(-6,-16,12,4);
-if(b.warning){
-ctx.globalAlpha=0.4+0.3*Math.sin(b.time*0.02);
-ctx.fillStyle="#0ff";
-ctx.fillRect(-8,0,16,120);
+}
+}
+function drawBoneJumps(){
+for(const b of boneJumps){
+if(b.phase==="white"){
+ctx.fillStyle="#fff";
 }else{
-ctx.globalAlpha=0.8;
+ctx.fillStyle="#55f";
+}
+ctx.fillRect(b.x,b.y,b.w,b.h);
+}
+}
+function drawBlasters(){
+for(const bl of blasters){
+ctx.save();
+ctx.translate(bl.x,bl.y);
+ctx.rotate(bl.angle);
+ctx.fillStyle="#fff";
+ctx.fillRect(-26,-18,52,36);
+ctx.fillStyle="#000";
+ctx.fillRect(-18,-10,8,6);
+ctx.fillRect(10,-10,8,6);
+ctx.fillRect(-6,0,12,4);
+if(bl.warning){
+ctx.globalAlpha=0.4+0.3*Math.sin(bl.time*0.02);
 ctx.fillStyle="#0ff";
-ctx.fillRect(-10,0,20,140);
+ctx.fillRect(20,-6,80,12);
+}else{
+ctx.globalAlpha=0.85;
+ctx.fillStyle="#0ff";
+ctx.fillRect(20,-8,220,16);
+}
+ctx.restore();
 ctx.globalAlpha=1;
 }
-ctx.restore();
 }
-}
-function drawUIBars(){
-const hpRatio=Math.max(0,player.hp)/MAX_HP;
-const enemyRatio=Math.max(0,enemy.hp)/200;
+function drawBars(){
+const pRatio=Math.max(0,player.hp)/MAX_PLAYER_HP;
+const sRatio=Math.max(0,sans.hp)/MAX_SANS_HP;
+const stRatio=Math.max(0,sans.stamina)/MAX_STAMINA;
 ctx.fillStyle="#400";
-ctx.fillRect(80,30,260,10);
+ctx.fillRect(140,40,260,10);
 ctx.fillStyle="#f00";
-ctx.fillRect(80,30,260*hpRatio,10);
+ctx.fillRect(140,40,260*pRatio,10);
 ctx.fillStyle="#044";
-ctx.fillRect(canvas.width-340,30,260,10);
+ctx.fillRect(canvas.width-400,40,260,10);
 ctx.fillStyle="#0ff";
-ctx.fillRect(canvas.width-340,30,260*enemyRatio,10);
+ctx.fillRect(canvas.width-400,40,260*sRatio,10);
+ctx.fillStyle="#220";
+ctx.fillRect(canvas.width-400,60,260,8);
+ctx.fillStyle="#ff0";
+ctx.fillRect(canvas.width-400,60,260*stRatio,8);
 ctx.fillStyle="#fff";
 ctx.font="12px Arial";
-ctx.fillText("SANS",80,25);
-ctx.fillText("HUMAN",canvas.width-340,25);
+ctx.fillText("CHARA",140,34);
+ctx.fillText("SANS",canvas.width-400,34);
+ctx.fillText("STAMINA",canvas.width-400,56);
 }
 </script>
 </body>

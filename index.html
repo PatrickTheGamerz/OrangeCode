@@ -847,52 +847,52 @@
         }
       }else if(pattern.startsWith("lb1")||pattern==="lb1"){
         if(pattern==="lb1"||pattern==="lb1a"){
-          boneWaveHorizontal(3,3.8,"white","white",0);
+          boneWaveHorizontal(3,4.2,"white","white",0);
         }else if(pattern==="lb1b"){
-          boneWaveHorizontal(4,4,"white","white",2);
+          boneWaveHorizontal(4,4.4,"white","white",2);
         }else if(pattern==="lb1c"){
-          blasterSpiral(bx+bw/2,by+bh/2,130,12,3.8,"white","white");
+          blasterSpiral(bx+bw/2,by+bh/2,130,12,4.2,"white","white");
         }else if(pattern==="lb1d"){
-          blasterSpiral(bx+bw/2,by+bh/2,150,16,4,"white","white");
+          blasterSpiral(bx+bw/2,by+bh/2,150,16,4.6,"white","white");
         }else if(pattern==="lb1e"){
           boneJumpFloor(3,"white","white");
         }else if(pattern==="lb1f"){
           boneJumpFloor(4,"white","white");
         }else if(pattern==="lb1g"){
-          lineHorizontal(by+bh/2,12,4,"white","white",true);
-          lineVertical(bx+bw/2,10,4,"white","white",true);
+          lineHorizontal(by+bh/2,12,4.4,"white","white",true);
+          lineVertical(bx+bw/2,10,4.4,"white","white",true);
         }else if(pattern==="lb1h"){
           for(let i=0;i<10;i++){
-            bullets.push({x:bx+Math.random()*bw,y:by-40,w:16,h:30,vx:0,vy:4,color:"white",type:"white",delay:0});
+            bullets.push({x:bx+Math.random()*bw,y:by-40,w:16,h:30,vx:0,vy:4.4,color:"white",type:"white",delay:0});
           }
         }else if(pattern==="lb1i"){
           for(let i=0;i<12;i++){
             const side=i%2===0?bx-40:bx+bw+40;
-            const vx=i%2===0?4:-4;
+            const vx=i%2===0?4.4:-4.4;
             bullets.push({x:side,y:by+Math.random()*bh,w:24,h:12,vx,vy:0,color:"white",type:"white",delay:0});
           }
         }else if(pattern==="lb1j"){
-          blasterSpiral(bx+bw/2,by+bh/2,160,18,4.2,"white","white");
+          blasterSpiral(bx+bw/2,by+bh/2,160,18,4.8,"white","white");
         }else if(pattern==="lb1Wave1"){
-          boneWaveHorizontal(3,4,"white","white",1);
+          boneWaveHorizontal(3,4.4,"white","white",1);
         }else if(pattern==="lb1Wave2"){
-          boneWaveHorizontal(4,4.2,"white","white",3);
+          boneWaveHorizontal(4,4.8,"white","white",3);
         }else if(pattern==="lb1Jump1"){
           boneJumpFloor(3,"white","white");
         }else if(pattern==="lb1Jump2"){
           boneJumpFloor(5,"white","white");
         }else if(pattern==="lb1Spiral1"){
-          blasterSpiral(bx+bw/2,by+bh/2,140,14,4,"white","white");
+          blasterSpiral(bx+bw/2,by+bh/2,140,14,4.6,"white","white");
         }else if(pattern==="lb1Spiral2"){
-          blasterSpiral(bx+bw/2,by+bh/2,170,18,4.4,"white","white");
+          blasterSpiral(bx+bw/2,by+bh/2,170,18,5,"white","white");
         }else if(pattern==="lb1Cross1"){
-          lineHorizontal(by+bh/2,12,4,"white","white",true);
-          lineVertical(bx+bw/2,10,4,"white","white",true);
+          lineHorizontal(by+bh/2,12,4.6,"white","white",true);
+          lineVertical(bx+bw/2,10,4.6,"white","white",true);
         }else if(pattern==="lb1Cross2"){
-          lineHorizontal(by+bh/2-30,10,4.2,"white","white",true);
-          lineHorizontal(by+bh/2+30,10,4.2,"white","white",true);
-          lineVertical(bx+bw/2-40,8,4.2,"white","white",true);
-          lineVertical(bx+bw/2+40,8,4.2,"white","white",true);
+          lineHorizontal(by+bh/2-30,10,4.8,"white","white",true);
+          lineHorizontal(by+bh/2+30,10,4.8,"white","white",true);
+          lineVertical(bx+bw/2-40,8,4.8,"white","white",true);
+          lineVertical(bx+bw/2+40,8,4.8,"white","white",true);
         }
       }else if(pattern.startsWith("lb2")||pattern==="lb2"){
         if(pattern==="lb2"||pattern==="lb2a"){
@@ -941,42 +941,42 @@
         }
       }else if(pattern.startsWith("lb3")||pattern==="lb3"){
         if(pattern==="lb3"||pattern==="lb3a"){
-          boneWaveHorizontal(3,4.4,"blue","blue",0);
-          boneWaveHorizontal(3,4.4,"orange","orange",2);
+          boneWaveHorizontal(3,3.4,"blue","blue",0);
+          boneWaveHorizontal(3,3.4,"orange","orange",2);
         }else if(pattern==="lb3b"){
-          boneWaveHorizontal(4,4.8,"blue","blue",1);
-          boneWaveHorizontal(4,4.8,"orange","orange",3);
+          boneWaveHorizontal(4,3.6,"blue","blue",1);
+          boneWaveHorizontal(4,3.6,"orange","orange",3);
         }else if(pattern==="lb3c"){
           boneJumpFloor(3,"blue","blue");
           boneJumpFloor(4,"orange","orange");
         }else if(pattern==="lb3d"){
-          blasterSpiral(bx+bw/2,by+bh/2,150,16,4.6,"white","white");
+          blasterSpiral(bx+bw/2,by+bh/2,150,16,3.6,"white","white");
         }else if(pattern==="lb3e"){
-          blasterSpiral(bx+bw/2,by+bh/2,180,20,5,"white","white");
+          blasterSpiral(bx+bw/2,by+bh/2,180,20,3.8,"white","white");
         }else if(pattern==="lb3f"){
           for(let i=0;i<18;i++){
-            bullets.push({x:bx+Math.random()*bw,y:by-40,w:18,h:32,vx:0,vy:4.8,color:"blue",type:"blue",delay:0});
+            bullets.push({x:bx+Math.random()*bw,y:by-40,w:18,h:32,vx:0,vy:3.6,color:"blue",type:"blue",delay:0});
           }
         }else if(pattern==="lb3g"){
           for(let i=0;i<18;i++){
-            bullets.push({x:bx+Math.random()*bw,y:by-40,w:18,h:32,vx:0,vy:4.8,color:"orange",type:"orange",delay:0});
+            bullets.push({x:bx+Math.random()*bw,y:by-40,w:18,h:32,vx:0,vy:3.6,color:"orange",type:"orange",delay:0});
           }
         }else if(pattern==="lb3h"){
-          lineHorizontal(by+bh/2,12,4.8,"blue","blue",true);
-          lineVertical(bx+bw/2,10,4.8,"orange","orange",true);
+          lineHorizontal(by+bh/2,12,3.6,"blue","blue",true);
+          lineVertical(bx+bw/2,10,3.6,"orange","orange",true);
         }else if(pattern==="lb3i"){
-          lineHorizontal(by+bh/2-30,10,5,"blue","blue",true);
-          lineHorizontal(by+bh/2+30,10,5,"orange","orange",true);
-          lineVertical(bx+bw/2-40,8,5,"blue","blue",true);
-          lineVertical(bx+bw/2+40,8,5,"orange","orange",true);
+          lineHorizontal(by+bh/2-30,10,3.8,"blue","blue",true);
+          lineHorizontal(by+bh/2+30,10,3.8,"orange","orange",true);
+          lineVertical(bx+bw/2-40,8,3.8,"blue","blue",true);
+          lineVertical(bx+bw/2+40,8,3.8,"orange","orange",true);
         }else if(pattern==="lb3j"){
           wingdingsRain("white");
         }else if(pattern==="lb3Wave1"){
-          boneWaveHorizontal(3,4.8,"blue","blue",1);
-          boneWaveHorizontal(3,4.8,"orange","orange",3);
+          boneWaveHorizontal(3,3.6,"blue","blue",1);
+          boneWaveHorizontal(3,3.6,"orange","orange",3);
         }else if(pattern==="lb3Wave2"){
-          boneWaveHorizontal(4,5.2,"blue","blue",2);
-          boneWaveHorizontal(4,5.2,"orange","orange",4);
+          boneWaveHorizontal(4,3.8,"blue","blue",2);
+          boneWaveHorizontal(4,3.8,"orange","orange",4);
         }else if(pattern==="lb3Jump1"){
           boneJumpFloor(4,"blue","blue");
           boneJumpFloor(5,"orange","orange");
@@ -984,28 +984,28 @@
           boneJumpFloor(5,"blue","blue");
           boneJumpFloor(6,"orange","orange");
         }else if(pattern==="lb3Spiral1"){
-          blasterSpiral(bx+bw/2,by+bh/2,170,18,5,"white","white");
+          blasterSpiral(bx+bw/2,by+bh/2,170,18,3.8,"white","white");
         }else if(pattern==="lb3Spiral2"){
-          blasterSpiral(bx+bw/2,by+bh/2,200,22,5.4,"white","white");
+          blasterSpiral(bx+bw/2,by+bh/2,200,22,4,"white","white");
         }else if(pattern==="lb3Wing1"){
           wingdingsRain("white");
         }else if(pattern==="lb3Wing2"){
           wingdingsRain("white");
           for(let i=0;i<12;i++){
-            bullets.push({x:bx+Math.random()*bw,y:by-40,w:18,h:32,vx:0,vy:5,color:"blue",type:"blue",delay:0});
+            bullets.push({x:bx+Math.random()*bw,y:by-40,w:18,h:32,vx:0,vy:3.8,color:"blue",type:"blue",delay:0});
           }
         }else if(pattern==="lb3Chaos1"){
-          for(let i=0;i<30;i++){
+          for(let i=0;i<24;i++){
             const t=Math.random();
             let type;
             if(t<0.33)type="blue";
             else if(t<0.66)type="orange";
             else type="white";
-            bullets.push({x:bx+Math.random()*bw,y:by+Math.random()*bh,w:16,h:16,vx:(Math.random()*2-1)*4,vy:(Math.random()*2-1)*4,color:type==="blue"?"blue":type==="orange"?"orange":"white",type,delay:0});
+            bullets.push({x:bx+Math.random()*bw,y:by+Math.random()*bh,w:16,h:16,vx:(Math.random()*2-1)*2.6,vy:(Math.random()*2-1)*2.6,color:type==="blue"?"blue":type==="orange"?"orange":"white",type,delay:0});
           }
         }else if(pattern==="lb3Chaos2"){
-          for(let i=0;i<36;i++){
-            const angle=(Math.PI*2/36)*i;
+          for(let i=0;i<28;i++){
+            const angle=(Math.PI*2/28)*i;
             const radius=bh/2+40;
             const cx=bx+bw/2+Math.cos(angle)*radius;
             const cy=by+bh/2+Math.sin(angle)*radius;
@@ -1017,13 +1017,14 @@
             const dx=soul.x-cx;
             const dy=soul.y-cy;
             const len=Math.hypot(dx,dy)||1;
-            const vx=(dx/len)*5.2;
-            const vy=(dy/len)*5.2;
+            const vx=(dx/len)*3.2;
+            const vy=(dy/len)*3.2;
             bullets.push({x:cx,y:cy,w:18,h:18,vx,vy,color:type==="blue"?"blue":type==="orange"?"orange":"white",type,delay:i*600});
           }
         }
       }
       if(tag==="shadow")bullets.forEach(b=>{b.color="cyan"});
+      if(tag==="final")bullets.forEach(b=>{b.vx*=0.6;b.vy*=0.6})
     }
     function startDodgePhase(attacker,defender,baseDamage,pattern,extra){
       state="dodgePhase";
@@ -1129,12 +1130,40 @@
       }
       requestAnimationFrame(()=>animateDodge(attacker,defender,baseDamage,pattern,extra))
     }
+    function drawEndingScene(type){
+      clearCanvas();
+      ctx.setTransform(1,0,0,1,0,0);
+      ctx.fillStyle="black";
+      ctx.fillRect(0,0,GAME_WIDTH,GAME_HEIGHT);
+      ctx.fillStyle="white";
+      ctx.font="28px Courier New";
+      if(type==="lb_kill"){
+        ctx.fillText("You ended his last breath.",220,170);
+        ctx.font="16px Courier New";
+        ctx.fillText("The timeline falls silent.",300,210);
+      }else if(type==="lb_spare"){
+        ctx.fillText("You spared his last breath.",210,170);
+        ctx.font="16px Courier New";
+        ctx.fillText("For a moment, hope returns.",280,210);
+      }else if(type==="death"){
+        ctx.fillText("You fell.",380,170);
+        ctx.font="16px Courier New";
+        ctx.fillText("But the multiverse keeps moving.",260,210);
+      }
+    }
     function endBattle(winner){
       state="end";
       menu.innerHTML="";
-      if(winner==="player")log("You won the battle. Timeline saved.");
-      else if(winner==="enemy")log("You died. The timeline shatters.");
-      else if(winner==="spare")log("You spared Sans. A fragile peace remains.")
+      if(winner==="player"){
+        if(enemy&&enemy.isLastBreath)drawEndingScene("lb_kill");
+        log("You won the battle. Timeline saved.");
+      }else if(winner==="enemy"){
+        if(player&&player.isLastBreathPlayer)drawEndingScene("death");
+        log("You died. The timeline shatters.");
+      }else if(winner==="spare"){
+        if(enemy&&enemy.isLastBreath)drawEndingScene("lb_spare");
+        log("You spared Sans. A fragile peace remains.");
+      }
     }
     function resetPlayerForPhase(){
       player.hp=player.maxHp;
@@ -1155,6 +1184,8 @@
           defender.stamina=defender.staminaMax;
           defender.basePattern=enemy.base.basePatternPhase[1];
           defender.patterns=enemy.base.patternsPhase[1];
+          defender.specialName=enemy.base.specialNamePhase[1];
+          defender.specialCost=enemy.base.specialCostPhase[1];
           defender.desperationUsed=false;
           log("Last Breath Sans refuses to die... Phase 2 begins!");
           resetPlayerForPhase();
@@ -1173,6 +1204,8 @@
             defender.stamina=defender.staminaMax;
             defender.basePattern=enemy.base.basePatternPhase[2];
             defender.patterns=enemy.base.patternsPhase[2];
+            defender.specialName=enemy.base.specialNamePhase[2];
+            defender.specialCost=enemy.base.specialCostPhase[2];
             defender.desperationUsed=false;
             log("Against all odds, Last Breath Sans clings to life... Phase 3 AWAKENS.");
             resetPlayerForPhase();
@@ -1193,9 +1226,21 @@
       if(player.hp<=0){
         if(player.isLastBreathPlayer&&player.lives>1){
           player.lives--;
+          player.phase++;
+          const base=player.baseLB;
+          const idx=Math.min(player.phase-1,2);
+          player.maxHp=base.maxHpPhase[idx];
           player.hp=player.maxHp;
+          player.atk=base.atkPhase[idx];
+          player.dodge=base.dodgePhase[idx];
+          player.crit=base.critPhase[idx];
+          player.staminaMax=base.staminaMaxPhase[idx];
           player.stamina=player.staminaMax;
-          log(`Last Breath Sans hangs on... Lives left: ${player.lives}`);
+          player.basePattern=base.basePatternPhase[idx];
+          player.patterns=base.patternsPhase[idx];
+          player.specialName=base.specialNamePhase[idx];
+          player.specialCost=base.specialCostPhase[idx];
+          log(`Last Breath Sans hangs on... Phase ${player.phase} for you.`);
           updateBars();
           return false
         }
@@ -1272,7 +1317,7 @@
     function playerMagic(){
       menu.innerHTML="";
       const cost=player.specialCost;
-      if(!playerSpendStamina(cost)){
+      if(cost>0&&!playerSpendStamina(cost)){
         log("Not enough stamina for MAGIC.");
         setTimeout(enemyTurn,700);
         return
@@ -1360,7 +1405,7 @@
       updateBars();
       if(enemy.isLastBreath&&enemy.phase===3&&enemy.finalDone){
         log("You offer MERCY to Last Breath Sans...");
-        setTimeout(()=>{endBattle("spare")},1000);
+        setTimeout(()=>{endBattle("spare")},1200);
         return
       }
       log("You tried to show mercy, but nothing happened. You feel a bit more rested.");
@@ -1388,7 +1433,8 @@
       else enemyHeal()
     }
     function enemyBasicAttack(){
-      const cost=15;
+      let cost=15;
+      if(enemy.isLastBreath&&enemy.phase===1)cost=18;
       if(!enemySpendStamina(cost)){
         log(`${enemy.name} is too tired to attack.`);
         setTimeout(showPlayerMenu,700);
@@ -1397,8 +1443,13 @@
       let pattern;
       if(enemy.isLastBreath)pattern=randomFrom(enemy.patterns);
       else pattern=randomFrom(enemy.patterns||[enemy.basePattern]);
-      const base=enemy.atk*1.4;
-      startDodgePhase(enemy,player,base,pattern,{duration:2600})
+      let base=enemy.atk*1.4;
+      let duration=2600;
+      if(enemy.isLastBreath&&enemy.phase===1){
+        base*=1.25;
+        duration=3000;
+      }
+      startDodgePhase(enemy,player,base,pattern,{duration:duration})
     }
     function enemySpecialAttack(){
       const cost=enemy.specialCost;
@@ -1426,6 +1477,7 @@
       let base=enemy.atk*1.9;
       if(enemy.basePattern==="dust")base*=1.2;
       if(enemy.basePattern==="horror")base*=1.1;
+      if(enemy.isLastBreath&&enemy.phase===1)base*=1.2;
       startDodgePhase(enemy,player,base,pattern,{duration:3200})
     }
     function enemyDesperationAttack(){
@@ -1441,7 +1493,8 @@
       else if(enemy.isLastBreath)pattern=randomFrom(["lb2Wing2","lb3Chaos1","lb3Chaos2"]);
       else if(enemy.basePattern==="horror")pattern="horSlash3";
       else pattern=randomFrom(enemy.patterns);
-      const base=enemy.atk*2.4;
+      let base=enemy.atk*2.4;
+      if(enemy.isLastBreath&&enemy.phase===1)base*=1.2;
       startDodgePhase(enemy,player,base,pattern,{duration:3500})
     }
     function enemyHeal(){
@@ -1466,19 +1519,20 @@
       state="dodgePhase";
       enemy.finalDone=false;
       menu.innerHTML="";
-      log("Last Breath Sans: 'This is your last chance.'");
+      log("Last Breath Sans: \"...this is really it.\"");
+      log("The world slows down, but the attack never stops.");
       dodgeActive=true;
       dodgeTimer=0;
       dodgeStillTime=0;
       lastFrameTime=performance.now();
-      dodgeDuration=16000;
+      dodgeDuration=22000;
       soul.x=dodgeBox.x+dodgeBox.w/2;
       soul.y=dodgeBox.y+dodgeBox.h/2;
       spawnPattern("lb3Chaos1","final");
-      cameraShake=6;
-      cameraShakeTime=16000;
+      cameraShake=5;
+      cameraShakeTime=22000;
       lbFinalHealsUsed=0;
-      lbFinalNextHeal=3500;
+      lbFinalNextHeal=4000;
       animateFinalLB()
     }
     function animateFinalLB(){
@@ -1489,11 +1543,11 @@
       dodgeTimer+=dt;
       cameraShakeTime=Math.max(0,cameraShakeTime-dt);
       let upKey="w",downKey="s",leftKey="a",rightKey="d";
-      if(dodgeTimer>4000&&dodgeTimer<8000){
+      if(dodgeTimer>4000&&dodgeTimer<9000){
         leftKey="d";rightKey="a";
-      }else if(dodgeTimer>8000&&dodgeTimer<12000){
+      }else if(dodgeTimer>9000&&dodgeTimer<15000){
         upKey="s";downKey="w";
-      }else if(dodgeTimer>12000){
+      }else if(dodgeTimer>15000){
         leftKey="d";rightKey="a";upKey="s";downKey="w";
       }
       let dx=0,dy=0;
@@ -1512,13 +1566,13 @@
         const heal=12;
         player.hp=Math.min(player.maxHp,player.hp+heal);
         lbFinalHealsUsed++;
-        lbFinalNextHeal+=4000;
+        lbFinalNextHeal+=5000;
         log(`Your determination heals you for ${heal} HP during the finale.`);
         updateBars();
       }
       const len=Math.hypot(dx,dy)||1;
-      soul.x+=dx/len*soul.speed*1.2;
-      soul.y+=dy/len*soul.speed*1.2;
+      soul.x+=dx/len*soul.speed*1.1;
+      soul.y+=dy/len*soul.speed*1.1;
       soul.x=Math.max(dodgeBox.x+soul.r,Math.min(dodgeBox.x+dodgeBox.w-soul.r,soul.x));
       soul.y=Math.max(dodgeBox.y+soul.r,Math.min(dodgeBox.y+dodgeBox.h-soul.r,soul.y));
       bullets.forEach(b=>{
@@ -1527,9 +1581,9 @@
           b.y+=b.vy
         }
       });
-      if(Math.random()<0.08){
+      if(Math.random()<0.05){
         const extraPattern=randomFrom(["lb3Wave1","lb3Wave2","lb3Jump1","lb3Jump2","lb3Spiral1","lb3Spiral2","lb3Wing1","lb3Wing2","lb3Chaos2"]);
-        spawnPattern(extraPattern);
+        spawnPattern(extraPattern,"final");
       }
       let hits=0;
       bullets.forEach(b=>{
@@ -1543,10 +1597,10 @@
         }
       });
       if(hits>0){
-        const perHit=enemy.atk*1.3;
+        const perHit=enemy.atk*0.9;
         const total=perHit*hits;
         player.hp-=total;
-        player.stamina=Math.max(0,player.stamina-total*0.5);
+        player.stamina=Math.max(0,player.stamina-total*0.4);
         log(`Finale hits you ${hits} time(s) for ${Math.round(total)} damage!`);
         updateBars();
         if(player.hp<=0){
@@ -1590,7 +1644,8 @@
     function showSpareChoice(){
       state="spareChoice";
       menu.innerHTML="";
-      log("Last Breath Sans is exhausted. You feel something change.");
+      log("Last Breath Sans is exhausted. His eye flickers, then dims.");
+      log("You feel the world waiting for your decision.");
       const info=document.createElement("div");
       info.className="centerText";
       info.innerHTML="<div>Only two options remain.</div>";
@@ -1598,17 +1653,24 @@
       const fightBtn=document.createElement("button");
       fightBtn.textContent="FIGHT";
       fightBtn.onclick=()=>{
-        log("You strike down Last Breath Sans.");
-        enemy.hp=0;
-        updateBars();
-        endBattle("player")
+        log("You raise your weapon one last time.");
+        setTimeout(()=>{
+          log("Last Breath Sans: \"heh... figures.\"");
+          enemy.hp=0;
+          updateBars();
+          endBattle("player");
+        },900);
       };
       menu.appendChild(fightBtn);
       const mercyBtn=document.createElement("button");
       mercyBtn.textContent="MERCY";
       mercyBtn.onclick=()=>{
-        enemy.finalDone=true;
-        playerMercy()
+        log("You lower your weapon.");
+        setTimeout(()=>{
+          log("Last Breath Sans: \"...guess someone finally learned.\"");
+          enemy.finalDone=true;
+          playerMercy();
+        },900);
       };
       menu.appendChild(mercyBtn)
     }
@@ -1676,7 +1738,9 @@
           patterns:base.patternsPhase[0],
           isLastBreath:false,
           isLastBreathPlayer:true,
-          lives:3
+          lives:3,
+          phase:1,
+          baseLB:base
         };
       }else{
         player={
@@ -1698,7 +1762,8 @@
           patterns:base.patterns||base.patternsPhase[0],
           isLastBreath:false,
           isLastBreathPlayer:false,
-          lives:1
+          lives:1,
+          phase:1
         };
       }
       const enemyNames=Object.keys(AUs).filter(n=>n!==playerAUName);

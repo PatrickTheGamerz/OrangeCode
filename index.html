@@ -1,526 +1,455 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Bonetale-style Sans vs Chara – Corridor</title>
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      background: #000;
-      color: #fff;
-      font-family: sans-serif;
-      overflow: hidden;
-    }
-
-    #gameContainer {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      height: 100vh;
-    }
-
-    canvas {
-      border: 2px solid #fff;
-      background: #111;
-      image-rendering: pixelated;
-    }
-
-    #ui {
-      margin-top: 8px;
-      text-align: center;
-      font-size: 14px;
-    }
-
-    #controls {
-      margin-top: 4px;
-      color: #ccc;
-    }
-
-    button {
-      margin-top: 6px;
-      padding: 4px 10px;
-      background: #222;
-      color: #fff;
-      border: 1px solid #555;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background: #333;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>Mini Bonetale HTML</title>
+<style>
+html,body{margin:0;padding:0;background:#000;color:#fff;font-family:Arial,Helvetica,sans-serif;overflow:hidden}
+#ui{position:fixed;top:10px;left:10px;z-index:10;font-size:14px}
+#ui span{margin-right:15px}
+#gameCanvas{background:linear-gradient(#111 60%,#333 60%);display:block;margin:0 auto;border:2px solid #444}
+#overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.8);color:#fff;font-size:20px;flex-direction:column}
+button{padding:8px 16px;margin-top:10px;background:#444;border:none;color:#fff;cursor:pointer}
+button:hover{background:#666}
+</style>
 </head>
 <body>
-  <div id="gameContainer">
-    <canvas id="game" width="640" height="360"></canvas>
-    <div id="ui">
-      <div>
-        HP: <span id="hp">1</span> |
-        Stamina: <span id="stam">100</span> |
-        Time survived: <span id="time">0.0</span>s
-      </div>
-      <div id="controls">
-        Move: A/D or ←/→ &nbsp;|&nbsp;
-        Jump: W / ↑ / Space &nbsp;|&nbsp;
-        Dash: Shift &nbsp;|&nbsp;
-        Shoot bone: J
-      </div>
-      <button id="restartBtn" style="display:none;">Restart</button>
-    </div>
-  </div>
-
-  <script>
-    const canvas = document.getElementById("game");
-    const ctx = canvas.getContext("2d");
-    const hpEl = document.getElementById("hp");
-    const stamEl = document.getElementById("stam");
-    const timeEl = document.getElementById("time");
-    const restartBtn = document.getElementById("restartBtn");
-
-    const W = canvas.width;
-    const H = canvas.height;
-
-    // ===== GAME CONSTANTS =====
-    const GRAVITY = 1500;
-    const MOVE_SPEED = 220;
-    const DASH_SPEED = 420;
-    const JUMP_SPEED = -550;
-    const FRICTION = 0.85;
-
-    const EXHAUSTED_MOVE_SPEED = 60;   // super slow when 0 stamina
-    const EXHAUSTED_JUMP_SPEED = -280;
-
-    const BONE_SPEED = 520;
-    const BONE_COST = 8;
-    const JUMP_COST = 5;
-    const DASH_COST_PER_SEC = 25;
-
-    const STAM_MAX = 100;
-    const STAM_REGEN_IDLE = 15; // per second when not doing actions
-
-    const FLOOR_Y = H - 70;
-
-    const PROJ_SPEED_MIN = 220;
-    const PROJ_SPEED_MAX = 320;
-    const PROJ_INTERVAL = 0.6; // seconds
-
-    // ===== GAME STATE =====
-    let keys = {};
-    let lastTime = 0;
-    let gameOver = false;
-    let elapsed = 0;
-
-    const player = {
-      x: W / 2 - 16,
-      y: FLOOR_Y - 48,
-      w: 32,
-      h: 48,
-      vx: 0,
-      vy: 0,
-      onGround: false,
-      facing: 1,
-      hp: 1,
-      stamina: STAM_MAX,
-      dashing: false,
-      exhausted: false
-    };
-
-    const chara = {
-      x: W / 2 - 16,
-      y: 80,
-      w: 32,
-      h: 48,
-      t: 0 // for movement pattern
-    };
-
-    const bones = [];
-    const projectiles = [];
-    let projTimer = 0;
-
-    // ===== INPUT =====
-    window.addEventListener("keydown", (e) => {
-      keys[e.key.toLowerCase()] = true;
-      if (["ArrowLeft", "ArrowRight", "ArrowUp", " "].includes(e.key)) {
-        e.preventDefault();
-      }
-      if (e.key.toLowerCase() === "j" && !gameOver) {
-        shootBone();
-      }
-    });
-
-    window.addEventListener("keyup", (e) => {
-      keys[e.key.toLowerCase()] = false;
-    });
-
-    restartBtn.addEventListener("click", () => {
-      resetGame();
-    });
-
-    // ===== RESET =====
-    function resetGame() {
-      player.x = W / 2 - 16;
-      player.y = FLOOR_Y - 48;
-      player.vx = 0;
-      player.vy = 0;
-      player.onGround = false;
-      player.facing = 1;
-      player.hp = 1;
-      player.stamina = STAM_MAX;
-      player.dashing = false;
-      player.exhausted = false;
-
-      chara.x = W / 2 - 16;
-      chara.y = 80;
-      chara.t = 0;
-
-      bones.length = 0;
-      projectiles.length = 0;
-      projTimer = 0;
-      elapsed = 0;
-      gameOver = false;
-      restartBtn.style.display = "none";
-
-      hpEl.textContent = player.hp;
-      stamEl.textContent = Math.round(player.stamina);
-      timeEl.textContent = elapsed.toFixed(1);
-    }
-
-    // ===== UTILS =====
-    function rectsOverlap(a, b) {
-      return !(
-        a.x + a.w < b.x ||
-        a.x > b.x + b.w ||
-        a.y + a.h < b.y ||
-        a.y > b.y + b.h
-      );
-    }
-
-    // ===== ACTIONS =====
-    function shootBone() {
-      if (player.exhausted) return; // too tired
-      if (player.stamina <= BONE_COST || gameOver) return;
-      player.stamina -= BONE_COST;
-      const dir = player.facing || 1;
-      bones.push({
-        x: player.x + player.w / 2 + dir * 10,
-        y: player.y + player.h / 2,
-        w: 18,
-        h: 6,
-        vx: dir * BONE_SPEED
-      });
-    }
-
-    function spawnProjectile() {
-      // projectiles fall from the air, not from Chara directly
-      const size = 16;
-      const x = 40 + Math.random() * (W - 80);
-      const speed =
-        PROJ_SPEED_MIN + Math.random() * (PROJ_SPEED_MAX - PROJ_SPEED_MIN);
-      projectiles.push({
-        x: x,
-        y: 0 - size,
-        w: size,
-        h: size,
-        vy: speed
-      });
-    }
-
-    // ===== UPDATE =====
-    function update(dt) {
-      if (gameOver) return;
-
-      elapsed += dt;
-      timeEl.textContent = elapsed.toFixed(1);
-
-      let moveLeft = keys["a"] || keys["arrowleft"];
-      let moveRight = keys["d"] || keys["arrowright"];
-      let jumpKey = keys["w"] || keys["arrowup"] || keys[" "];
-      let dashKey = keys["shift"];
-
-      let doingAction = false;
-
-      // Exhausted state check
-      player.exhausted = player.stamina <= 0.1;
-
-      // Horizontal movement
-      if (moveLeft && !moveRight) {
-        if (player.exhausted) {
-          player.vx = -EXHAUSTED_MOVE_SPEED;
-        } else {
-          player.vx = -MOVE_SPEED;
-        }
-        player.facing = -1;
-        doingAction = true;
-      } else if (moveRight && !moveLeft) {
-        if (player.exhausted) {
-          player.vx = EXHAUSTED_MOVE_SPEED;
-        } else {
-          player.vx = MOVE_SPEED;
-        }
-        player.facing = 1;
-        doingAction = true;
-      } else {
-        player.vx *= FRICTION;
-        if (Math.abs(player.vx) < 5) player.vx = 0;
-      }
-
-      // Dash (only if not exhausted)
-      if (dashKey && !player.exhausted && player.stamina > 0) {
-        player.dashing = true;
-        const dashDir = player.facing || 1;
-        player.vx = dashDir * DASH_SPEED;
-        player.stamina -= DASH_COST_PER_SEC * dt;
-        doingAction = true;
-      } else {
-        player.dashing = false;
-      }
-
-      // Jump
-      if (jumpKey && player.onGround) {
-        if (player.exhausted) {
-          // weak jump, no stamina cost
-          player.vy = EXHAUSTED_JUMP_SPEED;
-        } else if (player.stamina > JUMP_COST) {
-          player.vy = JUMP_SPEED;
-          player.stamina -= JUMP_COST;
-          doingAction = true;
-        }
-        player.onGround = false;
-      }
-
-      // Gravity
-      player.vy += GRAVITY * dt;
-
-      // Apply velocity
-      player.x += player.vx * dt;
-      player.y += player.vy * dt;
-
-      // Floor
-      if (player.y + player.h > FLOOR_Y) {
-        player.y = FLOOR_Y - player.h;
-        player.vy = 0;
-        player.onGround = true;
-      }
-
-      // Walls (corridor)
-      const leftWall = 80;
-      const rightWall = W - 80;
-      if (player.x < leftWall) player.x = leftWall;
-      if (player.x + player.w > rightWall) player.x = rightWall - player.w;
-
-      // Stamina regen when idle (and not exhausted forever)
-      if (!doingAction && player.stamina < STAM_MAX) {
-        player.stamina += STAM_REGEN_IDLE * dt;
-      }
-      if (player.stamina > STAM_MAX) player.stamina = STAM_MAX;
-      if (player.stamina < 0) player.stamina = 0;
-
-      // Update bones
-      for (let i = bones.length - 1; i >= 0; i--) {
-        const b = bones[i];
-        b.x += b.vx * dt;
-        if (b.x < -50 || b.x > W + 50) {
-          bones.splice(i, 1);
-        }
-      }
-
-      // Chara floating movement (just vibe)
-      chara.t += dt;
-      chara.x = W / 2 - 16 + Math.sin(chara.t * 0.8) * 80;
-      chara.y = 70 + Math.sin(chara.t * 1.3) * 10;
-
-      // Projectile spawn
-      projTimer += dt;
-      if (projTimer >= PROJ_INTERVAL) {
-        projTimer = 0;
-        spawnProjectile();
-      }
-
-      // Update projectiles
-      for (let i = projectiles.length - 1; i >= 0; i--) {
-        const p = projectiles[i];
-        p.y += p.vy * dt;
-        if (p.y > H + 40) {
-          projectiles.splice(i, 1);
-          continue;
-        }
-      }
-
-      // Bones vs Chara (just knockback visual)
-      for (let i = bones.length - 1; i >= 0; i--) {
-        const b = bones[i];
-        if (rectsOverlap(b, chara)) {
-          chara.x += (b.vx > 0 ? 1 : -1) * 4;
-          bones.splice(i, 1);
-        }
-      }
-
-      // Projectiles vs player
-      for (let i = projectiles.length - 1; i >= 0; i--) {
-        const p = projectiles[i];
-        if (rectsOverlap(p, player)) {
-          projectiles.splice(i, 1);
-          player.hp -= 1;
-          hpEl.textContent = player.hp;
-          if (player.hp <= 0) {
-            endGame("Sans took a hit...");
-          }
-        }
-      }
-
-      // Clamp chara inside corridor
-      if (chara.x < leftWall + 10) chara.x = leftWall + 10;
-      if (chara.x + chara.w > rightWall - 10)
-        chara.x = rightWall - 10 - chara.w;
-
-      // Update UI
-      stamEl.textContent = Math.round(player.stamina);
-    }
-
-    function endGame(reason) {
-      if (gameOver) return;
-      gameOver = true;
-      restartBtn.style.display = "inline-block";
-      // console.log(reason);
-    }
-
-    // ===== DRAW =====
-    function drawCorridorBackground() {
-      // Dark walls
-      ctx.fillStyle = "#000";
-      ctx.fillRect(0, 0, W, H);
-
-      // Floor (golden-ish like last corridor)
-      ctx.fillStyle = "#c9a24b";
-      ctx.fillRect(0, FLOOR_Y, W, H - FLOOR_Y);
-
-      // Side walls
-      ctx.fillStyle = "#444";
-      ctx.fillRect(0, 0, 80, H);
-      ctx.fillRect(W - 80, 0, 80, H);
-
-      // Back wall line
-      ctx.fillStyle = "#555";
-      ctx.fillRect(80, FLOOR_Y, W - 160, 4);
-
-      // Simple perspective lines on floor
-      ctx.strokeStyle = "#b58b3a";
-      ctx.lineWidth = 1;
-      for (let i = 0; i < 6; i++) {
-        const y = FLOOR_Y + i * 12;
-        ctx.beginPath();
-        ctx.moveTo(80, y);
-        ctx.lineTo(W - 80, y);
-        ctx.stroke();
-      }
-
-      // Pillars (very simple)
-      ctx.fillStyle = "#777";
-      ctx.fillRect(90, 40, 20, FLOOR_Y - 40);
-      ctx.fillRect(W - 110, 40, 20, FLOOR_Y - 40);
-    }
-
-    function draw() {
-      ctx.clearRect(0, 0, W, H);
-
-      drawCorridorBackground();
-
-      // Sans (player)
-      ctx.save();
-      ctx.translate(player.x + player.w / 2, player.y + player.h / 2);
-      ctx.scale(player.facing, 1);
-
-      // Body
-      ctx.fillStyle = "#fff";
-      ctx.fillRect(-8, -16, 16, 32);
-
-      // Head
-      ctx.beginPath();
-      ctx.arc(0, -26, 10, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Eyes (one tired if exhausted)
-      ctx.fillStyle = "#000";
-      if (player.exhausted) {
-        ctx.fillRect(-5, -28, 3, 2);
-        ctx.fillRect(2, -30, 3, 3);
-      } else {
-        ctx.fillRect(-5, -30, 3, 3);
-        ctx.fillRect(2, -30, 3, 3);
-      }
-
-      // Mouth
-      ctx.fillRect(-4, -22, 8, 2);
-
-      ctx.restore();
-
-      // Chara (floating)
-      ctx.fillStyle = "#f33";
-      ctx.fillRect(chara.x, chara.y, chara.w, chara.h);
-      ctx.fillStyle = "#000";
-      ctx.fillRect(chara.x + 6, chara.y + 10, 6, 6);
-      ctx.fillRect(chara.x + chara.w - 12, chara.y + 10, 6, 6);
-      ctx.fillRect(chara.x + 8, chara.y + chara.h - 10, chara.w - 16, 4);
-
-      // Bones (Sans attack)
-      for (const b of bones) {
-        ctx.fillStyle = "#fff";
-        ctx.fillRect(b.x, b.y, b.w, b.h);
-        ctx.fillRect(b.x - 4, b.y - 2, 4, 10);
-        ctx.fillRect(b.x + b.w, b.y - 2, 4, 10);
-      }
-
-      // Projectiles from air
-      for (const p of projectiles) {
-        ctx.fillStyle = "#f00";
-        ctx.fillRect(p.x, p.y, p.w, p.h);
-        ctx.fillStyle = "#900";
-        ctx.fillRect(p.x + 4, p.y + 4, p.w - 8, p.h - 8);
-      }
-
-      // UI bars (HP and stamina)
-      // HP bar
-      ctx.fillStyle = "#444";
-      ctx.fillRect(20, 20, 100, 10);
-      ctx.fillStyle = player.hp > 0 ? "#0f0" : "#400";
-      ctx.fillRect(20, 20, (player.hp / 1) * 100, 10);
-
-      // Stamina bar
-      ctx.fillStyle = "#444";
-      ctx.fillRect(20, 40, 150, 10);
-      ctx.fillStyle = player.exhausted ? "#088" : "#0ff";
-      ctx.fillRect(20, 40, (player.stamina / STAM_MAX) * 150, 10);
-
-      // Game over overlay
-      if (gameOver) {
-        ctx.fillStyle = "rgba(0,0,0,0.6)";
-        ctx.fillRect(0, 0, W, H);
-        ctx.fillStyle = "#fff";
-        ctx.font = "28px sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillText("GAME OVER", W / 2, H / 2 - 10);
-        ctx.font = "18px sans-serif";
-        ctx.fillText("Time survived: " + elapsed.toFixed(1) + "s", W / 2, H / 2 + 20);
-        ctx.fillText("Click Restart below to try again", W / 2, H / 2 + 50);
-      }
-    }
-
-    // ===== MAIN LOOP =====
-    function loop(timestamp) {
-      if (!lastTime) lastTime = timestamp;
-      const dt = (timestamp - lastTime) / 1000;
-      lastTime = timestamp;
-
-      update(dt);
-      draw();
-
-      requestAnimationFrame(loop);
-    }
-
-    resetGame();
-    requestAnimationFrame(loop);
-  </script>
+<div id="ui">
+<span>HP: <span id="hpText">100</span></span>
+<span>Phase: <span id="phaseText">1</span></span>
+<span>Score: <span id="scoreText">0</span></span>
+<span>Controls: A/D move, W jump, J bones, K blaster, L gravity</span>
+</div>
+<canvas id="gameCanvas" width="960" height="540"></canvas>
+<div id="overlay">
+<div id="overlayText">Mini Bonetale-like Arena</div>
+<div style="font-size:14px;margin-top:6px">Survive and hit the human soul. Phases get harder.</div>
+<button id="startBtn">Start</button>
+</div>
+<script>
+const canvas=document.getElementById("gameCanvas");
+const ctx=canvas.getContext("2d");
+const hpText=document.getElementById("hpText");
+const phaseText=document.getElementById("phaseText");
+const scoreText=document.getElementById("scoreText");
+const overlay=document.getElementById("overlay");
+const overlayText=document.getElementById("overlayText");
+const startBtn=document.getElementById("startBtn");
+const keys={};
+let lastTime=0;
+let player,enemy,projectiles,bones,enemyAttacks,gravityDir,phase,score,gameOver,started,phaseTimer,blasterBeams,shakeTime,shakeIntensity;
+const GROUND_Y=420;
+const GRAVITY=0.7;
+const PLAYER_SPEED=4;
+const JUMP_FORCE=-13;
+const MAX_HP=100;
+const ENEMY_SOUL_SIZE=26;
+const BONE_SPEED=9;
+const ENEMY_ATTACK_INTERVAL_BASE=1600;
+const BLASTER_COOLDOWN=2600;
+const BONE_COOLDOWN=260;
+const GRAVITY_COOLDOWN=4500;
+const PHASE_DURATION=26000;
+const BLASTER_BEAM_TIME=550;
+const SHAKE_DECAY=0.9;
+window.addEventListener("keydown",e=>{keys[e.key.toLowerCase()]=true;if([" ","arrowup","arrowdown","arrowleft","arrowright"].includes(e.key.toLowerCase()))e.preventDefault()});
+window.addEventListener("keyup",e=>{keys[e.key.toLowerCase()]=false});
+startBtn.onclick=()=>{startGame()};
+function startGame(){
+player={x:canvas.width*0.25,y:GROUND_Y-60,w:40,h:60,vx:0,vy:0,onGround:false,hp:MAX_HP,face:1,lastBone:0,lastBlaster:0,lastGravity:0};
+enemy={x:canvas.width*0.7,y:GROUND_Y-ENEMY_SOUL_SIZE,vx:0,vy:0,w:ENEMY_SOUL_SIZE,h:ENEMY_SOUL_SIZE,hp:200,dir:-1,patternTime:0};
+projectiles=[];
+bones=[];
+enemyAttacks=[];
+blasterBeams=[];
+gravityDir=1;
+phase=1;
+score=0;
+gameOver=false;
+started=true;
+phaseTimer=0;
+shakeTime=0;
+shakeIntensity=0;
+overlay.style.display="none";
+lastTime=performance.now();
+requestAnimationFrame(loop);
+}
+function loop(timestamp){
+if(!started)return;
+const dt=timestamp-lastTime;
+lastTime=timestamp;
+update(dt);
+draw();
+if(!gameOver)requestAnimationFrame(loop);
+}
+function update(dt){
+phaseTimer+=dt;
+if(phaseTimer>PHASE_DURATION){
+phaseTimer=0;
+phase++;
+if(phase>4)phase=4;
+}
+hpText.textContent=Math.max(0,Math.floor(player.hp));
+phaseText.textContent=phase;
+scoreText.textContent=score;
+handlePlayer(dt);
+handleEnemy(dt);
+handleProjectiles(dt);
+handleEnemyAttacks(dt);
+handleBlasterBeams(dt);
+checkCollisions();
+if(player.hp<=0){
+player.hp=0;
+endGame(false);
+}
+if(enemy.hp<=0){
+enemy.hp=0;
+score+=500;
+endGame(true);
+}
+if(shakeTime>0){
+shakeTime-=dt;
+shakeIntensity*=SHAKE_DECAY;
+if(shakeTime<0)shakeTime=0;
+}
+}
+function handlePlayer(dt){
+player.vx=0;
+if(keys["a"])player.vx=-PLAYER_SPEED;
+if(keys["d"])player.vx=PLAYER_SPEED;
+if(keys["w"]&&player.onGround){
+player.vy=JUMP_FORCE*gravityDir;
+player.onGround=false;
+}
+player.vy+=GRAVITY*gravityDir;
+player.x+=player.vx;
+player.y+=player.vy;
+if(gravityDir===1){
+if(player.y+player.h>GROUND_Y){
+player.y=GROUND_Y-player.h;
+player.vy=0;
+player.onGround=true;
+}
+if(player.y<40){
+player.y=40;
+player.vy=0;
+}
+}else{
+if(player.y<40){
+player.y=40;
+player.vy=0;
+player.onGround=true;
+}
+if(player.y+player.h>GROUND_Y){
+player.y=GROUND_Y-player.h;
+player.vy=0;
+}
+}
+if(player.x<40)player.x=40;
+if(player.x+player.w>canvas.width-40)player.x=canvas.width-40-player.w;
+if(player.vx>0)player.face=1;
+else if(player.vx<0)player.face=-1;
+if(keys["j"])tryShootBone();
+if(keys["k"])tryBlaster();
+if(keys["l"])tryGravityFlip();
+}
+function tryShootBone(){
+const now=performance.now();
+if(now-player.lastBone<BONE_COOLDOWN)return;
+player.lastBone=now;
+const dir=player.face||1;
+bones.push({x:player.x+player.w/2,y:player.y+player.h*0.35,w:26,h:10,vx:BONE_SPEED*dir,vy:0,life:1600});
+}
+function tryBlaster(){
+const now=performance.now();
+if(now-player.lastBlaster<BLASTER_COOLDOWN)return;
+player.lastBlaster=now;
+const dir=player.face||1;
+const bx=dir===1?player.x+80:player.x-80;
+const by=player.y-40;
+blasterBeams.push({x:bx,y:by,w:60,h:120,dir:dir,time:0,warning:true});
+shakeTime=400;
+shakeIntensity=6;
+}
+function tryGravityFlip(){
+const now=performance.now();
+if(now-player.lastGravity<GRAVITY_COOLDOWN)return;
+player.lastGravity=now;
+gravityDir*=-1;
+player.onGround=false;
+shakeTime=300;
+shakeIntensity=4;
+}
+function handleEnemy(dt){
+enemy.patternTime+=dt;
+const speedBase=1.4+phase*0.3;
+const targetX=canvas.width*0.6+Math.sin(enemy.patternTime*0.0015)*220;
+if(targetX>enemy.x)enemy.vx=speedBase;
+else enemy.vx=-speedBase;
+enemy.x+=enemy.vx;
+if(enemy.x<canvas.width*0.45)enemy.x=canvas.width*0.45;
+if(enemy.x>canvas.width*0.9)enemy.x=canvas.width*0.9;
+enemy.y=GROUND_Y-ENEMY_SOUL_SIZE-40-Math.sin(enemy.patternTime*0.002)*80;
+const interval=Math.max(ENEMY_ATTACK_INTERVAL_BASE-220*phase,550);
+if(enemy.patternTime>interval){
+enemy.patternTime=0;
+spawnEnemyPattern();
+}
+}
+function spawnEnemyPattern(){
+const pattern=Math.floor(Math.random()*3);
+if(pattern===0)spawnBoneRain();
+else if(pattern===1)spawnSoulChase();
+else spawnHorizontalBones();
+}
+function spawnBoneRain(){
+const count=6+phase*2;
+for(let i=0;i<count;i++){
+const delay=i*90;
+enemyAttacks.push({type:"fallBone",x:80+Math.random()*(canvas.width-160),y:-40,w:18,h:40,vx:0,vy:3+Math.random()*1.5+phase*0.4,delay:delay,life:6000});
+}
+}
+function spawnSoulChase(){
+const dir=player.x>enemy.x?1:-1;
+const speed=3.2+phase*0.5;
+enemyAttacks.push({type:"chaser",x:enemy.x+enemy.w/2,y:enemy.y+enemy.h/2,w:20,h:20,vx:speed*dir,vy:0,life:5000});
+}
+function spawnHorizontalBones(){
+const lanes=3+Math.min(phase,2);
+for(let i=0;i<lanes;i++){
+const fromLeft=i%2===0;
+const y=GROUND_Y-40-i*40*gravityDir;
+const vx=(3.2+phase*0.6)*(fromLeft?1:-1);
+enemyAttacks.push({type:"hBone",x:fromLeft?0:canvas.width,y:y,w:30,h:14,vx:vx,vy:0,life:6000});
+}
+}
+function handleProjectiles(dt){
+for(let i=projectiles.length-1;i>=0;i--){
+const p=projectiles[i];
+p.x+=p.vx;
+p.y+=p.vy;
+p.life-=dt;
+if(p.life<=0||p.x<-100||p.x>canvas.width+100||p.y<-100||p.y>canvas.height+100)projectiles.splice(i,1);
+}
+for(let i=bones.length-1;i>=0;i--){
+const b=bones[i];
+b.x+=b.vx;
+b.y+=b.vy;
+b.life-=dt;
+if(b.life<=0||b.x<-120||b.x>canvas.width+120)bones.splice(i,1);
+}
+}
+function handleEnemyAttacks(dt){
+for(let i=enemyAttacks.length-1;i>=0;i--){
+const a=enemyAttacks[i];
+if(a.delay&&a.delay>0){
+a.delay-=dt;
+continue;
+}
+a.x+=a.vx;
+a.y+=a.vy;
+a.life-=dt;
+if(a.type==="fallBone"){
+if(a.y<40)a.y=40;
+}
+if(a.life<=0||a.x<-160||a.x>canvas.width+160||a.y<-160||a.y>canvas.height+160)enemyAttacks.splice(i,1);
+}
+}
+function handleBlasterBeams(dt){
+for(let i=blasterBeams.length-1;i>=0;i--){
+const b=blasterBeams[i];
+b.time+=dt;
+if(b.warning&&b.time>260){
+b.warning=false;
+b.time=0;
+}
+if(!b.warning&&b.time>BLASTER_BEAM_TIME){
+blasterBeams.splice(i,1);
+}
+}
+}
+function rectsOverlap(a,b){
+return a.x<a.x+a.w&&b.x<b.x+b.w&&a.x+a.w>b.x&&a.y+a.h>b.y&&b.y+b.h>a.y;
+}
+function checkCollisions(){
+for(let i=bones.length-1;i>=0;i--){
+const b=bones[i];
+if(b.x<b.x+b.w){
+if(b.x<enemy.x+enemy.w&&b.x+b.w>enemy.x&&b.y<enemy.y+enemy.h&&b.y+b.h>enemy.y){
+enemy.hp-=8+phase*2;
+score+=10;
+bones.splice(i,1);
+shakeTime=200;
+shakeIntensity=3;
+}
+}
+}
+for(let i=enemyAttacks.length-1;i>=0;i--){
+const a=enemyAttacks[i];
+if(a.delay&&a.delay>0)continue;
+if(a.x<player.x+player.w&&a.x+a.w>player.x&&a.y<player.y+player.h&&a.y+a.h>player.y){
+const dmg=6+phase*2;
+player.hp-=dmg;
+enemyAttacks.splice(i,1);
+shakeTime=260;
+shakeIntensity=5;
+}
+}
+for(let i=blasterBeams.length-1;i>=0;i--){
+const b=blasterBeams[i];
+if(b.warning)continue;
+const hitBox={x:b.dir===1?b.x:b.x-b.w,y:b.y,w:b.w,h:b.h};
+if(hitBox.x<enemy.x+enemy.w&&hitBox.x+hitBox.w>enemy.x&&hitBox.y<enemy.y+enemy.h&&hitBox.y+hitBox.h>enemy.y){
+enemy.hp-=22+phase*4;
+score+=40;
+}
+}
+}
+function endGame(win){
+gameOver=true;
+started=false;
+overlay.style.display="flex";
+overlayText.textContent=win?"You won. Human stopped.":"You died. Genocide succeeded.";
+startBtn.textContent="Play again";
+}
+function draw(){
+let offsetX=0,offsetY=0;
+if(shakeTime>0){
+offsetX=(Math.random()*2-1)*shakeIntensity;
+offsetY=(Math.random()*2-1)*shakeIntensity;
+}
+ctx.save();
+ctx.clearRect(0,0,canvas.width,canvas.height);
+ctx.translate(offsetX,offsetY);
+drawBackground();
+drawPlayer();
+drawEnemy();
+drawBones();
+drawEnemyAttacks();
+drawBlasterBeams();
+drawUIBars();
+ctx.restore();
+}
+function drawBackground(){
+ctx.fillStyle="#111";
+ctx.fillRect(0,0,canvas.width,canvas.height);
+ctx.fillStyle="#222";
+ctx.fillRect(0,GROUND_Y,canvas.width,canvas.height-GROUND_Y);
+ctx.strokeStyle="#333";
+ctx.lineWidth=2;
+for(let i=0;i<6;i++){
+const x=80+i*140;
+ctx.beginPath();
+ctx.moveTo(x,GROUND_Y);
+ctx.lineTo(x,GROUND_Y-80);
+ctx.stroke();
+}
+ctx.fillStyle="#000";
+ctx.fillRect(60,60,canvas.width-120,GROUND_Y-100);
+ctx.strokeStyle="#555";
+ctx.strokeRect(60,60,canvas.width-120,GROUND_Y-100);
+}
+function drawPlayer(){
+ctx.save();
+ctx.translate(player.x+player.w/2,player.y+player.h/2);
+ctx.scale(1,gravityDir);
+ctx.translate(-player.w/2,-player.h/2);
+ctx.fillStyle="#fff";
+ctx.fillRect(8,0,24,30);
+ctx.fillRect(4,26,32,26);
+ctx.fillStyle="#00f";
+ctx.fillRect(4,26,32,16);
+ctx.fillStyle="#fff";
+ctx.fillRect(6,28,10,14);
+ctx.fillRect(22,28,10,14);
+ctx.fillStyle="#000";
+ctx.fillRect(10,10,6,4);
+ctx.fillRect(24,10,6,4);
+ctx.fillRect(16,18,8,3);
+ctx.restore();
+}
+function drawEnemy(){
+ctx.save();
+ctx.translate(enemy.x+enemy.w/2,enemy.y+enemy.h/2);
+ctx.fillStyle="#f00";
+ctx.beginPath();
+ctx.arc(0,0,enemy.w/2,0,Math.PI*2);
+ctx.fill();
+ctx.fillStyle="#fff";
+ctx.beginPath();
+ctx.arc(-5,-4,3,0,Math.PI*2);
+ctx.arc(5,-4,3,0,Math.PI*2);
+ctx.fill();
+ctx.fillStyle="#000";
+ctx.fillRect(-4,2,8,2);
+ctx.restore();
+}
+function drawBones(){
+ctx.fillStyle="#fff";
+for(const b of bones){
+ctx.save();
+ctx.translate(b.x,b.y);
+ctx.fillRect(0,0,b.w,b.h);
+ctx.restore();
+}
+}
+function drawEnemyAttacks(){
+for(const a of enemyAttacks){
+if(a.delay&&a.delay>0)continue;
+if(a.type==="fallBone"||a.type==="hBone"){
+ctx.fillStyle="#fff";
+ctx.fillRect(a.x,a.y,a.w,a.h);
+ctx.fillStyle="#ccc";
+ctx.fillRect(a.x,a.y,a.w,4);
+ctx.fillRect(a.x,a.y+a.h-4,a.w,4);
+}else if(a.type==="chaser"){
+ctx.fillStyle="#0ff";
+ctx.beginPath();
+ctx.arc(a.x,a.y,a.w/2,0,Math.PI*2);
+ctx.fill();
+}
+}
+}
+function drawBlasterBeams(){
+for(const b of blasterBeams){
+ctx.save();
+ctx.translate(b.x,b.y);
+ctx.scale(b.dir,1);
+ctx.fillStyle="#fff";
+ctx.fillRect(-20,-40,40,40);
+ctx.fillStyle="#000";
+ctx.fillRect(-12,-28,8,6);
+ctx.fillRect(4,-28,8,6);
+ctx.fillRect(-6,-16,12,4);
+if(b.warning){
+ctx.globalAlpha=0.4+0.3*Math.sin(b.time*0.02);
+ctx.fillStyle="#0ff";
+ctx.fillRect(-8,0,16,120);
+}else{
+ctx.globalAlpha=0.8;
+ctx.fillStyle="#0ff";
+ctx.fillRect(-10,0,20,140);
+ctx.globalAlpha=1;
+}
+ctx.restore();
+}
+}
+function drawUIBars(){
+const hpRatio=Math.max(0,player.hp)/MAX_HP;
+const enemyRatio=Math.max(0,enemy.hp)/200;
+ctx.fillStyle="#400";
+ctx.fillRect(80,30,260,10);
+ctx.fillStyle="#f00";
+ctx.fillRect(80,30,260*hpRatio,10);
+ctx.fillStyle="#044";
+ctx.fillRect(canvas.width-340,30,260,10);
+ctx.fillStyle="#0ff";
+ctx.fillRect(canvas.width-340,30,260*enemyRatio,10);
+ctx.fillStyle="#fff";
+ctx.font="12px Arial";
+ctx.fillText("SANS",80,25);
+ctx.fillText("HUMAN",canvas.width-340,25);
+}
+</script>
 </body>
 </html>

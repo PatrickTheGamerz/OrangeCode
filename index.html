@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Sans vs Chara Corridor</title>
+<title>Last Corridor – Sans vs Chara</title>
 <style>
 html,body{margin:0;padding:0;background:#000;color:#fff;font-family:Arial,Helvetica,sans-serif;overflow:hidden}
 #ui{position:fixed;top:10px;left:10px;z-index:10;font-size:14px;text-shadow:0 0 4px #000}
@@ -15,70 +15,76 @@ button:hover{background:#666}
 </head>
 <body>
 <div id="ui">
-<span>Chara HP: <span id="hpText">100</span></span>
-<span>Heals: <span id="healText">3</span></span>
-<span>Sans HP: <span id="sansHpText">200</span></span>
-<span>Sans Stamina: <span id="stamText">100</span></span>
+<span>Sans HP: <span id="sansHpText">100</span></span>
+<span>Stamina: <span id="stamText">100</span></span>
+<span>Chara HP: <span id="charaHpText">100</span></span>
+<span>KR: <span id="krText">0</span></span>
+<span>DT: <span id="dtText">0</span></span>
 <span>Phase: <span id="phaseText">1</span></span>
-<span>Controls: A/D move, W jump, J slash, H heal</span>
+<span>Controls: A/D move, W jump, J dodge</span>
 </div>
 <canvas id="gameCanvas" width="960" height="540"></canvas>
 <div id="overlay">
-<div id="overlayText">Last Corridor - Sans vs Chara</div>
-<div style="font-size:14px;margin-top:6px">Survive Sans' attacks and defeat him. Move during blue bones to take damage.</div>
+<div id="overlayText">Last Corridor – Play as Sans</div>
+<div style="font-size:14px;margin-top:6px">Move Sans, dodge Chara, let your attacks stack KR. Chara can revive with enough DT.</div>
 <button id="startBtn">Start</button>
 </div>
 <script>
 const canvas=document.getElementById("gameCanvas");
 const ctx=canvas.getContext("2d");
-const hpText=document.getElementById("hpText");
-const healText=document.getElementById("healText");
 const sansHpText=document.getElementById("sansHpText");
 const stamText=document.getElementById("stamText");
+const charaHpText=document.getElementById("charaHpText");
+const krText=document.getElementById("krText");
+const dtText=document.getElementById("dtText");
 const phaseText=document.getElementById("phaseText");
 const overlay=document.getElementById("overlay");
 const overlayText=document.getElementById("overlayText");
 const startBtn=document.getElementById("startBtn");
 const keys={};
 let lastTime=0;
-let player,sans,boneRains,blasters,boneJumps,phase,phaseTimer,gameOver,started,shakeTime,shakeIntensity,gravityAttackTimer;
+let sans,chara,boneRains,blasters,boneJumps,boneZones,phase,phaseTimer,gameOver,started,shakeTime,shakeIntensity;
+let boneRainTimer,blasterTimer,boneJumpTimer,gravityTimer,blasterChainTimer,blasterChainCount;
 const GROUND_Y=400;
-const PLAYER_SPEED=4.2;
-const PLAYER_JUMP=-13;
-const PLAYER_GRAVITY=0.7;
-const MAX_PLAYER_HP=100;
-const MAX_SANS_HP=220;
+const SANS_SPEED=4.2;
+const SANS_JUMP=-13;
+const SANS_GRAVITY=0.7;
+const MAX_SANS_HP=100;
 const MAX_STAMINA=100;
-const STAMINA_REGEN=4;
-const SLASH_COOLDOWN=550;
-const HEAL_COOLDOWN=6000;
-const HEAL_AMOUNT=35;
-const MAX_HEALS=3;
+const STAMINA_REGEN=8;
+const DODGE_COST=22;
+const DODGE_COOLDOWN=450;
+const CHARA_SPEED=3.4;
+const CHARA_JUMP=-11.5;
+const CHARA_GRAVITY=0.7;
+const MAX_CHARA_HP=92;
 const PHASE_DURATION=26000;
-const BONE_RAIN_INTERVAL_BASE=1800;
-const BLASTER_INTERVAL_BASE=5200;
-const BONE_JUMP_INTERVAL_BASE=4200;
-const GRAVITY_ATTACK_INTERVAL_BASE=9000;
+const BONE_RAIN_INTERVAL_BASE=2200;
+const BLASTER_INTERVAL_BASE=6200;
+const BONE_JUMP_INTERVAL_BASE=5200;
+const GRAVITY_INTERVAL_BASE=9000;
 const BLUE_BONE_TIME=1600;
-const WHITE_BONE_RISE_TIME=600;
+const WHITE_BONE_RISE_TIME=500;
+const BONE_ZONE_TIME=500;
 const SHAKE_DECAY=0.9;
-let boneRainTimer,blasterTimer,boneJumpTimer,gravityTimer;
 window.addEventListener("keydown",e=>{keys[e.key.toLowerCase()]=true;if([" ","arrowup","arrowdown","arrowleft","arrowright"].includes(e.key.toLowerCase()))e.preventDefault()});
 window.addEventListener("keyup",e=>{keys[e.key.toLowerCase()]=false});
 startBtn.onclick=()=>{startGame()};
 function startGame(){
-player={x:canvas.width*0.25,y:GROUND_Y-60,w:34,h:60,vx:0,vy:0,onGround:false,hp:MAX_PLAYER_HP,face:1,slashTimer:0,heals:MAX_HEALS,lastHeal:-1,gravityDir:1,gravityStateTime:0};
-sans={x:canvas.width*0.7,y:GROUND_Y-70,w:40,h:70,hp:MAX_SANS_HP,stamina:MAX_STAMINA,lastDodge:0};
+sans={x:canvas.width*0.7,y:GROUND_Y-70,w:40,h:70,vx:0,vy:0,onGround:false,hp:MAX_SANS_HP,stamina:MAX_STAMINA,lastDodge:0,face:-1};
+chara={x:canvas.width*0.3,y:GROUND_Y-60,w:34,h:60,vx:0,vy:0,onGround:false,hp:MAX_CHARA_HP,face:1,attackTimer:0,attackCooldown:650,aiJumpTimer:0,aiDir:1,kr:0,dt:0,dtGainPerHit:10,revives:0,gravityDir:1,gravityTime:0};
 boneRains=[];
 blasters=[];
 boneJumps=[];
+boneZones=[];
 phase=1;
 phaseTimer=0;
 boneRainTimer=0;
 blasterTimer=0;
 boneJumpTimer=0;
 gravityTimer=0;
-gravityAttackTimer=0;
+blasterChainTimer=0;
+blasterChainCount=0;
 gameOver=false;
 started=true;
 shakeTime=0;
@@ -103,24 +109,38 @@ phase++;
 if(phase>4)phase=4;
 }
 phaseText.textContent=phase;
-hpText.textContent=Math.max(0,Math.floor(player.hp));
-healText.textContent=player.heals;
 sansHpText.textContent=Math.max(0,Math.floor(sans.hp));
 stamText.textContent=Math.max(0,Math.floor(sans.stamina));
-handlePlayer(dt);
-handleSansAI(dt);
+charaHpText.textContent=Math.max(0,Math.floor(chara.hp));
+krText.textContent=chara.kr.toFixed(1);
+dtText.textContent=Math.floor(chara.dt);
+handleSans(dt);
+handleCharaAI(dt);
 updateBoneRain(dt);
 updateBlasters(dt);
 updateBoneJumps(dt);
-handleGravityAttack(dt);
+updateBoneZones(dt);
+applyKR(dt);
 checkCollisions();
-if(player.hp<=0){
-player.hp=0;
-endGame(false);
-}
 if(sans.hp<=0){
 sans.hp=0;
+endGame(false);
+}
+if(chara.hp<=0){
+if(chara.dt>=100){
+chara.dt-=100;
+chara.revives++;
+chara.dtGainPerHit=Math.max(2,chara.dtGainPerHit*0.6);
+chara.hp=MAX_CHARA_HP;
+chara.kr=0;
+chara.x=canvas.width*0.3;
+chara.y=GROUND_Y-60;
+shakeTime=400;
+shakeIntensity=6;
+}else{
+chara.hp=0;
 endGame(true);
+}
 }
 if(shakeTime>0){
 shakeTime-=dt;
@@ -128,131 +148,168 @@ shakeIntensity*=SHAKE_DECAY;
 if(shakeTime<0)shakeTime=0;
 }
 }
-function handlePlayer(dt){
-player.vx=0;
-if(keys["a"])player.vx=-PLAYER_SPEED;
-if(keys["d"])player.vx=PLAYER_SPEED;
-if(keys["w"]&&player.onGround){
-player.vy=PLAYER_JUMP*player.gravityDir;
-player.onGround=false;
+function handleSans(dt){
+sans.vx=0;
+if(keys["a"])sans.vx=-SANS_SPEED;
+if(keys["d"])sans.vx=SANS_SPEED;
+if(keys["w"]&&sans.onGround){
+sans.vy=SANS_JUMP;
+sans.onGround=false;
 }
-player.vy+=PLAYER_GRAVITY*player.gravityDir;
-player.x+=player.vx;
-player.y+=player.vy;
-if(player.gravityDir===1){
-if(player.y+player.h>GROUND_Y){
-player.y=GROUND_Y-player.h;
-player.vy=0;
-player.onGround=true;
+sans.vy+=SANS_GRAVITY;
+sans.x+=sans.vx;
+sans.y+=sans.vy;
+if(sans.y+sans.h>GROUND_Y){
+sans.y=GROUND_Y-sans.h;
+sans.vy=0;
+sans.onGround=true;
 }
-if(player.y<120){
-player.y=120;
-player.vy=0;
+if(sans.y<120){
+sans.y=120;
+sans.vy=0;
 }
-}else{
-if(player.y<120){
-player.y=120;
-player.vy=0;
-player.onGround=true;
-}
-if(player.y+player.h>GROUND_Y){
-player.y=GROUND_Y-player.h;
-player.vy=0;
-}
-}
-if(player.x<120)player.x=120;
-if(player.x+player.w>canvas.width-120)player.x=canvas.width-120-player.w;
-if(player.vx>0)player.face=1;
-else if(player.vx<0)player.face=-1;
-player.slashTimer-=dt;
-if(player.slashTimer<0)player.slashTimer=0;
-if(keys["j"])trySlash();
-if(keys["h"])tryHeal();
-if(player.gravityStateTime>0){
-player.gravityStateTime-=dt;
-if(player.gravityStateTime<=0){
-player.gravityDir=1;
-}
-}
-}
-function trySlash(){
-if(player.slashTimer>0)return;
-player.slashTimer=SLASH_COOLDOWN;
-const range=60;
-const slashWidth=40;
-const dir=player.face||1;
-const sx=dir===1?player.x+player.w:sans.x-player.w;
-const hitBox={x:player.x+(dir===1?player.w: -range),y:player.y+10,w:range,h:player.h-20};
-if(rectOverlap(hitBox,sans)){
-if(sans.stamina>0){
-const now=performance.now();
-if(now-sans.lastDodge>350){
-sans.lastDodge=now;
-sans.stamina-=22;
-if(sans.stamina<0)sans.stamina=0;
-const dodgeDir=Math.random()<0.5?-1:1;
-sans.x+=dodgeDir*70;
-if(sans.x<canvas.width*0.55)sans.x=canvas.width*0.55;
-if(sans.x>canvas.width*0.9)sans.x=canvas.width*0.9;
-shakeTime=200;
-shakeIntensity=3;
-}
-}else{
-sans.hp-=14+phase*2;
-shakeTime=260;
-shakeIntensity=4;
-}
-}
-}
-function tryHeal(){
-const now=performance.now();
-if(player.heals<=0)return;
-if(player.hp>MAX_PLAYER_HP*0.45)return;
-if(player.lastHeal>0&&now-player.lastHeal<HEAL_COOLDOWN)return;
-player.lastHeal=now;
-player.heals--;
-player.hp+=HEAL_AMOUNT;
-if(player.hp>MAX_PLAYER_HP)player.hp=MAX_PLAYER_HP;
-shakeTime=200;
-shakeIntensity=3;
-}
-function handleSansAI(dt){
+if(sans.x<120)sans.x=120;
+if(sans.x+sans.w>canvas.width-120)sans.x=canvas.width-120-sans.w;
+if(sans.vx>0)sans.face=1;
+else if(sans.vx<0)sans.face=-1;
 if(sans.stamina<MAX_STAMINA){
 sans.stamina+=STAMINA_REGEN*dt/1000;
 if(sans.stamina>MAX_STAMINA)sans.stamina=MAX_STAMINA;
 }
+if(keys["j"])trySansDodge();
 boneRainTimer+=dt;
 blasterTimer+=dt;
 boneJumpTimer+=dt;
 gravityTimer+=dt;
-const boneRainInterval=Math.max(BONE_RAIN_INTERVAL_BASE-160*phase,900);
-const blasterInterval=Math.max(BLASTER_INTERVAL_BASE-260*phase,2600);
-const boneJumpInterval=Math.max(BONE_JUMP_INTERVAL_BASE-200*phase,1800);
-const gravityInterval=Math.max(GRAVITY_ATTACK_INTERVAL_BASE-400*phase,4200);
-if(boneRainTimer>boneRainInterval){
+const boneRainInterval=Math.max(BONE_RAIN_INTERVAL_BASE-200*phase,1200);
+const blasterInterval=Math.max(BLASTER_INTERVAL_BASE-350*phase,3200);
+const boneJumpInterval=Math.max(BONE_JUMP_INTERVAL_BASE-260*phase,2200);
+const gravityInterval=Math.max(GRAVITY_INTERVAL_BASE-400*phase,4200);
+if(boneRainTimer>boneRainInterval&&sans.stamina>15){
 boneRainTimer=0;
 spawnBoneRain();
+sans.stamina-=10;
 }
-if(blasterTimer>blasterInterval){
+if(blasterTimer>blasterInterval&&sans.stamina>25){
 blasterTimer=0;
-spawnBlasters();
+blasterChainTimer=0;
+blasterChainCount=0;
+spawnBlasterChainStart();
+sans.stamina-=18;
 }
-if(boneJumpTimer>boneJumpInterval){
+if(boneJumpTimer>boneJumpInterval&&sans.stamina>18){
 boneJumpTimer=0;
-spawnBoneJump();
+spawnBoneJumpWave();
+sans.stamina-=14;
 }
-if(gravityTimer>gravityInterval){
+if(gravityTimer>gravityInterval&&sans.stamina>20){
 gravityTimer=0;
-triggerGravityAttack();
+triggerGravitySlam();
+sans.stamina-=16;
+}
+if(blasterChainCount>0&&blasterChainCount<3){
+blasterChainTimer+=dt;
+if(blasterChainTimer>500){
+blasterChainTimer=0;
+spawnNextBlasterInChain();
+}
+}
+}
+function trySansDodge(){
+const now=performance.now();
+if(now-sans.lastDodge<DODGE_COOLDOWN)return;
+if(sans.stamina<DODGE_COST)return;
+sans.lastDodge=now;
+sans.stamina-=DODGE_COST;
+const dir=Math.random()<0.5?-1:1;
+sans.x+=dir*120;
+if(sans.x<120)sans.x=120;
+if(sans.x+sans.w>canvas.width-120)sans.x=canvas.width-120-sans.w;
+shakeTime=220;
+shakeIntensity=4;
+}
+function handleCharaAI(dt){
+chara.attackTimer-=dt;
+if(chara.attackTimer<0)chara.attackTimer=0;
+chara.aiJumpTimer-=dt;
+if(chara.aiJumpTimer<0)chara.aiJumpTimer=0;
+let targetX=sans.x+sans.w/2;
+let dx=targetX-(chara.x+chara.w/2);
+if(Math.abs(dx)>40){
+chara.vx=dx>0?CHARA_SPEED:-CHARA_SPEED;
+}else{
+chara.vx=0;
+}
+if(chara.vx>0)chara.face=1;
+else if(chara.vx<0)chara.face=-1;
+if(chara.aiJumpTimer===0&&Math.random()<0.004){
+chara.aiJumpTimer=900;
+if(chara.onGround){
+chara.vy=CHARA_JUMP*chara.gravityDir;
+chara.onGround=false;
+}
+}
+chara.vy+=CHARA_GRAVITY*chara.gravityDir;
+chara.x+=chara.vx;
+chara.y+=chara.vy;
+if(chara.gravityDir===1){
+if(chara.y+chara.h>GROUND_Y){
+chara.y=GROUND_Y-chara.h;
+chara.vy=0;
+chara.onGround=true;
+}
+if(chara.y<120){
+chara.y=120;
+chara.vy=0;
+}
+}else{
+if(chara.y<120){
+chara.y=120;
+chara.vy=0;
+chara.onGround=true;
+}
+if(chara.y+chara.h>GROUND_Y){
+chara.y=GROUND_Y-chara.h;
+chara.vy=0;
+}
+}
+if(chara.x<120)chara.x=120;
+if(chara.x+chara.w>canvas.width-120)chara.x=canvas.width-120-chara.w;
+if(chara.gravityTime>0){
+chara.gravityTime-=dt;
+if(chara.gravityTime<=0){
+chara.gravityDir=1;
+}
+}
+if(chara.attackTimer===0){
+const dist=Math.abs((chara.x+chara.w/2)-(sans.x+sans.w/2));
+if(dist<70&&Math.abs(chara.y-sans.y)<40){
+chara.attackTimer=chara.attackCooldown;
+performCharaSlash();
+}
+}
+}
+function performCharaSlash(){
+const dir=chara.face||1;
+const hitBox={x:chara.x+(dir===1?chara.w-4:-50),y:chara.y+8,w:50,h:chara.h-16};
+if(rectOverlap(hitBox,sans)){
+sans.hp-=1;
+shakeTime=200;
+shakeIntensity=3;
+chara.dt+=chara.dtGainPerHit;
+if(chara.dt>999)chara.dt=999;
 }
 }
 function spawnBoneRain(){
-const count=6+phase*2;
+const count=7+phase*2;
 for(let i=0;i<count;i++){
-const delay=i*90;
+const delay=i*80;
 const x=140+Math.random()*(canvas.width-280);
-boneRains.push({x:x,y:-40,w:18,h:40,vy:3+Math.random()*1.5+phase*0.4,delay:delay,life:6000});
+const blue=Math.random()<0.35;
+boneRains.push({x:x,y:-40,w:18,h:40,vy:3+Math.random()*1.5+phase*0.4,delay:delay,life:6000,blue:blue});
 }
+shakeTime=220;
+shakeIntensity=4;
 }
 function updateBoneRain(dt){
 for(let i=boneRains.length-1;i>=0;i--){
@@ -266,72 +323,101 @@ b.life-=dt;
 if(b.life<=0||b.y>canvas.height+80)boneRains.splice(i,1);
 }
 }
-function spawnBlasters(){
-const px=player.x+player.w/2;
-const py=player.y+player.h/2;
+function spawnBlasterChainStart(){
+blasterChainCount=1;
+spawnBlasterAtIndex(0);
+}
+function spawnNextBlasterInChain(){
+blasterChainCount++;
+spawnBlasterAtIndex(blasterChainCount-1);
+if(blasterChainCount>=3)blasterChainCount=3;
+}
+function spawnBlasterAtIndex(index){
+const px=chara.x+chara.w/2;
+const py=chara.y+chara.h/2;
 const sx=sans.x+sans.w/2;
 const sy=sans.y+sans.h/2;
 const baseAngle=Math.atan2(py-sy,px-sx);
 const spread=0.35;
-const angles=[baseAngle-spread,baseAngle,baseAngle+spread];
-for(let i=0;i<3;i++){
-const a=angles[i];
-const dist=120;
+const offsets=[-spread,0,spread];
+const a=baseAngle+offsets[index];
+const dist=140;
 const bx=sx+Math.cos(a)*dist;
 const by=sy+Math.sin(a)*dist;
-blasters.push({x:bx,y:by,angle:a,time:0,warning:true});
-}
-shakeTime=350;
+blasters.push({x:bx,y:by,angle:a,time:0,warning:true,appearTime:260});
+shakeTime=260;
 shakeIntensity=5;
 }
 function updateBlasters(dt){
 for(let i=blasters.length-1;i>=0;i--){
 const b=blasters[i];
 b.time+=dt;
-if(b.warning&&b.time>450){
+if(b.warning){
+if(b.time>b.appearTime){
 b.warning=false;
 b.time=0;
 }
-if(!b.warning&&b.time>650){
+}else{
+if(b.time>650){
 blasters.splice(i,1);
 }
 }
 }
-function spawnBoneJump(){
-const lanes=2+phase;
-for(let i=0;i<lanes;i++){
-const x=160+Math.random()*(canvas.width-320);
-boneJumps.push({x:x,y:GROUND_Y-10,w:20,h:10,phase:"white",time:0});
 }
+function spawnBoneJumpWave(){
+const side=Math.random()<0.5?"left":"right";
+const baseX=side==="left"?130:canvas.width-150;
+const dir=side==="left"?1:-1;
+boneJumps.push({x:baseX,y:GROUND_Y-20,w:20,h:20,phase:"white",time:0,dir:dir});
+setTimeout(()=>{boneJumps.push({x:baseX,y:GROUND_Y-20,w:20,h:20,phase:"blue",time:0,dir:dir});},1000);
+setTimeout(()=>{boneJumps.push({x:baseX,y:GROUND_Y-20,w:20,h:20,phase:"white",time:0,dir:dir});},3000);
 }
 function updateBoneJumps(dt){
 for(let i=boneJumps.length-1;i>=0;i--){
 const b=boneJumps[i];
 b.time+=dt;
+b.x+=b.dir*(2.4+phase*0.4);
 if(b.phase==="white"){
-b.h=10+40*(b.time/WHITE_BONE_RISE_TIME);
+b.h=20+60*(b.time/WHITE_BONE_RISE_TIME);
+if(b.h>120)b.h=120;
 b.y=GROUND_Y-b.h;
-if(b.time>WHITE_BONE_RISE_TIME){
-b.phase="blue";
-b.time=0;
+if(b.time>WHITE_BONE_RISE_TIME+800){
+boneJumps.splice(i,1);
+continue;
+}
+}else{
 b.h=180;
 b.y=GROUND_Y-b.h;
-}
-}else if(b.phase==="blue"){
 if(b.time>BLUE_BONE_TIME){
 boneJumps.splice(i,1);
+continue;
 }
 }
+if(b.x<-200||b.x>canvas.width+200)boneJumps.splice(i,1);
 }
 }
-function triggerGravityAttack(){
-player.gravityDir=-1;
-player.gravityStateTime=2200+phase*200;
+function triggerGravitySlam(){
+chara.gravityDir*=-1;
+chara.gravityTime=2200+phase*200;
+const zoneY=chara.gravityDir===1?GROUND_Y-40:120;
+boneZones.push({x:chara.x-40,y:zoneY,width:chara.w+80,height:40,life:BONE_ZONE_TIME,time:0,dir:chara.gravityDir});
 shakeTime=260;
-shakeIntensity=4;
+shakeIntensity=5;
 }
-function handleGravityAttack(dt){
-if(player.gravityStateTime>0){
+function updateBoneZones(dt){
+for(let i=boneZones.length-1;i>=0;i--){
+const z=boneZones[i];
+z.time+=dt;
+z.life-=dt;
+if(z.life<=0)boneZones.splice(i,1);
+}
+}
+function applyKR(dt){
+if(chara.kr>0){
+const dmg=chara.kr*dt/1000*6;
+chara.hp-=dmg;
+chara.kr-=dt/1000*1.2;
+if(chara.kr<0)chara.kr=0;
 }
 }
 function rectOverlap(a,b){
@@ -340,53 +426,74 @@ return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
 function checkCollisions(){
 for(let i=boneRains.length-1;i>=0;i--){
 const b=boneRains[i];
+if(b.delay>0)continue;
 const hitBox={x:b.x,y:b.y,w:b.w,h:b.h};
-if(rectOverlap(hitBox,player)){
-player.hp-=6+phase*2;
-boneRains.splice(i,1);
+if(rectOverlap(hitBox,chara)){
+if(b.blue){
+const moving=Math.abs(chara.vx)+Math.abs(chara.vy)>0.4;
+if(moving){
+chara.hp-=1;
+chara.kr+=0.18;
+shakeTime=220;
+shakeIntensity=4;
+}
+}else{
+chara.hp-=1;
+chara.kr+=0.12;
 shakeTime=220;
 shakeIntensity=4;
 }
 }
-for(let i=blasters.length-1;i>=0;i--){
-const b=blasters[i];
-if(b.warning)continue;
-const beamLen=260;
+}
+for(const bl of blasters){
+if(bl.warning)continue;
+const beamLen=2000;
 const bw=26;
-const bx=b.x-Math.cos(b.angle)*20;
-const by=b.y-Math.sin(b.angle)*20;
-const ex=bx+Math.cos(b.angle)*beamLen;
-const ey=by+Math.sin(b.angle)*beamLen;
-const steps=16;
+const bx=bl.x;
+const by=bl.y;
+const ex=bx+Math.cos(bl.angle)*beamLen;
+const ey=by+Math.sin(bl.angle)*beamLen;
+const steps=40;
 for(let s=0;s<steps;s++){
 const t=s/steps;
 const cx=bx+(ex-bx)*t;
 const cy=by+(ey-by)*t;
 const beamBox={x:cx-bw/2,y:cy-bw/2,w:bw,h:bw};
-if(rectOverlap(beamBox,player)){
-player.hp-=14+phase*3;
+if(rectOverlap(beamBox,chara)){
+chara.hp-=1;
+chara.kr+=0.2;
 shakeTime=260;
 shakeIntensity=5;
 break;
 }
 }
 }
-for(let i=boneJumps.length-1;i>=0;i--){
-const b=boneJumps[i];
+for(const b of boneJumps){
 const hitBox={x:b.x,y:b.y,w:b.w,h:b.h};
-if(rectOverlap(hitBox,player)){
+if(rectOverlap(hitBox,chara)){
 if(b.phase==="white"){
-player.hp-=8+phase*2;
+chara.hp-=1;
+chara.kr+=0.14;
 shakeTime=220;
 shakeIntensity=4;
-}else if(b.phase==="blue"){
-const moving=Math.abs(player.vx)+Math.abs(player.vy)>0.4;
+}else{
+const moving=Math.abs(chara.vx)+Math.abs(chara.vy)>0.4;
 if(moving){
-player.hp-=10+phase*3;
+chara.hp-=1;
+chara.kr+=0.2;
 shakeTime=260;
 shakeIntensity=5;
 }
 }
+}
+}
+for(const z of boneZones){
+const hitBox={x:z.x,y:z.y-z.dir*10,w:z.width,h:z.height};
+if(rectOverlap(hitBox,chara)){
+chara.hp-=1;
+chara.kr+=0.16;
+shakeTime=220;
+shakeIntensity=4;
 }
 }
 }
@@ -394,7 +501,7 @@ function endGame(win){
 gameOver=true;
 started=false;
 overlay.style.display="flex";
-overlayText.textContent=win?"You defeated Sans.":"You died. You felt your sins crawling.";
+overlayText.textContent=win?"You gave them a bad time.":"You died. Chara’s DT refused.";
 startBtn.textContent="Play again";
 }
 function draw(){
@@ -407,11 +514,12 @@ ctx.save();
 ctx.clearRect(0,0,canvas.width,canvas.height);
 ctx.translate(offsetX,offsetY);
 drawCorridor();
+drawBoneZones();
 drawBoneRain();
 drawBoneJumps();
 drawBlasters();
 drawSans();
-drawPlayer();
+drawChara();
 drawBars();
 ctx.restore();
 }
@@ -449,31 +557,6 @@ ctx.strokeRect(120,100,canvas.width-240,GROUND_Y-120);
 ctx.fillStyle="#111";
 ctx.fillRect(120,100,canvas.width-240,GROUND_Y-120);
 }
-function drawPlayer(){
-ctx.save();
-ctx.translate(player.x+player.w/2,player.y+player.h/2);
-ctx.scale(1,player.gravityDir);
-ctx.translate(-player.w/2,-player.h/2);
-ctx.fillStyle="#3b0000";
-ctx.fillRect(4,0,26,30);
-ctx.fillStyle="#5c0000";
-ctx.fillRect(2,28,30,18);
-ctx.fillStyle="#2b2b2b";
-ctx.fillRect(4,44,10,16);
-ctx.fillRect(20,44,10,16);
-ctx.fillStyle="#f0e0d0";
-ctx.fillRect(6,4,22,18);
-ctx.fillStyle="#000";
-ctx.fillRect(10,10,4,3);
-ctx.fillRect(20,10,4,3);
-ctx.fillRect(14,16,6,2);
-ctx.fillStyle="#0f0";
-if(player.slashTimer>SLASH_COOLDOWN-160){
-const dir=player.face||1;
-ctx.fillRect(dir===1?26:-18,10,18,6);
-}
-ctx.restore();
-}
 function drawSans(){
 ctx.save();
 ctx.translate(sans.x+sans.w/2,sans.y+sans.h/2);
@@ -495,24 +578,53 @@ ctx.fillRect(-10,18,8,18);
 ctx.fillRect(2,18,8,18);
 ctx.restore();
 }
+function drawChara(){
+ctx.save();
+ctx.translate(chara.x+chara.w/2,chara.y+chara.h/2);
+ctx.scale(1,chara.gravityDir);
+ctx.translate(-chara.w/2,-chara.h/2);
+ctx.fillStyle="#3b0000";
+ctx.fillRect(4,0,26,30);
+ctx.fillStyle="#5c0000";
+ctx.fillRect(2,28,30,18);
+ctx.fillStyle="#2b2b2b";
+ctx.fillRect(4,44,10,16);
+ctx.fillRect(20,44,10,16);
+ctx.fillStyle="#f0e0d0";
+ctx.fillRect(6,4,22,18);
+ctx.fillStyle="#000";
+ctx.fillRect(10,10,4,3);
+ctx.fillRect(20,10,4,3);
+ctx.fillRect(14,16,6,2);
+if(chara.attackTimer>chara.attackCooldown-160){
+ctx.fillStyle="#0f0";
+const dir=chara.face||1;
+ctx.fillRect(dir===1?26:-18,10,18,6);
+}
+ctx.restore();
+}
 function drawBoneRain(){
-ctx.fillStyle="#fff";
 for(const b of boneRains){
+if(b.blue)ctx.fillStyle="#55f";
+else ctx.fillStyle="#fff";
 ctx.fillRect(b.x,b.y,b.w,b.h);
-ctx.fillStyle="#ccc";
+ctx.fillStyle=b.blue?"#88f":"#ccc";
 ctx.fillRect(b.x,b.y,b.w,4);
 ctx.fillRect(b.x,b.y+b.h-4,b.w,4);
-ctx.fillStyle="#fff";
 }
 }
 function drawBoneJumps(){
 for(const b of boneJumps){
-if(b.phase==="white"){
-ctx.fillStyle="#fff";
-}else{
-ctx.fillStyle="#55f";
-}
+if(b.phase==="white")ctx.fillStyle="#fff";
+else ctx.fillStyle="#55f";
 ctx.fillRect(b.x,b.y,b.w,b.h);
+}
+}
+function drawBoneZones(){
+for(const z of boneZones){
+const alpha=0.3+0.4*Math.sin(z.time*0.02);
+ctx.fillStyle="rgba(255,255,255,"+alpha+")";
+ctx.fillRect(z.x,z.y-z.dir*10,z.width,z.height);
 }
 }
 function drawBlasters(){
@@ -520,6 +632,8 @@ for(const bl of blasters){
 ctx.save();
 ctx.translate(bl.x,bl.y);
 ctx.rotate(bl.angle);
+const appearScale=bl.warning?Math.min(1,bl.time/bl.appearTime):1;
+ctx.scale(appearScale,appearScale);
 ctx.fillStyle="#fff";
 ctx.fillRect(-26,-18,52,36);
 ctx.fillStyle="#000";
@@ -531,35 +645,35 @@ ctx.globalAlpha=0.4+0.3*Math.sin(bl.time*0.02);
 ctx.fillStyle="#0ff";
 ctx.fillRect(20,-6,80,12);
 }else{
-ctx.globalAlpha=0.85;
+ctx.globalAlpha=0.9;
 ctx.fillStyle="#0ff";
-ctx.fillRect(20,-8,220,16);
+ctx.fillRect(20,-8,2000,16);
 }
 ctx.restore();
 ctx.globalAlpha=1;
 }
 }
 function drawBars(){
-const pRatio=Math.max(0,player.hp)/MAX_PLAYER_HP;
 const sRatio=Math.max(0,sans.hp)/MAX_SANS_HP;
 const stRatio=Math.max(0,sans.stamina)/MAX_STAMINA;
-ctx.fillStyle="#400";
-ctx.fillRect(140,40,260,10);
-ctx.fillStyle="#f00";
-ctx.fillRect(140,40,260*pRatio,10);
+const cRatio=Math.max(0,chara.hp)/MAX_CHARA_HP;
 ctx.fillStyle="#044";
-ctx.fillRect(canvas.width-400,40,260,10);
+ctx.fillRect(140,40,260,10);
 ctx.fillStyle="#0ff";
-ctx.fillRect(canvas.width-400,40,260*sRatio,10);
+ctx.fillRect(140,40,260*sRatio,10);
 ctx.fillStyle="#220";
-ctx.fillRect(canvas.width-400,60,260,8);
+ctx.fillRect(140,56,260,8);
 ctx.fillStyle="#ff0";
-ctx.fillRect(canvas.width-400,60,260*stRatio,8);
+ctx.fillRect(140,56,260*stRatio,8);
+ctx.fillStyle="#400";
+ctx.fillRect(canvas.width-400,40,260,10);
+ctx.fillStyle="#f00";
+ctx.fillRect(canvas.width-400,40,260*cRatio,10);
 ctx.fillStyle="#fff";
 ctx.font="12px Arial";
-ctx.fillText("CHARA",140,34);
-ctx.fillText("SANS",canvas.width-400,34);
-ctx.fillText("STAMINA",canvas.width-400,56);
+ctx.fillText("SANS",140,34);
+ctx.fillText("STAMINA",140,52);
+ctx.fillText("CHARA",canvas.width-400,34);
 }
 </script>
 </body>

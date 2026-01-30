@@ -1,5 +1,3 @@
-// Basic data and helpers
-
 const SAVE_SLOTS = 4;
 
 const defaultPlayer = () => ({
@@ -18,16 +16,16 @@ const defaultPlayer = () => ({
     inventory: ["MONSTER CANDY"],
 });
 
-let saves = []; // filled from localStorage
+let saves = [];
 let currentSlot = 0;
 let currentPlayer = null;
-let gameState = "title"; // title, fileSelect, nameEntry, mainMenu, shop, inventory, stats, settings, credits, battle
+let gameState = "title";
 let currentMenuIndex = 0;
 
-// Shop data
+// shop
 const shopData = {
     weapon: [
-        { name: "STICK", cost: 0, at: 1 },
+        { name: "STICK", cost: 0, at: 0 },
         { name: "TOY KNIFE", cost: 20, at: 3 },
     ],
     armor: [
@@ -40,21 +38,21 @@ const shopData = {
     ]
 };
 
-// Simple enemy
+// enemy
 const enemies = [
     {
         id: "dummy",
-        name: "TRAINING DUMMY",
+        name: "DUMMY",
         maxHP: 30,
         AT: 4,
         DF: 0,
         gold: 5,
-        exp: 5
+        exp: 5,
+        spareTalks: 2
     }
 ];
 
 let currentEnemy = null;
-let battleState = null; // handled in battle.js
 
 function loadSaves() {
     saves = [];

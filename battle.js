@@ -22,6 +22,11 @@ let bullets = [];
 let enemyInterval = null;
 let enemyTurnTicks = 0;
 
+let gameOverText = "";
+let gameOverShownText = "";
+let gameOverIndex = 0;
+let gameOverTimer = null;
+
 function startBattle(enemyId) {
     currentEnemy = JSON.parse(JSON.stringify(enemies.find(e => e.id === enemyId)));
     currentEnemy.HP = currentEnemy.maxHP;
@@ -197,19 +202,23 @@ function handleActConfirm() {
 function useBattleItem() {
     const item = currentPlayer.inventory[itemIndex];
     if (!item) return;
-    if (item === "MONSTER CANDY") {
-        currentPlayer.HP = Math.min(currentPlayer.maxHP, currentPlayer.HP + 10);
-        battleText = "* You ate the MONSTER CANDY.\n* You recovered 10 HP.";
-    } else if (item === "SPIDER DONUT") {
-        currentPlayer.HP = Math.min(currentPlayer.maxHP, currentPlayer.HP + 12);
-        battleText = "* You ate the SPIDER DONUT.\n* You recovered 12 HP.";
-    } else if (item === "BUTTERSCOTCH PIE") {
-        currentPlayer.HP = currentPlayer.maxHP;
-        battleText = "* You ate the BUTTERSCOTCH PIE.\n* Your HP was maxed out.";
+    if (item.type === "heal") {
+        if (item.name === "MONSTER CANDY") {
+            currentPlayer.HP = Math.min(currentPlayer.maxHP, currentPlayer.HP + 10);
+            battleText = "* You ate the MONSTER CANDY.\n* You recovered 10 HP.";
+        } else if (item.name === "SPIDER DONUT") {
+            currentPlayer.HP = Math.min(currentPlayer.maxHP, currentPlayer.HP + 12);
+            battleText = "* You ate the SPIDER DONUT.\n* You recovered 12 HP.";
+        } else if (item.name === "BUTTERSCOTCH PIE") {
+            currentPlayer.HP = currentPlayer.maxHP;
+            battleText = "* You ate the BUTTERSCOTCH PIE.\n* Your HP was maxed out.";
+        } else {
+            battleText = `* You used ${item.name}.`;
+        }
+        currentPlayer.inventory.splice(itemIndex, 1);
     } else {
-        battleText = `* You used ${item}.`;
+        battleText = `* You can't use that here.`;
     }
-    currentPlayer.inventory.splice(itemIndex, 1);
     battleSubState = "text";
     renderBattle();
 }
@@ -226,7 +235,12 @@ function startEnemyTurn() {
     onGround = false;
 
     const patterns = currentEnemy.patterns && currentEnemy.patterns.length ? currentEnemy.patterns : [currentEnemy.pattern];
-    const chosen = patterns[Math.floor(Math.random() * patterns.length)];
+    let chosen = patterns[Math.floor(Math.random() * patterns.length)];
+    if (currentEnemy.id === "mad_dummy") {
+        const hpRatio = currentEnemy.HP / currentEnemy.maxHP;
+        if (hpRatio < 0.33) chosen = "dummyAimBurst";
+        else if (hpRatio < 0.66) chosen = "dummyAim";
+    }
     spawnPattern(chosen);
 
     if (enemyInterval) clearInterval(enemyInterval);
@@ -304,22 +318,49 @@ function checkBulletCollisions() {
 function spawnPattern(pattern) {
     bullets = [];
     if (pattern === "simpleHorizontal") {
-        for (let i = 0; i < 4; i++) {
-            bullets.push({ x: -10 - i * 40, y: 80, vx: 4, vy: 0 });
-        }
+        bullets.push({ x: -10, y: 80, vx: 3, vy: 0 });
     } else if (pattern === "multiHorizontal") {
-        for (let y = 40; y <= 120; y += 20) {
-            for (let i = 0; i < 4; i++) {
-                bullets.push({ x: -10 - i * 40, y, vx: 4, vy: 0 });
+        for (let y = 50; y <= 110; y += 20) {
+            for (let i = 0; i < 3; i++) {
+                bullets.push({ x: -10 - i * 40, y, vx: 3.5, vy: 0 });
             }
         }
-    } else if (pattern === "fallingFire") {
-        for (let x = 20; x <= 240; x += 30) {
-            bullets.push({ x, y: -10, vx: 0, vy: 3 });
+    } else if (pattern === "dummyAim") {
+        for (let i = 0; i < 4; i++) {
+            const dy = soulY - 80;
+            const dx = soulX - 20;
+            const len = Math.max(1, Math.sqrt(dx * dx + dy * dy));
+            const sp = 3;
+            bullets.push({
+                x: 20,
+                y: 80,
+                vx: (dx / len) * sp,
+                vy: (dy / len) * sp
+            });
         }
-    } else if (pattern === "fallingFireWave") {
-        for (let x = 20; x <= 240; x += 20) {
-            bullets.push({ x, y: -10 - (x % 40), vx: 0, vy: 3.5 });
+    } else if (pattern === "dummyAimBurst") {
+        for (let i = 0; i < 8; i++) {
+            const angle = (Math.PI * 2 * i) / 8;
+            const sp = 3.5;
+            bullets.push({
+                x: 130,
+                y: 80,
+                vx: Math.cos(angle) * sp,
+                vy: Math.sin(angle) * sp
+            });
+        }
+    } else if (pattern === "fallingFire") {
+        for (let x = 40; x <= 220; x += 30) {
+            bullets.push({ x, y: -10, vx: 0, vy: 2.5 });
+        }
+    } else if (pattern === "torielSideFire") {
+        for (let y = 40; y <= 120; y += 20) {
+            bullets.push({ x: -10, y, vx: 3, vy: 0 });
+            bullets.push({ x: 260, y, vx: -3, vy: 0 });
+        }
+    } else if (pattern === "torielWaveFire") {
+        for (let x = 40; x <= 220; x += 20) {
+            bullets.push({ x, y: -10, vx: Math.sin(x / 20) * 0.8, vy: 2.8 });
         }
     } else if (pattern === "bonesHorizontal") {
         for (let x = 0; x <= 240; x += 30) {
@@ -342,23 +383,6 @@ function spawnPattern(pattern) {
         for (let y = 20; y <= 140; y += 20) {
             bullets.push({ x: -10, y, vx: 4, vy: 0 });
             bullets.push({ x: 260, y, vx: -4, vy: 0 });
-        }
-    } else if (pattern === "dummySpiral") {
-        const cx = 130;
-        const cy = 80;
-        for (let i = 0; i < 24; i++) {
-            const angle = (Math.PI * 2 * i) / 24;
-            const speed = 2.5;
-            bullets.push({
-                x: cx,
-                y: cy,
-                vx: Math.cos(angle) * speed,
-                vy: Math.sin(angle) * speed
-            });
-        }
-    } else if (pattern === "dummyRain") {
-        for (let x = 10; x <= 250; x += 20) {
-            bullets.push({ x, y: -10, vx: 0, vy: 3 + (x % 3) });
         }
     } else if (pattern === "sansKarma") {
         for (let x = 0; x <= 240; x += 24) {
@@ -404,21 +428,31 @@ function endBattleWin() {
     };
 }
 
-function endBattleLose() {
+function startGameOver() {
     if (enemyInterval) clearInterval(enemyInterval);
     if (fightInterval) clearInterval(fightInterval);
-    battleSubState = "text";
-    battleText = "* You died. (Z)";
-    renderBattle();
-    document.onkeydown = (e) => {
-        if (e.key.toLowerCase() === "z") {
-            document.onkeydown = handleKeyDown;
-            loadSaves();
-            useSave(currentSlot);
-            gameState = "mainMenu";
-            render();
+    const name = currentPlayer && currentPlayer.name ? currentPlayer.name : "HUMAN";
+    gameOverText = `GAME OVER\n${name}!\nStay determined...`;
+    gameOverShownText = "";
+    gameOverIndex = 0;
+    if (gameOverTimer) clearInterval(gameOverTimer);
+    gameState = "gameOver";
+    gameOverTimer = setInterval(() => {
+        if (gameOverIndex >= gameOverText.length) {
+            clearInterval(gameOverTimer);
+            gameOverTimer = null;
+            return;
         }
-    };
+        const ch = gameOverText[gameOverIndex];
+        gameOverShownText += ch;
+        gameOverIndex++;
+        renderGameOver();
+    }, 50);
+    renderGameOver();
+}
+
+function endBattleLose() {
+    startGameOver();
 }
 
 function endBattleMercy() {
@@ -476,7 +510,7 @@ function renderBattle() {
         } else {
             let itemsHTML = `<div class="sub-box"><p>* ITEMS</p>`;
             currentPlayer.inventory.forEach((it, i) => {
-                itemsHTML += `<div class="sub-option">${i === itemIndex ? '<span class="heart">♥</span>' : '&nbsp;&nbsp;'}${it}</div>`;
+                itemsHTML += `<div class="sub-option">${i === itemIndex ? '<span class="heart">♥</span>' : '&nbsp;&nbsp;'}${it.name}</div>`;
             });
             itemsHTML += `</div>`;
             subBoxHTML = itemsHTML;
@@ -524,6 +558,18 @@ function renderBattle() {
                     <span class="hp-bar"><span class="hp-fill" style="width:${hpPercent}%; background:${hpColor};"></span></span>
                 </div>
             </div>
+        </div>
+    `;
+}
+
+function renderGameOver() {
+    const g = document.getElementById("game");
+    const lines = gameOverShownText.split("\n").map(l => l.replace(/ /g, "&nbsp;")).join("<br>");
+    g.innerHTML = `
+        <div class="center game-over-screen">
+            <p class="game-over-title">GAME OVER</p>
+            <p class="game-over-text">${lines}</p>
+            <p class="small-text">(Press Z)</p>
         </div>
     `;
 }

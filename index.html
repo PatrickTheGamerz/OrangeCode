@@ -1,967 +1,153 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>Sans Fight</title>
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      background: #000;
-      color: #fff;
-      font-family: sans-serif;
-      overflow: hidden;
+<meta charset="UTF-8">
+<title>Sans Multiversal Simulator</title>
+<style>
+    body {
+        margin: 0;
+        overflow: hidden;
+        background: black;
+        color: white;
+        font-family: monospace;
     }
-    #gameContainer {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      height: 100vh;
+
+    #game {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+        background: radial-gradient(circle, #111, #000);
     }
-    #ui {
-      margin-top: 10px;
-      text-align: center;
+
+    .sans {
+        position: absolute;
+        width: 60px;
+        height: 60px;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 0 20px cyan;
     }
-    canvas {
-      border: 2px solid #fff;
-      background: #000;
-      image-rendering: pixelated;
+
+    .bone {
+        position: absolute;
+        width: 20px;
+        height: 80px;
+        background: cyan;
+        border-radius: 5px;
+        box-shadow: 0 0 15px cyan;
     }
-    #controls {
-      font-size: 14px;
-      margin-top: 6px;
-      color: #ccc;
+
+    .blaster {
+        position: absolute;
+        width: 120px;
+        height: 60px;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 0 20px purple;
     }
-    button {
-      margin-top: 6px;
-      padding: 4px 10px;
-      background: #222;
-      color: #fff;
-      border: 1px solid #555;
-      cursor: pointer;
+
+    #universeLabel {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        font-size: 22px;
     }
-    button:hover {
-      background: #333;
-    }
-  </style>
+</style>
 </head>
 <body>
-  <div id="gameContainer">
-    <canvas id="game" width="640" height="360"></canvas>
-    <div id="ui">
-      <div id="info">
-        HP: <span id="hp">1</span> |
-        Stamina: <span id="stamina">100</span> |
-        Stress: <span id="stress">0</span>% |
-        Score: <span id="score">0</span>
-      </div>
-      <div id="controls">
-        Move: A / D or ← / → &nbsp;|&nbsp;
-        Jump: W or ↑ or Space &nbsp;|&nbsp;
-        Bones: J &nbsp;|&nbsp;
-        Shortcut: Q &nbsp;|&nbsp;
-        Gaster Blaster: E
-      </div>
-      <button id="restartBtn" style="display:none;">Restart</button>
-    </div>
-  </div>
 
-  <script>
-    const canvas = document.getElementById("game");
-    const ctx = canvas.getContext("2d");
+<div id="game">
+    <div id="universeLabel">Universe: 1</div>
+    <div id="sans" class="sans"></div>
+</div>
 
-    const hpEl = document.getElementById("hp");
-    const staminaEl = document.getElementById("stamina");
-    const stressEl = document.getElementById("stress");
-    const scoreEl = document.getElementById("score");
-    const restartBtn = document.getElementById("restartBtn");
+<script>
+const game = document.getElementById("game");
+const sans = document.getElementById("sans");
+const label = document.getElementById("universeLabel");
 
-    const W = canvas.width;
-    const H = canvas.height;
+let x = 300, y = 300;
+let speed = 6;
+let universe = 1;
 
-    let lastTime = 0;
-    let keys = {};
-    let gameOver = false;
+let keys = {};
 
-    const GRAVITY = 1500;
-    const MOVE_SPEED = 260;
-    const JUMP_SPEED = -550;
-    const FRICTION = 0.85;
+document.addEventListener("keydown", e => keys[e.key] = true);
+document.addEventListener("keyup", e => keys[e.key] = false);
 
-    const BONE_SPEED = 520;
-    const BONE_SPIN_TIME = 0.28;
-    const BONE_SPIN_SPEED_START = 10;
-    const BONE_SPIN_SPEED_END = 26;
+function moveSans() {
+    if (keys["w"]) y -= speed;
+    if (keys["s"]) y += speed;
+    if (keys["a"]) x -= speed;
+    if (keys["d"]) x += speed;
 
-    const ENEMY_SPEED_MIN = 80;
-    const ENEMY_SPEED_MAX = 160;
-    const ENEMY_SPAWN_INTERVAL = 1.2;
+    sans.style.left = x + "px";
+    sans.style.top = y + "px";
+}
 
-    const WINGDING_SYMBOLS = ["☞", "☜", "☟", "☝", "✋", "☛", "☚", "☜"];
+function summonBone() {
+    const bone = document.createElement("div");
+    bone.className = "bone";
+    bone.style.left = (x + 20) + "px";
+    bone.style.top = (y - 60) + "px";
+    game.appendChild(bone);
 
-    const STAMINA_COST_BONE = 4;
-    const STAMINA_COST_BLASTER = 10;
-    const STRESS_PER_DODGE = 6;
-    const STRESS_PER_ATTACK = 3;
-
-    const REST_IDLE_TIME = 2;
-    const NAP_TIME = 2;
-    const REST_STAMINA_REGEN = 10;
-    const REST_STRESS_DRAIN = 7;
-    const NAP_STAMINA_REGEN = 26;
-    const NAP_STRESS_DRAIN = 4;
-
-    const BADTIME_STRESS_DRAIN = 10;
-    const BADTIME_STAMINA_DRAIN = 12;
-
-    let enemySpawnTimer = 0;
-    let score = 0;
-
-    const player = {
-      x: 80,
-      y: H - 140,
-      w: 28,
-      h: 44,
-      vx: 0,
-      vy: 0,
-      onGround: false,
-      facing: 1,
-      hp: 1,
-      stamina: 100,
-      stress: 0,
-      badTime: false
-    };
-
-    const bones = [];
-    const boneRain = [];
-    const enemies = [];
-    const misses = [];
-    const blasters = [];
-    const zs = [];
-
-    let lastActionTime = 0;
-    let isResting = false;
-    let restStartTime = 0;
-    let isNapping = false;
-    let napStartTime = 0;
-
-    let gameOverStartTime = 0;
-    let papyrusLines = [
-      "SANS! YOU CAN'T JUST NAP THROUGH A FIGHT.",
-      "SANS! I EXPECTED MORE THAN... LYING DOWN.",
-      "SANS! GET UP! THE HUMAN ISN'T GOING TO WAIT.",
-      "SANS! THIS IS NO TIME FOR A BREAK.",
-      "SANS! YOU CALL THAT 'DEFENSE'?",
-      "SANS! YOU FELL ASLEEP AGAIN, DIDN'T YOU?"
-    ];
-    let papyrusText = "";
-    let papyrusShown = 0;
-    let papyrusTimer = 0;
-
-    window.addEventListener("keydown", (e) => {
-      keys[e.key.toLowerCase()] = true;
-      if (["ArrowLeft", "ArrowRight", "ArrowUp", " "].includes(e.key)) {
-        e.preventDefault();
-      }
-      if (e.key.toLowerCase() === "j" && !gameOver) {
-        shootBone();
-      }
-      if (e.key.toLowerCase() === "q" && !gameOver) {
-        shortcutTeleport();
-      }
-      if (e.key.toLowerCase() === "e" && !gameOver) {
-        triggerBlaster();
-      }
-    });
-
-    window.addEventListener("keyup", (e) => {
-      keys[e.key.toLowerCase()] = false;
-    });
-
-    restartBtn.addEventListener("click", () => {
-      resetGame();
-    });
-
-    function resetGame() {
-      player.x = 80;
-      player.y = H - 140;
-      player.vx = 0;
-      player.vy = 0;
-      player.hp = 1;
-      player.stamina = 100;
-      player.stress = 0;
-      player.badTime = false;
-      player.onGround = false;
-      player.facing = 1;
-      bones.length = 0;
-      boneRain.length = 0;
-      enemies.length = 0;
-      misses.length = 0;
-      blasters.length = 0;
-      zs.length = 0;
-      score = 0;
-      enemySpawnTimer = 0;
-      gameOver = false;
-      restartBtn.style.display = "none";
-      hpEl.textContent = player.hp;
-      staminaEl.textContent = Math.round(player.stamina);
-      stressEl.textContent = Math.round(player.stress);
-      scoreEl.textContent = score;
-      lastActionTime = performance.now() / 1000;
-      isResting = false;
-      isNapping = false;
-      papyrusText = "";
-      papyrusShown = 0;
-      papyrusTimer = 0;
-    }
-
-    function markAction() {
-      lastActionTime = performance.now() / 1000;
-      isResting = false;
-      isNapping = false;
-    }
-
-    function shootBone() {
-      if (!player.badTime) {
-        if (player.stamina < STAMINA_COST_BONE) return;
-        player.stamina -= STAMINA_COST_BONE;
-        player.stress = Math.min(100, player.stress + STRESS_PER_ATTACK);
-      }
-      markAction();
-      const dir = player.facing || 1;
-      if (player.badTime) {
-        spawnBoneRain();
-      } else {
-        const spinSpeed = BONE_SPIN_SPEED_START;
-        bones.push({
-          mode: "spin",
-          angle: dir === 1 ? 0 : Math.PI,
-          spinTime: BONE_SPIN_TIME,
-          spinSpeed: spinSpeed,
-          x: player.x + player.w / 2,
-          y: player.y + player.h / 2,
-          w: 18,
-          h: 6,
-          vx: 0,
-          vy: 0
-        });
-      }
-      staminaEl.textContent = Math.round(player.stamina);
-      stressEl.textContent = Math.round(player.stress);
-    }
-
-    function spawnBoneRain() {
-      const count = 16;
-      for (let i = 0; i < count; i++) {
-        const bx = Math.random() * W;
-        const by = -Math.random() * 200 - 40;
-        boneRain.push({
-          x: bx,
-          y: by,
-          w: 10,
-          h: 26,
-          vy: 0,
-          bounces: 0
-        });
-      }
-    }
-
-    function shortcutTeleport() {
-      const distance = 160;
-      const dir = player.facing || 1;
-      let targetX = player.x + dir * distance;
-      if (targetX < 0) targetX = 0;
-      if (targetX + player.w > W) targetX = W - player.w;
-      player.x = targetX;
-      markAction();
-    }
-
-    function triggerBlaster() {
-      markAction();
-      if (!player.badTime) {
-        if (player.stamina < STAMINA_COST_BLASTER) return;
-        player.stamina -= STAMINA_COST_BLASTER;
-        player.stress = Math.min(100, player.stress + STRESS_PER_ATTACK);
-        spawnAutoBlaster();
-      } else {
-        spawnBadTimeBlasters();
-      }
-      staminaEl.textContent = Math.round(player.stamina);
-      stressEl.textContent = Math.round(player.stress);
-    }
-
-    function nearestEnemy() {
-      if (enemies.length === 0) return null;
-      let best = null;
-      let bestDist = Infinity;
-      for (const e of enemies) {
-        const cx = e.x + e.w / 2;
-        const cy = e.y + e.h / 2;
-        const dx = cx - (player.x + player.w / 2);
-        const dy = cy - (player.y + player.h / 2);
-        const d2 = dx * dx + dy * dy;
-        if (d2 < bestDist) {
-          bestDist = d2;
-          best = { enemy: e, cx, cy };
+    let by = y - 60;
+    const interval = setInterval(() => {
+        by -= 10;
+        bone.style.top = by + "px";
+        if (by < -100) {
+            bone.remove();
+            clearInterval(interval);
         }
-      }
-      return best;
-    }
+    }, 30);
+}
 
-    function spawnAutoBlaster() {
-      const target = nearestEnemy();
-      let angle;
-      let bx;
-      let by;
-      if (target) {
-        angle = Math.atan2(target.cy - player.y, target.cx - player.x);
-        bx = player.x + player.w / 2 + Math.cos(angle) * 80;
-        by = player.y + player.h / 2 + Math.sin(angle) * 40;
-      } else {
-        angle = player.facing === 1 ? 0 : Math.PI;
-        bx = player.x + player.w / 2 + (player.facing === 1 ? 80 : -80);
-        by = player.y;
-      }
-      blasters.push({
-        x: bx,
-        y: by,
-        angle: angle,
-        chargeTime: 0.35,
-        beamTime: 0.4,
-        state: "appear",
-        scale: 0
-      });
-    }
+function summonBlaster() {
+    const blaster = document.createElement("div");
+    blaster.className = "blaster";
+    blaster.style.left = (x + 80) + "px";
+    blaster.style.top = (y - 20) + "px";
+    game.appendChild(blaster);
 
-    function spawnBadTimeBlasters() {
-      const targets = [];
-      const shuffled = enemies.slice().sort(() => Math.random() - 0.5);
-      for (let i = 0; i < Math.min(6, shuffled.length); i++) {
-        const e = shuffled[i];
-        const cx = e.x + e.w / 2;
-        const cy = e.y + e.h / 2;
-        targets.push({ cx, cy });
-      }
-      if (targets.length === 0) {
-        for (let i = 0; i < 6; i++) {
-          const cx = Math.random() * W;
-          const cy = Math.random() * (H - 120);
-          targets.push({ cx, cy });
-        }
-      }
-      for (const t of targets) {
-        const angle = Math.atan2(t.cy - player.y, t.cx - player.x);
-        const bx = t.cx - Math.cos(angle) * 80;
-        const by = t.cy - Math.sin(angle) * 40;
-        blasters.push({
-          x: bx,
-          y: by,
-          angle: angle,
-          chargeTime: 0.25,
-          beamTime: 0.45,
-          state: "appear",
-          scale: 0
-        });
-      }
-    }
+    setTimeout(() => {
+        blaster.style.boxShadow = "0 0 40px red";
+    }, 300);
 
-    function spawnEnemy() {
-      const size = 32;
-      const side = Math.random() < 0.5 ? "left" : "right";
-      const y = H - 110;
-      const speed =
-        ENEMY_SPEED_MIN +
-        Math.random() * (ENEMY_SPEED_MAX - ENEMY_SPEED_MIN);
+    setTimeout(() => blaster.remove(), 1000);
+}
 
-      enemies.push({
-        x: side === "left" ? -size : W + size,
-        y: y,
-        w: size,
-        h: size,
-        vx: side === "left" ? speed : -speed,
-        hp: 3,
-        symbol: WINGDING_SYMBOLS[Math.floor(Math.random() * WINGDING_SYMBOLS.length)]
-      });
-    }
+function teleport() {
+    x = Math.random() * (window.innerWidth - 100);
+    y = Math.random() * (window.innerHeight - 100);
+}
 
-    function rectsOverlap(a, b) {
-      return !(
-        a.x + a.w < b.x ||
-        a.x > b.x + b.w ||
-        a.y + a.h < b.y ||
-        a.y > b.y + b.h
-      );
-    }
+function switchUniverse() {
+    universe++;
+    if (universe > 5) universe = 1;
 
-    function addMiss() {
-      misses.push({
-        x: player.x + player.w / 2,
-        y: player.y - 10,
-        vy: -40,
-        life: 0.6
-      });
-    }
+    label.textContent = "Universe: " + universe;
 
-    function spawnZ() {
-      zs.push({
-        x: player.x + player.w / 2 + (Math.random() * 10 - 5),
-        y: player.y - 10 + (Math.random() * 6 - 3),
-        vy: -20 - Math.random() * 20,
-        life: 1.2
-      });
-    }
+    document.body.style.background =
+        universe % 2 === 0
+        ? "radial-gradient(circle, #003, #000)"
+        : "radial-gradient(circle, #111, #000)";
+}
 
-    function charDelay(c) {
-      if (c === ",") return 0.2;
-      if (c === ".") return 1.0;
-      if (c === " ") return 0.05;
-      return 0.05;
-    }
+document.addEventListener("keydown", e => {
+    if (e.key === "j") summonBone();
+    if (e.key === "k") summonBlaster();
+    if (e.key === "l") teleport();
+    if (e.key === "m") switchUniverse();
+});
 
-    function startGameOver() {
-      if (gameOverStartTime === 0) {
-        gameOverStartTime = performance.now() / 1000;
-        papyrusText = papyrusLines[Math.floor(Math.random() * papyrusLines.length)];
-        papyrusShown = 0;
-        papyrusTimer = 0;
-      }
-    }
+function gameLoop() {
+    moveSans();
+    requestAnimationFrame(gameLoop);
+}
 
-    function updatePapyrus(dt) {
-      if (!gameOver || papyrusShown >= papyrusText.length) return;
-      papyrusTimer += dt;
-      while (papyrusShown < papyrusText.length) {
-        const c = papyrusText[papyrusShown];
-        const d = charDelay(c);
-        if (papyrusTimer >= d) {
-          papyrusTimer -= d;
-          papyrusShown++;
-        } else {
-          break;
-        }
-      }
-    }
+gameLoop();
+</script>
 
-    function update(dt) {
-      if (gameOver) {
-        updatePapyrus(dt);
-        return;
-      }
-
-      const now = performance.now() / 1000;
-
-      let moveLeft = keys["a"] || keys["arrowleft"];
-      let moveRight = keys["d"] || keys["arrowright"];
-      let jumpKey = keys["w"] || keys["arrowup"] || keys[" "];
-
-      if (moveLeft && !moveRight) {
-        player.vx = -MOVE_SPEED;
-        player.facing = -1;
-        markAction();
-      } else if (moveRight && !moveLeft) {
-        player.vx = MOVE_SPEED;
-        player.facing = 1;
-        markAction();
-      } else {
-        player.vx *= FRICTION;
-        if (Math.abs(player.vx) < 5) player.vx = 0;
-      }
-
-      if (jumpKey && player.onGround) {
-        player.vy = JUMP_SPEED;
-        player.onGround = false;
-        markAction();
-      }
-
-      player.vy += GRAVITY * dt;
-
-      player.x += player.vx * dt;
-      player.y += player.vy * dt;
-
-      const floorY = H - 70;
-      if (player.y + player.h > floorY) {
-        player.y = floorY - player.h;
-        player.vy = 0;
-        player.onGround = true;
-      }
-
-      if (player.x < 0) player.x = 0;
-      if (player.x + player.w > W) player.x = W - player.w;
-
-      for (let i = bones.length - 1; i >= 0; i--) {
-        const b = bones[i];
-        if (b.mode === "spin") {
-          b.spinTime -= dt;
-          const t = 1 - Math.max(0, b.spinTime) / BONE_SPIN_TIME;
-          b.spinSpeed = BONE_SPIN_SPEED_START + (BONE_SPIN_SPEED_END - BONE_SPIN_SPEED_START) * t;
-          b.angle += b.spinSpeed * dt;
-          const radius = 26;
-          b.x = player.x + player.w / 2 + Math.cos(b.angle) * radius;
-          b.y = player.y + player.h / 2 + Math.sin(b.angle) * radius;
-          if (b.spinTime <= 0) {
-            const target = nearestEnemy();
-            let dx, dy;
-            if (target) {
-              dx = target.cx - b.x;
-              dy = target.cy - b.y;
-            } else {
-              dx = player.facing === 1 ? 1 : -1;
-              dy = 0;
-            }
-            const len = Math.sqrt(dx * dx + dy * dy) || 1;
-            dx /= len;
-            dy /= len;
-            b.vx = dx * BONE_SPEED;
-            b.vy = dy * BONE_SPEED * 0.6;
-            b.mode = "fly";
-          }
-        } else {
-          b.x += b.vx * dt;
-          b.y += b.vy * dt;
-        }
-        if (b.x < -80 || b.x > W + 80 || b.y < -80 || b.y > H + 80) {
-          bones.splice(i, 1);
-        }
-      }
-
-      for (let i = boneRain.length - 1; i >= 0; i--) {
-        const b = boneRain[i];
-        b.vy += GRAVITY * dt;
-        b.y += b.vy * dt;
-        const floor = H - 70;
-        if (b.y + b.h > floor) {
-          b.y = floor - b.h;
-          b.vy = -Math.abs(b.vy) * 0.55;
-          b.bounces++;
-          if (b.bounces > 3 || Math.abs(b.vy) < 80) {
-            boneRain.splice(i, 1);
-            continue;
-          }
-        }
-        if (b.y > H + 80) {
-          boneRain.splice(i, 1);
-        }
-      }
-
-      enemySpawnTimer += dt;
-      if (enemySpawnTimer >= ENEMY_SPAWN_INTERVAL) {
-        enemySpawnTimer = 0;
-        spawnEnemy();
-      }
-
-      for (let i = enemies.length - 1; i >= 0; i--) {
-        const e = enemies[i];
-        e.x += e.vx * dt;
-        if (e.x < -140 || e.x > W + 140) {
-          enemies.splice(i, 1);
-          continue;
-        }
-      }
-
-      for (let i = enemies.length - 1; i >= 0; i--) {
-        const e = enemies[i];
-        for (let j = bones.length - 1; j >= 0; j--) {
-          const b = bones[j];
-          const rectB = { x: b.x, y: b.y, w: b.w, h: b.h };
-          if (rectsOverlap(e, rectB)) {
-            bones.splice(j, 1);
-            e.hp -= 1;
-            if (e.hp <= 0) {
-              enemies.splice(i, 1);
-              score += 10;
-              scoreEl.textContent = score;
-            }
-            break;
-          }
-        }
-      }
-
-      for (let i = enemies.length - 1; i >= 0; i--) {
-        const e = enemies[i];
-        if (rectsOverlap(e, player)) {
-          if (player.stamina >= 5) {
-            player.stamina -= 5;
-            player.stress = Math.min(100, player.stress + STRESS_PER_DODGE);
-            staminaEl.textContent = Math.round(player.stamina);
-            stressEl.textContent = Math.round(player.stress);
-            addMiss();
-            const push = e.vx > 0 ? 60 : -60;
-            player.x += push;
-            enemies.splice(i, 1);
-            markAction();
-          } else {
-            enemies.splice(i, 1);
-            player.hp -= 1;
-            hpEl.textContent = player.hp;
-            if (player.hp <= 0) {
-              gameOver = true;
-              restartBtn.style.display = "inline-block";
-              startGameOver();
-            }
-          }
-        }
-      }
-
-      for (let i = boneRain.length - 1; i >= 0; i--) {
-        const b = boneRain[i];
-        const rectB = { x: b.x, y: b.y, w: b.w, h: b.h };
-        if (rectsOverlap(rectB, player)) {
-          if (player.stamina >= 5) {
-            player.stamina -= 5;
-            player.stress = Math.min(100, player.stress + STRESS_PER_DODGE);
-            staminaEl.textContent = Math.round(player.stamina);
-            stressEl.textContent = Math.round(player.stress);
-            addMiss();
-            boneRain.splice(i, 1);
-            markAction();
-          } else {
-            boneRain.splice(i, 1);
-            player.hp -= 1;
-            hpEl.textContent = player.hp;
-            if (player.hp <= 0) {
-              gameOver = true;
-              restartBtn.style.display = "inline-block";
-              startGameOver();
-            }
-          }
-        }
-      }
-
-      for (let i = blasters.length - 1; i >= 0; i--) {
-        const b = blasters[i];
-        if (b.state === "appear") {
-          b.scale += dt * 4;
-          if (b.scale >= 1) {
-            b.scale = 1;
-            b.state = "charge";
-          }
-        } else if (b.state === "charge") {
-          b.chargeTime -= dt;
-          if (b.chargeTime <= 0) {
-            b.state = "beam";
-          }
-        } else if (b.state === "beam") {
-          b.beamTime -= dt;
-          const beamLen = 320;
-          const beamWidth = 40;
-          const bx = b.x;
-          const by = b.y;
-          const dx = Math.cos(b.angle);
-          const dy = Math.sin(b.angle);
-          const px = bx - dx * 20;
-          const py = by - dy * 20;
-          const steps = 12;
-          for (let s = 0; s <= steps; s++) {
-            const t = (beamLen / steps) * s;
-            const cx = px + dx * t;
-            const cy = py + dy * t;
-            const beamRect = {
-              x: cx - beamWidth / 2,
-              y: cy - beamWidth / 2,
-              w: beamWidth,
-              h: beamWidth
-            };
-            for (let j = enemies.length - 1; j >= 0; j--) {
-              const e = enemies[j];
-              if (rectsOverlap(beamRect, e)) {
-                enemies.splice(j, 1);
-                score += 15;
-                scoreEl.textContent = score;
-              }
-            }
-          }
-          if (b.beamTime <= 0) {
-            blasters.splice(i, 1);
-          }
-        }
-      }
-
-      for (let i = misses.length - 1; i >= 0; i--) {
-        const m = misses[i];
-        m.life -= dt;
-        m.y += m.vy * dt;
-        if (m.life <= 0) {
-          misses.splice(i, 1);
-        }
-      }
-
-      for (let i = zs.length - 1; i >= 0; i--) {
-        const z = zs[i];
-        z.life -= dt;
-        z.y += z.vy * dt;
-        if (z.life <= 0) {
-          zs.splice(i, 1);
-        }
-      }
-
-      if (!player.badTime && player.stress >= 100) {
-        player.badTime = true;
-      }
-
-      if (!player.badTime) {
-        const idleTime = now - lastActionTime;
-        if (!moveLeft && !moveRight && !jumpKey && idleTime >= REST_IDLE_TIME) {
-          if (!isResting) {
-            isResting = true;
-            restStartTime = now;
-          }
-          const restDuration = now - restStartTime;
-          if (!isNapping && restDuration >= NAP_TIME) {
-            isNapping = true;
-            napStartTime = now;
-          }
-          if (isNapping) {
-            player.stamina = Math.min(100, player.stamina + NAP_STAMINA_REGEN * dt);
-            player.stress = Math.max(0, player.stress - NAP_STRESS_DRAIN * dt);
-            spawnZ();
-          } else {
-            player.stamina = Math.min(100, player.stamina + REST_STAMINA_REGEN * dt);
-            player.stress = Math.max(0, player.stress - REST_STRESS_DRAIN * dt);
-          }
-          staminaEl.textContent = Math.round(player.stamina);
-          stressEl.textContent = Math.round(player.stress);
-        }
-      } else {
-        player.stress = Math.max(0, player.stress - BADTIME_STRESS_DRAIN * dt);
-        player.stamina = Math.max(0, player.stamina - BADTIME_STAMINA_DRAIN * dt);
-        staminaEl.textContent = Math.round(player.stamina);
-        stressEl.textContent = Math.round(player.stress);
-        if (player.stress <= 0 && player.stamina <= 0) {
-          gameOver = true;
-          restartBtn.style.display = "inline-block";
-          startGameOver();
-        }
-      }
-    }
-
-    function drawBackground() {
-      ctx.fillStyle = "#000";
-      ctx.fillRect(0, 0, W, H);
-
-      const grad = ctx.createLinearGradient(0, H - 140, 0, H);
-      grad.addColorStop(0, "#111");
-      grad.addColorStop(0.4, "#333");
-      grad.addColorStop(1, "#fff");
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, H - 70, W, 70);
-
-      ctx.fillStyle = "#444";
-      for (let i = 0; i < 6; i++) {
-        const x = 30 + i * 110;
-        ctx.fillRect(x, H - 180, 20, 110);
-      }
-
-      ctx.save();
-      ctx.globalAlpha = 0.08;
-      ctx.fillStyle = "#fff";
-      ctx.font = "32px Wingdings, Webdings, sans-serif";
-      for (let i = 0; i < 26; i++) {
-        const s = WINGDING_SYMBOLS[Math.floor(Math.random() * WINGDING_SYMBOLS.length)];
-        const x = Math.random() * W;
-        const y = Math.random() * (H - 120);
-        ctx.fillText(s, x, y);
-      }
-      ctx.restore();
-
-      ctx.save();
-      ctx.globalAlpha = 0.2;
-      ctx.fillStyle = "#fff";
-      ctx.beginPath();
-      ctx.ellipse(W - 120, H - 150, 40, 70, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = "#000";
-      ctx.beginPath();
-      ctx.arc(W - 135, H - 165, 6, 0, Math.PI * 2);
-      ctx.arc(W - 105, H - 165, 6, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillRect(W - 135, H - 145, 30, 4);
-      ctx.restore();
-
-      if (player.badTime) {
-        ctx.save();
-        ctx.fillStyle = "rgba(0, 0, 80, 0.25)";
-        ctx.fillRect(0, 0, W, H);
-        ctx.restore();
-      }
-    }
-
-    function drawPlayer() {
-      ctx.save();
-      ctx.translate(player.x + player.w / 2, player.y + player.h / 2);
-      ctx.scale(player.facing, 1);
-
-      ctx.fillStyle = "#00bfff";
-      ctx.fillRect(-12, 0, 24, 20);
-
-      ctx.fillStyle = "#fff";
-      ctx.fillRect(-10, -10, 20, 10);
-
-      ctx.fillStyle = "#fff";
-      ctx.fillRect(-8, -26, 16, 16);
-
-      ctx.fillStyle = "#000";
-      ctx.fillRect(-6, -22, 4, 4);
-      ctx.fillRect(2, -22, 4, 4);
-
-      ctx.fillStyle = "#000";
-      ctx.fillRect(-6, -16, 12, 3);
-
-      ctx.fillStyle = "#fff";
-      ctx.fillRect(-10, 20, 8, 10);
-      ctx.fillRect(2, 20, 8, 10);
-
-      ctx.fillStyle = "#ccc";
-      ctx.fillRect(-10, 30, 8, 4);
-      ctx.fillRect(2, 30, 8, 4);
-
-      ctx.restore();
-    }
-
-    function drawBones() {
-      for (const b of bones) {
-        ctx.save();
-        ctx.translate(b.x + b.w / 2, b.y + b.h / 2);
-        ctx.rotate(b.mode === "spin" ? b.angle : 0);
-        ctx.fillStyle = "#fff";
-        ctx.fillRect(-b.w / 2, -b.h / 2, b.w, b.h);
-        ctx.fillRect(-b.w / 2 - 4, -b.h / 2 - 2, 4, 10);
-        ctx.fillRect(b.w / 2, -b.h / 2 - 2, 4, 10);
-        ctx.restore();
-      }
-    }
-
-    function drawBoneRain() {
-      for (const b of boneRain) {
-        ctx.fillStyle = "#fff";
-        ctx.fillRect(b.x + 3, b.y + 6, 4, b.h - 12);
-        ctx.beginPath();
-        ctx.arc(b.x + 5, b.y + 6, 5, 0, Math.PI * 2);
-        ctx.arc(b.x + 5, b.y + b.h - 6, 5, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-
-    function drawEnemies() {
-      for (const e of enemies) {
-        ctx.save();
-        ctx.fillStyle = "#fff";
-        ctx.font = "30px Wingdings, Webdings, sans-serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(e.symbol, e.x + e.w / 2, e.y + e.h / 2);
-        ctx.restore();
-      }
-    }
-
-    function drawBlasters() {
-      for (const b of blasters) {
-        ctx.save();
-        ctx.translate(b.x, b.y);
-        ctx.rotate(b.angle);
-        const scale = b.scale || 1;
-        ctx.scale(scale, scale);
-
-        ctx.fillStyle = "#fff";
-        ctx.beginPath();
-        ctx.ellipse(0, 0, 26, 18, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = "#000";
-        ctx.beginPath();
-        ctx.arc(-8, -4, 3, 0, Math.PI * 2);
-        ctx.arc(-8, 4, 3, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.fillStyle = "#000";
-        ctx.fillRect(-4, -2, 10, 4);
-
-        if (b.state === "beam") {
-          const beamLen = 320;
-          const beamWidth = 40;
-          const grad = ctx.createLinearGradient(0, -beamWidth / 2, beamLen, beamWidth / 2);
-          grad.addColorStop(0, "rgba(255,255,255,0.1)");
-          grad.addColorStop(0.3, "#00ffff");
-          grad.addColorStop(0.7, "#ffffff");
-          grad.addColorStop(1, "rgba(0,255,255,0.1)");
-          ctx.fillStyle = grad;
-          ctx.fillRect(0, -beamWidth / 2, beamLen, beamWidth);
-        }
-
-        ctx.restore();
-      }
-    }
-
-    function drawMisses() {
-      ctx.save();
-      ctx.fillStyle = "#fff";
-      ctx.font = "16px sans-serif";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      for (const m of misses) {
-        const alpha = Math.max(0, m.life / 0.6);
-        ctx.globalAlpha = alpha;
-        ctx.fillText("MISS", m.x, m.y);
-      }
-      ctx.restore();
-    }
-
-    function drawZs() {
-      ctx.save();
-      ctx.fillStyle = "#fff";
-      ctx.font = "14px monospace";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      for (const z of zs) {
-        const alpha = Math.max(0, z.life / 1.2);
-        ctx.globalAlpha = alpha;
-        ctx.fillText("Z", z.x, z.y);
-      }
-      ctx.restore();
-    }
-
-    function drawGameOver() {
-      ctx.fillStyle = "#000";
-      ctx.fillRect(0, 0, W, H);
-      ctx.fillStyle = "#fff";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.font = "64px monospace";
-      ctx.fillText("GAME OVER", W / 2, H / 2 - 40);
-      ctx.font = "22px monospace";
-      const shownText = papyrusText.slice(0, papyrusShown);
-      ctx.fillText("SANS!", W / 2, H / 2 + 10);
-      ctx.fillText(shownText, W / 2, H / 2 + 40);
-    }
-
-    function draw() {
-      ctx.clearRect(0, 0, W, H);
-      drawBackground();
-      drawPlayer();
-      drawBones();
-      drawBoneRain();
-      drawEnemies();
-      drawBlasters();
-      drawMisses();
-      drawZs();
-      if (gameOver) {
-        drawGameOver();
-      }
-    }
-
-    function loop(timestamp) {
-      if (!lastTime) lastTime = timestamp;
-      const dt = (timestamp - lastTime) / 1000;
-      lastTime = timestamp;
-
-      update(dt);
-      draw();
-
-      requestAnimationFrame(loop);
-    }
-
-    resetGame();
-    requestAnimationFrame(loop);
-  </script>
 </body>
 </html>

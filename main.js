@@ -46,7 +46,7 @@ function handleKeyDown(e) {
     }
 
     if (gameState === "mainMenu") {
-        const max = 5; // MONSTERS, SHOP, INVENTORY, STATS, SETTINGS, CREDITS
+        const max = 5; // MONSTERS, SHOP, ITEM, STATS, SETTINGS, CREDITS
         if (key === "w") {
             currentMenuIndex = (currentMenuIndex + max) % (max + 1);
             render();
@@ -63,7 +63,7 @@ function handleKeyDown(e) {
                 currentMenuIndex = 0;
                 render();
             } else if (currentMenuIndex === 2) {
-                gameState = "inventory";
+                gameState = "item";
                 currentMenuIndex = 0;
                 render();
             } else if (currentMenuIndex === 3) {
@@ -105,7 +105,7 @@ function handleKeyDown(e) {
         return;
     }
 
-    if (gameState === "inventory") {
+    if (gameState === "item") {
         if (key === "z" || key === "x") {
             gameState = "mainMenu";
             currentMenuIndex = 2;
@@ -194,7 +194,7 @@ function render() {
     }
 
     if (gameState === "mainMenu") {
-        const options = ["MONSTERS", "SHOP", "INVENTORY", "STATS", "SETTINGS", "CREDITS"];
+        const options = ["MONSTERS", "SHOP", "ITEM", "STATS", "SETTINGS", "CREDITS"];
         let html = `<div class="center" style="margin-top:120px;">`;
         options.forEach((opt, i) => {
             html += `<div class="menu-option ${i === currentMenuIndex ? "selected" : ""}">
@@ -227,9 +227,9 @@ function render() {
         return;
     }
 
-    if (gameState === "inventory") {
+    if (gameState === "item") {
         let html = `<div class="center" style="margin-top:80px;">
-            <div class="undertale-box"><p>INVENTORY</p>`;
+            <div class="undertale-box"><p>ITEM</p>`;
         if (currentPlayer.inventory.length === 0) {
             html += `<p>(empty)</p>`;
         } else {
@@ -244,6 +244,8 @@ function render() {
 
     if (gameState === "stats") {
         const p = currentPlayer;
+        const atTotal = totalAT(p);
+        const dfTotal = totalDF(p);
         let html = `<div class="center" style="margin-top:60px;">
             <div class="undertale-box stats-box">
                 <p>"${p.name || "HUMAN"}"</p>
@@ -252,11 +254,11 @@ function render() {
                     <span>HP ${p.HP}/${p.maxHP}</span>
                 </div>
                 <div class="flex-between">
-                    <span>AT ${p.AT}</span>
+                    <span>AT ${p.baseAT} (${atTotal})</span>
                     <span>EXP: ${p.EXP}</span>
                 </div>
                 <div class="flex-between">
-                    <span>DF ${p.DF}</span>
+                    <span>DF ${p.baseDF} (${dfTotal})</span>
                     <span>NEXT: ${p.NEXT}</span>
                 </div>
                 <p>WEAPON: ${p.weapon}</p>
@@ -443,10 +445,10 @@ function buyShopItem(section, item) {
     currentPlayer.G -= item.cost;
     if (section === "weapon") {
         currentPlayer.weapon = item.name;
-        currentPlayer.AT += item.at;
+        currentPlayer.weaponBonus = item.at;
     } else if (section === "armor") {
         currentPlayer.armor = item.name;
-        currentPlayer.DF += item.df;
+        currentPlayer.armorBonus = item.df;
     } else if (section === "heal") {
         currentPlayer.inventory.push(item.name);
     }

@@ -1,1101 +1,384 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Last Corridor – Sans Advanced Sandbox</title>
-<style>
-html,body{margin:0;padding:0;background:#000;color:#fff;font-family:Arial,Helvetica,sans-serif;overflow:hidden}
-#topbar{position:fixed;top:6px;left:6px;right:6px;z-index:20;display:flex;align-items:center;gap:10px;font-size:13px;text-shadow:0 0 4px #000}
-#topbar button{padding:4px 10px;background:#333;border:1px solid #666;color:#fff;cursor:pointer}
-#topbar button.active{background:#666}
-#topbar button:hover{background:#555}
-#ui{margin-left:10px;flex:1}
-#ui span{margin-right:14px}
-#editorPanel{position:fixed;right:6px;top:40px;bottom:6px;width:310px;background:rgba(0,0,0,.95);border:1px solid #444;padding:8px;font-size:11px;overflow:auto;z-index:15;display:none}
-#editorPanel h3{margin:4px 0 6px;font-size:12px}
-#editorPanel h4{margin:6px 0 4px;font-size:11px;border-bottom:1px solid #333;padding-bottom:2px}
-#editorPanel label{display:block;margin-top:4px}
-#editorPanel input,#editorPanel select{width:100%;box-sizing:border-box;margin-top:2px;background:#111;border:1px solid #444;color:#fff;font-size:11px;padding:2px 3px}
-#editorPanel small{color:#aaa}
-#editorPanel .row{display:flex;gap:4px}
-#editorPanel .row>div{flex:1}
-#editorPanel button{margin-top:6px;width:100%;padding:4px 0;background:#333;border:1px solid #666;color:#fff;cursor:pointer;font-size:11px}
-#editorPanel button:hover{background:#555}
-#editorPanel input[type="checkbox"]{width:auto}
-#gameCanvas{display:block;margin:0 auto;background:#000;border:2px solid #444}
-#overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.9);color:#fff;font-size:20px;flex-direction:column;z-index:30}
-#overlay button{padding:8px 18px;margin-top:12px;background:#444;border:none;color:#fff;cursor:pointer;font-size:14px}
-#overlay button:hover{background:#666}
-</style>
+  <meta charset="UTF-8" />
+  <title>Mini Bonetale-like Game</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      color: #fff;
+      font-family: sans-serif;
+      overflow: hidden;
+    }
+
+    #gameContainer {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      height: 100vh;
+    }
+
+    #ui {
+      margin-top: 10px;
+      text-align: center;
+    }
+
+    canvas {
+      border: 2px solid #fff;
+      background: #111;
+      image-rendering: pixelated;
+    }
+
+    #controls {
+      font-size: 14px;
+      margin-top: 6px;
+      color: #ccc;
+    }
+
+    button {
+      margin-top: 6px;
+      padding: 4px 10px;
+      background: #222;
+      color: #fff;
+      border: 1px solid #555;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #333;
+    }
+  </style>
 </head>
 <body>
-<div id="topbar">
-<button id="modeBattleBtn" class="active">Battle</button>
-<button id="modeSoloBtn">Solo</button>
-<button id="toggleEditorBtn">Advanced Edit</button>
-<div id="ui">
-<span>Sans HP: <span id="sansHpText">100</span></span>
-<span>Stamina: <span id="stamText">100</span></span>
-<span>Chara HP: <span id="charaHpText">100</span></span>
-<span>KR: <span id="krText">0</span></span>
-<span>DT: <span id="dtText">0</span></span>
-<span>Phase: <span id="phaseText">1</span></span>
-<span>Controls: A/D move, W jump, J dodge, attack keys from layout</span>
-</div>
-</div>
-<div id="editorPanel">
-<h3>Super Advanced Attack Layout Editor</h3>
-<label>Save slot
-<select id="slotSelect">
-<option value="0">Slot 1</option>
-<option value="1">Slot 2</option>
-<option value="2">Slot 3</option>
-</select>
-</label>
-<h4>Map layout</h4>
-<label>Floor color
-<input id="mapFloor" type="text" value="#2a1a0a">
-</label>
-<div class="row">
-<div>
-<label>Corridor width (0.5–0.9)
-<input id="mapWidth" type="number" min="0.5" max="0.9" step="0.05" value="0.75">
-</label>
-</div>
-<div>
-<label>Light intensity (0–1)
-<input id="mapLight" type="number" min="0" max="1" step="0.05" value="0.18">
-</label>
-</div>
-</div>
-<h4>Attack core</h4>
-<label>Attack name
-<input id="atkName" type="text" value="Bone Rain A">
-</label>
-<label>Type
-<select id="atkType">
-<option value="boneRain">Bone Rain</option>
-<option value="blasterChain">Gaster Blaster Chain</option>
-<option value="boneWave">Bone Wave (moving jumps)</option>
-<option value="gravityZone">Gravity Bone Zone</option>
-</select>
-</label>
-<label>Key (single letter)
-<input id="atkKey" maxlength="1" value="e">
-</label>
-<div class="row">
-<div>
-<label>Cooldown ms
-<input id="atkCooldown" type="number" value="2200">
-</label>
-</div>
-<div>
-<label>Stamina cost
-<input id="atkCost" type="number" value="15">
-</label>
-</div>
-</div>
-<div class="row">
-<div>
-<label>Damage per hit (visual)
-<input id="atkDamage" type="number" value="1">
-</label>
-</div>
-<div>
-<label>KR per hit
-<input id="atkPower" type="number" step="0.05" value="0.2">
-</label>
-</div>
-</div>
-<h4>Pattern layout</h4>
-<div class="row">
-<div>
-<label>Count
-<input id="atkCount" type="number" value="8">
-</label>
-</div>
-<div>
-<label>Rows
-<input id="atkRows" type="number" value="1">
-</label>
-</div>
-<div>
-<label>Columns
-<input id="atkCols" type="number" value="1">
-</label>
-</div>
-</div>
-<div class="row">
-<div>
-<label>Spread X (px)
-<input id="atkSpreadX" type="number" value="260">
-</label>
-</div>
-<div>
-<label>Spread Y (px)
-<input id="atkSpreadY" type="number" value="0">
-</label>
-</div>
-</div>
-<div class="row">
-<div>
-<label>Start offset X (px)
-<input id="atkOffsetX" type="number" value="0">
-</label>
-</div>
-<div>
-<label>Start offset Y (px)
-<input id="atkOffsetY" type="number" value="0">
-</label>
-</div>
-</div>
-<h4>Timing and motion</h4>
-<div class="row">
-<div>
-<label>Delay between spawns ms
-<input id="atkStepDelay" type="number" value="80">
-</label>
-</div>
-<div>
-<label>Lifetime ms
-<input id="atkLife" type="number" value="6000">
-</label>
-</div>
-</div>
-<div class="row">
-<div>
-<label>Speed
-<input id="atkSpeed" type="number" value="3">
-</label>
-</div>
-<div>
-<label>Acceleration
-<input id="atkAccel" type="number" value="0">
-</label>
-</div>
-</div>
-<div class="row">
-<div>
-<label>Gravity factor
-<input id="atkGravity" type="number" value="0">
-</label>
-</div>
-<div>
-<label>Track player
-<select id="atkTrack">
-<option value="none">None</option>
-<option value="aimOnce">Aim once</option>
-<option value="follow">Follow</option>
-</select>
-</label>
-</div>
-</div>
-<h4>Special options</h4>
-<div class="row">
-<div>
-<label>Blue chance (0–1)
-<input id="atkBlue" type="number" step="0.05" value="0.35">
-</label>
-</div>
-<div>
-<label>Random angle (0–180)
-<input id="atkRandAngle" type="number" value="0">
-</label>
-</div>
-</div>
-<div class="row">
-<div>
-<label>Chain count (for blasters)
-<input id="atkChainCount" type="number" value="3">
-</label>
-</div>
-<div>
-<label>Chain delay ms
-<input id="atkChainDelay" type="number" value="500">
-</label>
-</div>
-</div>
-<label><input id="atkMirror" type="checkbox"> Mirror horizontally</label>
-<label><input id="atkSpawnSide" type="checkbox"> Spawn from Sans side (unchecked = random)</label>
-<label><input id="atkTestFreeze" type="checkbox" checked> Freeze Chara while testing</label>
-<small>Different attack types use these fields differently, but everything is saved in layout.</small>
-<button id="addAttackBtn">Add / Replace attack</button>
-<label>Current attacks
-<select id="attackList" size="7"></select>
-</label>
-<button id="deleteAttackBtn">Delete selected</button>
-<button id="testAttackBtn">Test selected attack now</button>
-<hr>
-<button id="saveSlotBtn">Save layout to slot</button>
-<button id="loadSlotBtn">Load layout from slot</button>
-<small>Layouts are stored in your browser (localStorage). You can have different key layouts per slot.</small>
-</div>
-<canvas id="gameCanvas" width="960" height="540"></canvas>
-<div id="overlay">
-<div id="overlayText">Last Corridor – Play as Sans</div>
-<div style="font-size:14px;margin-top:6px">Battle: Sans vs smart Chara. Solo: sandbox. Use the advanced editor to design and test insane attack layouts.</div>
-<button id="startBtn">Start</button>
-</div>
-<script>
-const canvas=document.getElementById("gameCanvas");
-const ctx=canvas.getContext("2d");
-const sansHpText=document.getElementById("sansHpText");
-const stamText=document.getElementById("stamText");
-const charaHpText=document.getElementById("charaHpText");
-const krText=document.getElementById("krText");
-const dtText=document.getElementById("dtText");
-const phaseText=document.getElementById("phaseText");
-const overlay=document.getElementById("overlay");
-const overlayText=document.getElementById("overlayText");
-const startBtn=document.getElementById("startBtn");
-const modeBattleBtn=document.getElementById("modeBattleBtn");
-const modeSoloBtn=document.getElementById("modeSoloBtn");
-const toggleEditorBtn=document.getElementById("toggleEditorBtn");
-const editorPanel=document.getElementById("editorPanel");
-const slotSelect=document.getElementById("slotSelect");
-const mapFloorInput=document.getElementById("mapFloor");
-const mapWidthInput=document.getElementById("mapWidth");
-const mapLightInput=document.getElementById("mapLight");
-const atkNameInput=document.getElementById("atkName");
-const atkTypeInput=document.getElementById("atkType");
-const atkKeyInput=document.getElementById("atkKey");
-const atkCooldownInput=document.getElementById("atkCooldown");
-const atkCostInput=document.getElementById("atkCost");
-const atkDamageInput=document.getElementById("atkDamage");
-const atkPowerInput=document.getElementById("atkPower");
-const atkCountInput=document.getElementById("atkCount");
-const atkRowsInput=document.getElementById("atkRows");
-const atkColsInput=document.getElementById("atkCols");
-const atkSpreadXInput=document.getElementById("atkSpreadX");
-const atkSpreadYInput=document.getElementById("atkSpreadY");
-const atkOffsetXInput=document.getElementById("atkOffsetX");
-const atkOffsetYInput=document.getElementById("atkOffsetY");
-const atkStepDelayInput=document.getElementById("atkStepDelay");
-const atkLifeInput=document.getElementById("atkLife");
-const atkSpeedInput=document.getElementById("atkSpeed");
-const atkAccelInput=document.getElementById("atkAccel");
-const atkGravityInput=document.getElementById("atkGravity");
-const atkTrackInput=document.getElementById("atkTrack");
-const atkBlueInput=document.getElementById("atkBlue");
-const atkRandAngleInput=document.getElementById("atkRandAngle");
-const atkChainCountInput=document.getElementById("atkChainCount");
-const atkChainDelayInput=document.getElementById("atkChainDelay");
-const atkMirrorInput=document.getElementById("atkMirror");
-const atkSpawnSideInput=document.getElementById("atkSpawnSide");
-const atkTestFreezeInput=document.getElementById("atkTestFreeze");
-const addAttackBtn=document.getElementById("addAttackBtn");
-const deleteAttackBtn=document.getElementById("deleteAttackBtn");
-const testAttackBtn=document.getElementById("testAttackBtn");
-const attackList=document.getElementById("attackList");
-const saveSlotBtn=document.getElementById("saveSlotBtn");
-const loadSlotBtn=document.getElementById("loadSlotBtn");
-const keys={};
-let lastTime=0;
-let sans,chara,boneRains,blasters,boneJumps,boneZones,phase,phaseTimer,gameOver,started,shakeTime,shakeIntensity;
-let mode="battle";
-let attacks=[];
-let attackState={};
-let mapConfig={floor:"#2a1a0a",corridorWidth:0.75,light:0.18};
-let blasterChainQueue=[];
-const GROUND_Y=400;
-const SANS_SPEED=4.2;
-const SANS_JUMP=-13;
-const SANS_GRAVITY=0.7;
-const MAX_SANS_HP=100;
-const MAX_STAMINA=100;
-const STAMINA_REGEN=8;
-const DODGE_COST=22;
-const DODGE_COOLDOWN=450;
-const CHARA_SPEED=3.6;
-const CHARA_JUMP=-11.5;
-const CHARA_GRAVITY=0.7;
-const MAX_CHARA_HP=92;
-const BLUE_BONE_TIME=1600;
-const WHITE_BONE_RISE_TIME=500;
-const BONE_ZONE_TIME=500;
-const SHAKE_DECAY=0.9;
-window.addEventListener("keydown",e=>{keys[e.key.toLowerCase()]=true;if([" ","arrowup","arrowdown","arrowleft","arrowright"].includes(e.key.toLowerCase()))e.preventDefault()});
-window.addEventListener("keyup",e=>{keys[e.key.toLowerCase()]=false});
-startBtn.onclick=()=>{startGame()};
-modeBattleBtn.onclick=()=>{mode="battle";modeBattleBtn.classList.add("active");modeSoloBtn.classList.remove("active")};
-modeSoloBtn.onclick=()=>{mode="solo";modeSoloBtn.classList.add("active");modeBattleBtn.classList.remove("active")};
-toggleEditorBtn.onclick=()=>{editorPanel.style.display=editorPanel.style.display==="none"?"block":"none"};
-addAttackBtn.onclick=()=>{addOrReplaceAttack()};
-deleteAttackBtn.onclick=()=>{deleteSelectedAttack()};
-testAttackBtn.onclick=()=>{testSelectedAttack()};
-saveSlotBtn.onclick=()=>{saveSlot()};
-loadSlotBtn.onclick=()=>{loadSlot()};
-attackList.onchange=()=>{loadAttackToForm()};
-function defaultConfig(){
-attacks=[
-{ name:"Bone Rain A",type:"boneRain",key:"e",cooldown:2200,cost:15,damage:1,power:0.18,count:10,rows:1,cols:1,spreadX:260,spreadY:0,offsetX:0,offsetY:0,stepDelay:80,life:6000,speed:3,accel:0,gravity:0,track:"none",blueChance:0.35,randAngle:0,chainCount:0,chainDelay:0,mirror:false,spawnFromSans:false },
-{ name:"Blaster Chain",type:"blasterChain",key:"r",cooldown:4200,cost:24,damage:1,power:0.25,count:3,rows:1,cols:1,spreadX:0,spreadY:0,offsetX:0,offsetY:0,stepDelay:0,life:650,speed:0,accel:0,gravity:0,track:"aimOnce",blueChance:0,randAngle:0,chainCount:3,chainDelay:500,mirror:false,spawnFromSans:true },
-{ name:"Bone Wave",type:"boneWave",key:"f",cooldown:3200,cost:18,damage:1,power:0.2,count:4,rows:1,cols:1,spreadX:0,spreadY:0,offsetX:0,offsetY:0,stepDelay:800,life:6000,speed:3,accel:0,gravity:0,track:"none",blueChance:0.5,randAngle:0,chainCount:0,chainDelay:0,mirror:false,spawnFromSans:false },
-{ name:"Gravity Zone",type:"gravityZone",key:"g",cooldown:5200,cost:20,damage:1,power:0.22,count:1,rows:1,cols:1,spreadX:0,spreadY:0,offsetX:0,offsetY:0,stepDelay:0,life:BONE_ZONE_TIME,speed:0,accel:0,gravity:0,track:"none",blueChance:0,randAngle:0,chainCount:0,chainDelay:0,mirror:false,spawnFromSans:false }
-];
-mapConfig={floor:"#2a1a0a",corridorWidth:0.75,light:0.18};
-syncEditorFromConfig();
-}
-function syncEditorFromConfig(){
-mapFloorInput.value=mapConfig.floor;
-mapWidthInput.value=mapConfig.corridorWidth;
-mapLightInput.value=mapConfig.light;
-refreshAttackList();
-}
-function refreshAttackList(){
-attackList.innerHTML="";
-attacks.forEach((a,i)=>{
-const opt=document.createElement("option");
-opt.value=i;
-opt.textContent=a.key.toUpperCase()+" – "+a.name+" ("+a.type+")";
-attackList.appendChild(opt);
-});
-}
-function readAttackFromForm(){
-return{
-name:atkNameInput.value.trim()||"Attack",
-type:atkTypeInput.value,
-key:(atkKeyInput.value.trim().toLowerCase()||"e"),
-cooldown:Math.max(200,parseInt(atkCooldownInput.value)||2000),
-cost:Math.max(0,parseInt(atkCostInput.value)||10),
-damage:Math.max(0,parseInt(atkDamageInput.value)||1),
-power:parseFloat(atkPowerInput.value)||0.2,
-count:Math.max(1,parseInt(atkCountInput.value)||3),
-rows:Math.max(1,parseInt(atkRowsInput.value)||1),
-cols:Math.max(1,parseInt(atkColsInput.value)||1),
-spreadX:parseFloat(atkSpreadXInput.value)||0,
-spreadY:parseFloat(atkSpreadYInput.value)||0,
-offsetX:parseFloat(atkOffsetXInput.value)||0,
-offsetY:parseFloat(atkOffsetYInput.value)||0,
-stepDelay:Math.max(0,parseInt(atkStepDelayInput.value)||0),
-life:Math.max(200,parseInt(atkLifeInput.value)||6000),
-speed:parseFloat(atkSpeedInput.value)||0,
-accel:parseFloat(atkAccelInput.value)||0,
-gravity:parseFloat(atkGravityInput.value)||0,
-track:atkTrackInput.value,
-blueChance:Math.max(0,Math.min(1,parseFloat(atkBlueInput.value)||0)),
-randAngle:Math.max(0,Math.min(180,parseFloat(atkRandAngleInput.value)||0)),
-chainCount:Math.max(0,parseInt(atkChainCountInput.value)||0),
-chainDelay:Math.max(0,parseInt(atkChainDelayInput.value)||0),
-mirror:atkMirrorInput.checked,
-spawnFromSans:atkSpawnSideInput.checked
-};
-}
-function writeAttackToForm(a){
-atkNameInput.value=a.name;
-atkTypeInput.value=a.type;
-atkKeyInput.value=a.key;
-atkCooldownInput.value=a.cooldown;
-atkCostInput.value=a.cost;
-atkDamageInput.value=a.damage;
-atkPowerInput.value=a.power;
-atkCountInput.value=a.count;
-atkRowsInput.value=a.rows;
-atkColsInput.value=a.cols;
-atkSpreadXInput.value=a.spreadX;
-atkSpreadYInput.value=a.spreadY;
-atkOffsetXInput.value=a.offsetX;
-atkOffsetYInput.value=a.offsetY;
-atkStepDelayInput.value=a.stepDelay;
-atkLifeInput.value=a.life;
-atkSpeedInput.value=a.speed;
-atkAccelInput.value=a.accel;
-atkGravityInput.value=a.gravity;
-atkTrackInput.value=a.track;
-atkBlueInput.value=a.blueChance;
-atkRandAngleInput.value=a.randAngle;
-atkChainCountInput.value=a.chainCount;
-atkChainDelayInput.value=a.chainDelay;
-atkMirrorInput.checked=a.mirror;
-atkSpawnSideInput.checked=a.spawnFromSans;
-}
-function addOrReplaceAttack(){
-const obj=readAttackFromForm();
-const idx=attacks.findIndex(a=>a.key===obj.key&&a.type===obj.type);
-if(idx>=0)attacks[idx]=obj;else attacks.push(obj);
-refreshAttackList();
-}
-function deleteSelectedAttack(){
-const idx=parseInt(attackList.value);
-if(isNaN(idx))return;
-attacks.splice(idx,1);
-refreshAttackList();
-}
-function loadAttackToForm(){
-const idx=parseInt(attackList.value);
-if(isNaN(idx))return;
-writeAttackToForm(attacks[idx]);
-}
-function saveSlot(){
-const slot=parseInt(slotSelect.value);
-mapConfig.floor=mapFloorInput.value||"#2a1a0a";
-mapConfig.corridorWidth=Math.max(0.5,Math.min(0.9,parseFloat(mapWidthInput.value)||0.75));
-mapConfig.light=Math.max(0,Math.min(1,parseFloat(mapLightInput.value)||0.18));
-const data={attacks:attacks,map:mapConfig};
-localStorage.setItem("sans_slot_"+slot,JSON.stringify(data));
-}
-function loadSlot(){
-const slot=parseInt(slotSelect.value);
-const raw=localStorage.getItem("sans_slot_"+slot);
-if(!raw)return;
-try{
-const data=JSON.parse(raw);
-attacks=data.attacks||[];
-mapConfig=data.map||mapConfig;
-syncEditorFromConfig();
-}catch(e){}
-}
-function startGame(){
-if(attacks.length===0)defaultConfig();
-mapConfig.floor=mapFloorInput.value||mapConfig.floor;
-mapConfig.corridorWidth=Math.max(0.5,Math.min(0.9,parseFloat(mapWidthInput.value)||mapConfig.corridorWidth));
-mapConfig.light=Math.max(0,Math.min(1,parseFloat(mapLightInput.value)||mapConfig.light));
-sans={x:canvas.width*0.7,y:GROUND_Y-70,w:40,h:70,vx:0,vy:0,onGround:false,hp:MAX_SANS_HP,stamina:MAX_STAMINA,lastDodge:0,face:-1};
-chara={x:canvas.width*0.3,y:GROUND_Y-60,w:34,h:60,vx:0,vy:0,onGround:false,hp:MAX_CHARA_HP,face:1,attackTimer:0,attackCooldown:650,aiJumpTimer:0,aiDir:1,kr:0,dt:0,dtGainPerHit:10,revives:0,gravityDir:1,gravityTime:0};
-boneRains=[];
-blasters=[];
-boneJumps=[];
-boneZones=[];
-phase=1;
-phaseTimer=0;
-gameOver=false;
-started=true;
-shakeTime=0;
-shakeIntensity=0;
-attackState={};
-attacks.forEach(a=>{attackState[a.key+"_"+a.name]=0});
-blasterChainQueue=[];
-overlay.style.display="none";
-lastTime=performance.now();
-requestAnimationFrame(loop);
-}
-function loop(timestamp){
-if(!started)return;
-const dt=timestamp-lastTime;
-lastTime=timestamp;
-update(dt);
-draw();
-if(!gameOver)requestAnimationFrame(loop);
-}
-function update(dt){
-phaseTimer+=dt;
-if(phaseTimer>26000){
-phaseTimer=0;
-phase++;
-if(phase>4)phase=4;
-}
-phaseText.textContent=phase;
-sansHpText.textContent=Math.max(0,Math.floor(sans.hp));
-stamText.textContent=Math.max(0,Math.floor(sans.stamina));
-charaHpText.textContent=Math.max(0,Math.floor(chara.hp));
-krText.textContent=chara.kr.toFixed(1);
-dtText.textContent=Math.floor(chara.dt);
-handleSans(dt);
-if(mode==="battle")handleCharaAI(dt);else handleCharaSolo(dt);
-updateBoneRain(dt);
-updateBlasters(dt);
-updateBoneJumps(dt);
-updateBoneZones(dt);
-applyKR(dt);
-checkCollisions();
-if(sans.hp<=0){
-sans.hp=0;
-endGame(false);
-}
-if(chara.hp<=0){
-if(mode==="solo"){
-chara.hp=MAX_CHARA_HP;
-chara.kr=0;
-chara.x=canvas.width*0.3;
-chara.y=GROUND_Y-60;
-}else{
-if(chara.dt>=100){
-chara.dt-=100;
-chara.revives++;
-chara.dtGainPerHit=Math.max(2,chara.dtGainPerHit*0.6);
-chara.hp=MAX_CHARA_HP;
-chara.kr=0;
-chara.x=canvas.width*0.3;
-chara.y=GROUND_Y-60;
-shakeTime=400;
-shakeIntensity=6;
-}else{
-chara.hp=0;
-endGame(true);
-}
-}
-}
-if(shakeTime>0){
-shakeTime-=dt;
-shakeIntensity*=SHAKE_DECAY;
-if(shakeTime<0)shakeTime=0;
-}
-}
-function handleSans(dt){
-sans.vx=0;
-if(keys["a"])sans.vx=-SANS_SPEED;
-if(keys["d"])sans.vx=SANS_SPEED;
-if(keys["w"]&&sans.onGround){
-sans.vy=SANS_JUMP;
-sans.onGround=false;
-}
-sans.vy+=SANS_GRAVITY;
-sans.x+=sans.vx;
-sans.y+=sans.vy;
-if(sans.y+sans.h>GROUND_Y){
-sans.y=GROUND_Y-sans.h;
-sans.vy=0;
-sans.onGround=true;
-}
-if(sans.y<120){
-sans.y=120;
-sans.vy=0;
-}
-if(sans.x<120)sans.x=120;
-if(sans.x+sans.w>canvas.width-120)sans.x=canvas.width-120-sans.w;
-if(sans.vx>0)sans.face=1;
-else if(sans.vx<0)sans.face=-1;
-if(sans.stamina<MAX_STAMINA){
-sans.stamina+=STAMINA_REGEN*dt/1000;
-if(sans.stamina>MAX_STAMINA)sans.stamina=MAX_STAMINA;
-}
-if(keys["j"])trySansDodge();
-attacks.forEach(a=>{
-const id=a.key+"_"+a.name;
-attackState[id]-=dt;
-if(attackState[id]<0)attackState[id]=0;
-if(keys[a.key]){
-if(attackState[id]===0&&sans.stamina>=a.cost){
-sans.stamina-=a.cost;
-attackState[id]=a.cooldown;
-triggerAttack(a,false);
-}
-}
-});
-}
-function trySansDodge(){
-const now=performance.now();
-if(now-sans.lastDodge<DODGE_COOLDOWN)return;
-if(sans.stamina<DODGE_COST)return;
-sans.lastDodge=now;
-sans.stamina-=DODGE_COST;
-const dir=(chara.x+chara.w/2)<(sans.x+sans.w/2)?1:-1;
-sans.x+=dir*140;
-if(sans.x<120)sans.x=120;
-if(sans.x+sans.w>canvas.width-120)sans.x=canvas.width-120-sans.w;
-shakeTime=220;
-shakeIntensity=4;
-}
-function handleCharaAI(dt){
-chara.attackTimer-=dt;
-if(chara.attackTimer<0)chara.attackTimer=0;
-chara.aiJumpTimer-=dt;
-if(chara.aiJumpTimer<0)chara.aiJumpTimer=0;
-let targetX=sans.x+sans.w/2;
-let dx=targetX-(chara.x+chara.w/2);
-let dangerLeft=false,dangerRight=false;
-boneRains.forEach(b=>{
-if(b.y>chara.y-40&&b.y<chara.y+80){
-if(b.x<chara.x)dangerLeft=true;
-if(b.x>chara.x)dangerRight=true;
-}
-});
-boneJumps.forEach(b=>{
-if(b.y<GROUND_Y&&b.y+b.h>chara.y){
-if(b.x<chara.x)dangerLeft=true;
-if(b.x>chara.x)dangerRight=true;
-}
-});
-if(dangerLeft&&!dangerRight)chara.vx=CHARA_SPEED;
-else if(dangerRight&&!dangerLeft)chara.vx=-CHARA_SPEED;
-else{
-if(Math.abs(dx)>40)chara.vx=dx>0?CHARA_SPEED:-CHARA_SPEED;
-else chara.vx=0;
-}
-if(chara.vx>0)chara.face=1;
-else if(chara.vx<0)chara.face=-1;
-if(chara.aiJumpTimer===0&&(dangerLeft||dangerRight||Math.random()<0.004)){
-chara.aiJumpTimer=900;
-if(chara.onGround){
-chara.vy=CHARA_JUMP*chara.gravityDir;
-chara.onGround=false;
-}
-}
-chara.vy+=CHARA_GRAVITY*chara.gravityDir;
-chara.x+=chara.vx;
-chara.y+=chara.vy;
-if(chara.gravityDir===1){
-if(chara.y+chara.h>GROUND_Y){
-chara.y=GROUND_Y-chara.h;
-chara.vy=0;
-chara.onGround=true;
-}
-if(chara.y<120){
-chara.y=120;
-chara.vy=0;
-}
-}else{
-if(chara.y<120){
-chara.y=120;
-chara.vy=0;
-chara.onGround=true;
-}
-if(chara.y+chara.h>GROUND_Y){
-chara.y=GROUND_Y-chara.h;
-chara.vy=0;
-}
-}
-if(chara.x<120)chara.x=120;
-if(chara.x+chara.w>canvas.width-120)chara.x=canvas.width-120-chara.w;
-if(chara.gravityTime>0){
-chara.gravityTime-=dt;
-if(chara.gravityTime<=0)chara.gravityDir=1;
-}
-if(chara.attackTimer===0){
-const dist=Math.abs((chara.x+chara.w/2)-(sans.x+sans.w/2));
-if(dist<70&&Math.abs(chara.y-sans.y)<40){
-chara.attackTimer=chara.attackCooldown;
-performCharaSlash();
-}
-}
-}
-function handleCharaSolo(dt){
-chara.vx=0;
-chara.vy+=CHARA_GRAVITY*chara.gravityDir;
-chara.x+=chara.vx;
-chara.y+=chara.vy;
-if(chara.y+chara.h>GROUND_Y){
-chara.y=GROUND_Y-chara.h;
-chara.vy=0;
-chara.onGround=true;
-}
-if(chara.y<120){
-chara.y=120;
-chara.vy=0;
-}
-if(chara.gravityTime>0){
-chara.gravityTime-=dt;
-if(chara.gravityTime<=0)chara.gravityDir=1;
-}
-}
-function performCharaSlash(){
-const dir=chara.face||1;
-const hitBox={x:chara.x+(dir===1?chara.w-4:-50),y:chara.y+8,w:50,h:chara.h-16};
-if(rectOverlap(hitBox,sans)){
-sans.hp-=1;
-shakeTime=200;
-shakeIntensity=3;
-chara.dt+=chara.dtGainPerHit;
-if(chara.dt>999)chara.dt=999;
-}
-}
-function triggerAttack(a,testing){
-if(a.type==="boneRain")spawnBoneRainCustom(a);
-else if(a.type==="blasterChain")spawnBlasterChainCustom(a);
-else if(a.type==="boneWave")spawnBoneWaveCustom(a);
-else if(a.type==="gravityZone")triggerGravityZoneCustom(a,testing);
-}
-function spawnBoneRainCustom(a){
-const baseCount=a.count;
-for(let r=0;r<a.rows;r++){
-for(let c=0;c<a.cols;c++){
-for(let i=0;i<baseCount;i++){
-const delay=a.stepDelay*(i+r+c);
-const left=120,right=canvas.width-120;
-let x=left+(right-left)*Math.random();
-x+=a.offsetX+c*a.spreadX;
-const blue=Math.random()<a.blueChance;
-boneRains.push({x:x,y:-40+a.offsetY+r*a.spreadY,w:18,h:40,vy:a.speed+Math.random()*1.5+phase*0.4,delay:delay,life:a.life,blue:blue,power:a.power,gravity:a.gravity});
-}
-}
-}
-shakeTime=220;
-shakeIntensity=4;
-}
-function updateBoneRain(dt){
-for(let i=boneRains.length-1;i>=0;i--){
-const b=boneRains[i];
-if(b.delay>0){
-b.delay-=dt;
-continue;
-}
-b.vy+=b.gravity*dt/1000;
-b.y+=b.vy;
-b.life-=dt;
-if(b.life<=0||b.y>canvas.height+80)boneRains.splice(i,1);
-}
-}
-function spawnBlasterChainCustom(a){
-blasterChainQueue=[];
-for(let i=0;i<a.chainCount;i++){
-blasterChainQueue.push({delay:i*a.chainDelay,config:a});
-}
-}
-function updateBlasters(dt){
-for(let i=blasters.length-1;i>=0;i--){
-const b=blasters[i];
-b.time+=dt;
-if(b.warning){
-if(b.time>b.appearTime){
-b.warning=false;
-b.time=0;
-}
-}else{
-if(b.time>b.life)blasters.splice(i,1);
-}
-}
-for(let i=blasterChainQueue.length-1;i>=0;i--){
-const q=blasterChainQueue[i];
-q.delay-=dt;
-if(q.delay<=0){
-spawnSingleBlaster(q.config);
-blasterChainQueue.splice(i,1);
-}
-}
-}
-function spawnSingleBlaster(a){
-const px=chara.x+chara.w/2;
-const py=chara.y+chara.h/2;
-const sx=sans.x+sans.w/2;
-const sy=sans.y+sans.h/2;
-let angle=Math.atan2(py-sy,px-sx);
-if(a.randAngle>0){
-const rad=a.randAngle*Math.PI/180;
-angle+= (Math.random()*2-1)*rad;
-}
-const dist=140;
-const bx=sx+Math.cos(angle)*dist;
-const by=sy+Math.sin(angle)*dist;
-blasters.push({x:bx,y:by,angle:angle,time:0,warning:true,appearTime:260,life:a.life,power:a.power});
-shakeTime=260;
-shakeIntensity=5;
-}
-function spawnBoneWaveCustom(a){
-const side=a.spawnFromSans?((chara.x+chara.w/2)<(sans.x+sans.w/2)?"left":"right"):(Math.random()<0.5?"left":"right");
-const baseX=side==="left"?130:canvas.width-150;
-const dir=side==="left"?1:-1;
-for(let i=0;i<a.count;i++){
-const delay=i*a.stepDelay;
-setTimeout(()=>{
-const phaseType=i%2===0?"white":"blue";
-boneJumps.push({x:baseX+a.offsetX,y:GROUND_Y-20+a.offsetY,w:20,h:20,phase:phaseType,time:0,dir:dir,power:a.power,speed:a.speed});
-},delay);
-}
-}
-function updateBoneJumps(dt){
-for(let i=boneJumps.length-1;i>=0;i--){
-const b=boneJumps[i];
-b.time+=dt;
-b.x+=b.dir*(b.speed||3);
-if(b.phase==="white"){
-b.h=20+60*(b.time/WHITE_BONE_RISE_TIME);
-if(b.h>120)b.h=120;
-b.y=GROUND_Y-b.h;
-if(b.time>WHITE_BONE_RISE_TIME+800){
-boneJumps.splice(i,1);
-continue;
-}
-}else{
-b.h=180;
-b.y=GROUND_Y-b.h;
-if(b.time>BLUE_BONE_TIME){
-boneJumps.splice(i,1);
-continue;
-}
-}
-if(b.x<-200||b.x>canvas.width+200)boneJumps.splice(i,1);
-}
-}
-function triggerGravityZoneCustom(a,testing){
-chara.gravityDir*=-1;
-chara.gravityTime=2200+phase*200;
-const zoneY=chara.gravityDir===1?GROUND_Y-40:120;
-const width=(chara.w+80)+a.spreadX;
-boneZones.push({x:chara.x-40+a.offsetX,y:zoneY+a.offsetY,width:width,height:40,life:a.life,time:0,dir:chara.gravityDir,power:a.power});
-if(testing&&atkTestFreezeInput.checked)chara.gravityTime+=2000;
-shakeTime=260;
-shakeIntensity=5;
-}
-function updateBoneZones(dt){
-for(let i=boneZones.length-1;i>=0;i--){
-const z=boneZones[i];
-z.time+=dt;
-z.life-=dt;
-if(z.life<=0)boneZones.splice(i,1);
-}
-}
-function applyKR(dt){
-if(chara.kr>0){
-const dmg=chara.kr*dt/1000*6;
-chara.hp-=dmg;
-chara.kr-=dt/1000*1.2;
-if(chara.kr<0)chara.kr=0;
-}
-}
-function rectOverlap(a,b){
-return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
-}
-function checkCollisions(){
-boneRains.forEach(b=>{
-if(b.delay>0)return;
-const hitBox={x:b.x,y:b.y,w:b.w,h:b.h};
-if(rectOverlap(hitBox,chara)){
-if(b.blue){
-const moving=Math.abs(chara.vx)+Math.abs(chara.vy)>0.4;
-if(moving){
-chara.hp-=1;
-chara.kr+=b.power;
-shakeTime=220;
-shakeIntensity=4;
-}
-}else{
-chara.hp-=1;
-chara.kr+=b.power*0.7;
-shakeTime=220;
-shakeIntensity=4;
-}
-}
-});
-blasters.forEach(bl=>{
-if(bl.warning)return;
-const beamLen=2000;
-const bw=26;
-const bx=bl.x;
-const by=bl.y;
-const ex=bx+Math.cos(bl.angle)*beamLen;
-const ey=by+Math.sin(bl.angle)*beamLen;
-const steps=40;
-for(let s=0;s<steps;s++){
-const t=s/steps;
-const cx=bx+(ex-bx)*t;
-const cy=by+(ey-by)*t;
-const beamBox={x:cx-bw/2,y:cy-bw/2,w:bw,h:bw};
-if(rectOverlap(beamBox,chara)){
-chara.hp-=1;
-chara.kr+=bl.power;
-shakeTime=260;
-shakeIntensity=5;
-break;
-}
-}
-});
-boneJumps.forEach(b=>{
-const hitBox={x:b.x,y:b.y,w:b.w,h:b.h};
-if(rectOverlap(hitBox,chara)){
-if(b.phase==="white"){
-chara.hp-=1;
-chara.kr+=b.power*0.7;
-shakeTime=220;
-shakeIntensity=4;
-}else{
-const moving=Math.abs(chara.vx)+Math.abs(chara.vy)>0.4;
-if(moving){
-chara.hp-=1;
-chara.kr+=b.power;
-shakeTime=260;
-shakeIntensity=5;
-}
-}
-}
-});
-boneZones.forEach(z=>{
-const hitBox={x:z.x,y:z.y-z.dir*10,w:z.width,h:z.height};
-if(rectOverlap(hitBox,chara)){
-chara.hp-=1;
-chara.kr+=z.power;
-shakeTime=220;
-shakeIntensity=4;
-}
-});
-}
-function endGame(win){
-gameOver=true;
-started=false;
-overlay.style.display="flex";
-overlayText.textContent=win?"You gave them a bad time.":"You died. Chara’s DT refused.";
-startBtn.textContent="Play again";
-}
-function draw(){
-let offsetX=0,offsetY=0;
-if(shakeTime>0){
-offsetX=(Math.random()*2-1)*shakeIntensity;
-offsetY=(Math.random()*2-1)*shakeIntensity;
-}
-ctx.save();
-ctx.clearRect(0,0,canvas.width,canvas.height);
-ctx.translate(offsetX,offsetY);
-drawCorridor();
-drawBoneZones();
-drawBoneRain();
-drawBoneJumps();
-drawBlasters();
-drawSans();
-drawChara();
-drawBars();
-ctx.restore();
-}
-function drawCorridor(){
-ctx.fillStyle="#000";
-ctx.fillRect(0,0,canvas.width,canvas.height);
-const grad=ctx.createLinearGradient(0,0,0,GROUND_Y);
-grad.addColorStop(0,"#111");
-grad.addColorStop(0.5,"#151515");
-grad.addColorStop(1,"#202020");
-ctx.fillStyle=grad;
-ctx.fillRect(0,0,canvas.width,GROUND_Y);
-ctx.fillStyle=mapConfig.floor;
-ctx.fillRect(0,GROUND_Y,canvas.width,canvas.height-GROUND_Y);
-const wFrac=mapConfig.corridorWidth;
-const left=canvas.width*(1-wFrac)/2;
-const right=canvas.width-left;
-ctx.fillStyle="#d9c9a3";
-ctx.fillRect(canvas.width/2-70,80,140,260);
-ctx.fillStyle="#f7f0d0";
-ctx.fillRect(canvas.width/2-40,100,80,220);
-ctx.fillStyle="rgba(255,255,220,"+mapConfig.light+")";
-ctx.beginPath();
-ctx.moveTo(canvas.width/2-120,80);
-ctx.lineTo(canvas.width/2+120,80);
-ctx.lineTo(canvas.width/2+260,GROUND_Y);
-ctx.lineTo(canvas.width/2-260,GROUND_Y);
-ctx.closePath();
-ctx.fill();
-ctx.fillStyle="#3b2b1a";
-for(let i=0;i<4;i++){
-const x=left+60+i*((right-left-120)/3);
-ctx.fillRect(x,120,40,GROUND_Y-120);
-}
-ctx.strokeStyle="#444";
-ctx.lineWidth=3;
-ctx.strokeRect(left,100,right-left,GROUND_Y-120);
-ctx.fillStyle="#111";
-ctx.fillRect(left,100,right-left,GROUND_Y-120);
-}
-function drawSans(){
-ctx.save();
-ctx.translate(sans.x+sans.w/2,sans.y+sans.h/2);
-ctx.fillStyle="#fff";
-ctx.beginPath();
-ctx.arc(0,-20,16,0,Math.PI*2);
-ctx.fill();
-ctx.fillStyle="#000";
-ctx.fillRect(-8,-24,4,3);
-ctx.fillRect(4,-24,4,3);
-ctx.fillRect(-4,-16,8,2);
-ctx.fillStyle="#4aa";
-ctx.fillRect(-14,-2,28,26);
-ctx.fillStyle="#fff";
-ctx.fillRect(-12,0,10,18);
-ctx.fillRect(2,0,10,18);
-ctx.fillStyle="#333";
-ctx.fillRect(-10,18,8,18);
-ctx.fillRect(2,18,8,18);
-ctx.restore();
-}
-function drawChara(){
-ctx.save();
-ctx.translate(chara.x+chara.w/2,chara.y+chara.h/2);
-ctx.scale(1,chara.gravityDir);
-ctx.translate(-chara.w/2,-chara.h/2);
-ctx.fillStyle="#3b0000";
-ctx.fillRect(4,0,26,30);
-ctx.fillStyle="#5c0000";
-ctx.fillRect(2,28,30,18);
-ctx.fillStyle="#2b2b2b";
-ctx.fillRect(4,44,10,16);
-ctx.fillRect(20,44,10,16);
-ctx.fillStyle="#f0e0d0";
-ctx.fillRect(6,4,22,18);
-ctx.fillStyle="#000";
-ctx.fillRect(10,10,4,3);
-ctx.fillRect(20,10,4,3);
-ctx.fillRect(14,16,6,2);
-if(chara.attackTimer>chara.attackCooldown-160){
-ctx.fillStyle="#0f0";
-const dir=chara.face||1;
-ctx.fillRect(dir===1?26:-18,10,18,6);
-}
-ctx.restore();
-}
-function drawBoneRain(){
-for(const b of boneRains){
-if(b.blue)ctx.fillStyle="#55f";
-else ctx.fillStyle="#fff";
-ctx.fillRect(b.x,b.y,b.w,b.h);
-ctx.fillStyle=b.blue?"#88f":"#ccc";
-ctx.fillRect(b.x,b.y,b.w,4);
-ctx.fillRect(b.x,b.y+b.h-4,b.w,4);
-}
-}
-function drawBoneJumps(){
-for(const b of boneJumps){
-if(b.phase==="white")ctx.fillStyle="#fff";
-else ctx.fillStyle="#55f";
-ctx.fillRect(b.x,b.y,b.w,b.h);
-}
-}
-function drawBoneZones(){
-for(const z of boneZones){
-const alpha=0.3+0.4*Math.sin(z.time*0.02);
-ctx.fillStyle="rgba(255,255,255,"+alpha+")";
-ctx.fillRect(z.x,z.y-z.dir*10,z.width,z.height);
-}
-}
-function drawBlasters(){
-for(const bl of blasters){
-ctx.save();
-ctx.translate(bl.x,bl.y);
-ctx.rotate(bl.angle);
-const appearScale=bl.warning?Math.min(1,bl.time/bl.appearTime):1;
-ctx.scale(appearScale,appearScale);
-ctx.fillStyle="#fff";
-ctx.fillRect(-26,-18,52,36);
-ctx.fillStyle="#000";
-ctx.fillRect(-18,-10,8,6);
-ctx.fillRect(10,-10,8,6);
-ctx.fillRect(-6,0,12,4);
-if(bl.warning){
-ctx.globalAlpha=0.4+0.3*Math.sin(bl.time*0.02);
-ctx.fillStyle="#0ff";
-ctx.fillRect(20,-6,80,12);
-}else{
-ctx.globalAlpha=0.9;
-ctx.fillStyle="#0ff";
-ctx.fillRect(20,-8,2000,16);
-}
-ctx.restore();
-ctx.globalAlpha=1;
-}
-}
-function drawBars(){
-const sRatio=Math.max(0,sans.hp)/MAX_SANS_HP;
-const stRatio=Math.max(0,sans.stamina)/MAX_STAMINA;
-const cRatio=Math.max(0,chara.hp)/MAX_CHARA_HP;
-ctx.fillStyle="#044";
-ctx.fillRect(140,40,260,10);
-ctx.fillStyle="#0ff";
-ctx.fillRect(140,40,260*sRatio,10);
-ctx.fillStyle="#220";
-ctx.fillRect(140,56,260,8);
-ctx.fillStyle="#ff0";
-ctx.fillRect(140,56,260*stRatio,8);
-ctx.fillStyle="#400";
-ctx.fillRect(canvas.width-400,40,260,10);
-ctx.fillStyle="#f00";
-ctx.fillRect(canvas.width-400,40,260*cRatio,10);
-ctx.fillStyle="#fff";
-ctx.font="12px Arial";
-ctx.fillText("SANS",140,34);
-ctx.fillText("STAMINA",140,52);
-ctx.fillText("CHARA",canvas.width-400,34);
-}
-function testSelectedAttack(){
-const idx=parseInt(attackList.value);
-if(isNaN(idx))return;
-const a=attacks[idx];
-triggerAttack(a,true);
-}
-defaultConfig();
-</script>
+  <div id="gameContainer">
+    <canvas id="game" width="640" height="360"></canvas>
+    <div id="ui">
+      <div id="info">HP: <span id="hp">5</span> | Score: <span id="score">0</span></div>
+      <div id="controls">
+        Move: A / D or ← / → &nbsp;|&nbsp;
+        Jump: W or ↑ or Space &nbsp;|&nbsp;
+        Shoot bone: J
+      </div>
+      <button id="restartBtn" style="display:none;">Restart</button>
+    </div>
+  </div>
+
+  <script>
+    // ====== BASIC SETUP ======
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+
+    const hpEl = document.getElementById("hp");
+    const scoreEl = document.getElementById("score");
+    const restartBtn = document.getElementById("restartBtn");
+
+    const W = canvas.width;
+    const H = canvas.height;
+
+    // ====== GAME STATE ======
+    let lastTime = 0;
+    let keys = {};
+    let gameOver = false;
+
+    const GRAVITY = 1500;      // px/s^2
+    const MOVE_SPEED = 260;    // px/s
+    const JUMP_SPEED = -550;   // px/s
+    const FRICTION = 0.85;
+
+    const BONE_SPEED = 500;
+    const ENEMY_SPEED_MIN = 80;
+    const ENEMY_SPEED_MAX = 160;
+    const ENEMY_SPAWN_INTERVAL = 1.2; // seconds
+
+    let enemySpawnTimer = 0;
+    let score = 0;
+
+    const player = {
+      x: 80,
+      y: H - 80,
+      w: 32,
+      h: 48,
+      vx: 0,
+      vy: 0,
+      onGround: false,
+      facing: 1, // 1 right, -1 left
+      hp: 5
+    };
+
+    const bones = [];
+    const enemies = [];
+
+    // ====== INPUT HANDLING ======
+    window.addEventListener("keydown", (e) => {
+      keys[e.key.toLowerCase()] = true;
+      if (["ArrowLeft", "ArrowRight", "ArrowUp", " "].includes(e.key)) {
+        e.preventDefault();
+      }
+      // Shoot bone with J
+      if (e.key.toLowerCase() === "j" && !gameOver) {
+        shootBone();
+      }
+    });
+
+    window.addEventListener("keyup", (e) => {
+      keys[e.key.toLowerCase()] = false;
+    });
+
+    // ====== RESTART BUTTON ======
+    restartBtn.addEventListener("click", () => {
+      resetGame();
+    });
+
+    // ====== GAME FUNCTIONS ======
+    function resetGame() {
+      player.x = 80;
+      player.y = H - 80;
+      player.vx = 0;
+      player.vy = 0;
+      player.hp = 5;
+      player.onGround = false;
+      player.facing = 1;
+      bones.length = 0;
+      enemies.length = 0;
+      score = 0;
+      enemySpawnTimer = 0;
+      gameOver = false;
+      restartBtn.style.display = "none";
+      hpEl.textContent = player.hp;
+      scoreEl.textContent = score;
+    }
+
+    function shootBone() {
+      const boneWidth = 18;
+      const boneHeight = 6;
+      const dir = player.facing || 1;
+      bones.push({
+        x: player.x + player.w / 2 + dir * 10,
+        y: player.y + player.h / 2,
+        w: boneWidth,
+        h: boneHeight,
+        vx: dir * BONE_SPEED
+      });
+    }
+
+    function spawnEnemy() {
+      const size = 32;
+      const side = Math.random() < 0.5 ? "left" : "right";
+      const y = H - 64; // ground-ish
+      const speed =
+        ENEMY_SPEED_MIN +
+        Math.random() * (ENEMY_SPEED_MAX - ENEMY_SPEED_MIN);
+
+      enemies.push({
+        x: side === "left" ? -size : W + size,
+        y: y,
+        w: size,
+        h: size,
+        vx: side === "left" ? speed : -speed,
+        hp: 1
+      });
+    }
+
+    function rectsOverlap(a, b) {
+      return !(
+        a.x + a.w < b.x ||
+        a.x > b.x + b.w ||
+        a.y + a.h < b.y ||
+        a.y > b.y + b.h
+      );
+    }
+
+    // ====== UPDATE LOOP ======
+    function update(dt) {
+      if (gameOver) return;
+
+      // --- Player movement ---
+      let moveLeft = keys["a"] || keys["arrowleft"];
+      let moveRight = keys["d"] || keys["arrowright"];
+      let jumpKey = keys["w"] || keys["arrowup"] || keys[" "];
+
+      if (moveLeft && !moveRight) {
+        player.vx = -MOVE_SPEED;
+        player.facing = -1;
+      } else if (moveRight && !moveLeft) {
+        player.vx = MOVE_SPEED;
+        player.facing = 1;
+      } else {
+        player.vx *= FRICTION;
+        if (Math.abs(player.vx) < 5) player.vx = 0;
+      }
+
+      if (jumpKey && player.onGround) {
+        player.vy = JUMP_SPEED;
+        player.onGround = false;
+      }
+
+      // Gravity
+      player.vy += GRAVITY * dt;
+
+      // Apply velocity
+      player.x += player.vx * dt;
+      player.y += player.vy * dt;
+
+      // Floor collision
+      const floorY = H - 40;
+      if (player.y + player.h > floorY) {
+        player.y = floorY - player.h;
+        player.vy = 0;
+        player.onGround = true;
+      }
+
+      // Wall bounds
+      if (player.x < 0) player.x = 0;
+      if (player.x + player.w > W) player.x = W - player.w;
+
+      // --- Update bones ---
+      for (let i = bones.length - 1; i >= 0; i--) {
+        const b = bones[i];
+        b.x += b.vx * dt;
+        if (b.x < -50 || b.x > W + 50) {
+          bones.splice(i, 1);
+        }
+      }
+
+      // --- Spawn enemies ---
+      enemySpawnTimer += dt;
+      if (enemySpawnTimer >= ENEMY_SPAWN_INTERVAL) {
+        enemySpawnTimer = 0;
+        spawnEnemy();
+      }
+
+      // --- Update enemies ---
+      for (let i = enemies.length - 1; i >= 0; i--) {
+        const e = enemies[i];
+        e.x += e.vx * dt;
+
+        // Remove if off-screen far
+        if (e.x < -100 || e.x > W + 100) {
+          enemies.splice(i, 1);
+          continue;
+        }
+      }
+
+      // --- Collisions: bones vs enemies ---
+      for (let i = enemies.length - 1; i >= 0; i--) {
+        const e = enemies[i];
+        for (let j = bones.length - 1; j >= 0; j--) {
+          const b = bones[j];
+          if (rectsOverlap(e, b)) {
+            bones.splice(j, 1);
+            e.hp -= 1;
+            if (e.hp <= 0) {
+              enemies.splice(i, 1);
+              score += 10;
+              scoreEl.textContent = score;
+            }
+            break;
+          }
+        }
+      }
+
+      // --- Collisions: enemies vs player ---
+      for (let i = enemies.length - 1; i >= 0; i--) {
+        const e = enemies[i];
+        if (rectsOverlap(e, player)) {
+          enemies.splice(i, 1);
+          player.hp -= 1;
+          hpEl.textContent = player.hp;
+          if (player.hp <= 0) {
+            gameOver = true;
+            restartBtn.style.display = "inline-block";
+          }
+        }
+      }
+    }
+
+    // ====== DRAW LOOP ======
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+
+      // Background
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, W, H);
+
+      // Floor
+      ctx.fillStyle = "#222";
+      ctx.fillRect(0, H - 40, W, 40);
+
+      // Player (simple skeleton-like)
+      ctx.save();
+      ctx.translate(player.x + player.w / 2, player.y + player.h / 2);
+      ctx.scale(player.facing, 1);
+
+      // Body
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(-8, -16, 16, 32);
+
+      // Head
+      ctx.beginPath();
+      ctx.arc(0, -26, 10, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Eyes
+      ctx.fillStyle = "#000";
+      ctx.fillRect(-5, -30, 3, 3);
+      ctx.fillRect(2, -30, 3, 3);
+
+      // Mouth
+      ctx.fillRect(-4, -22, 8, 2);
+
+      ctx.restore();
+
+      // Bones
+      for (const b of bones) {
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(b.x, b.y, b.w, b.h);
+        ctx.fillRect(b.x - 4, b.y - 2, 4, 10);
+        ctx.fillRect(b.x + b.w, b.y - 2, 4, 10);
+      }
+
+      // Enemies (simple red squares)
+      for (const e of enemies) {
+        ctx.fillStyle = "#f33";
+        ctx.fillRect(e.x, e.y, e.w, e.h);
+        ctx.fillStyle = "#000";
+        ctx.fillRect(e.x + 6, e.y + 8, 6, 6);
+        ctx.fillRect(e.x + e.w - 12, e.y + 8, 6, 6);
+        ctx.fillRect(e.x + 8, e.y + e.h - 10, e.w - 16, 4);
+      }
+
+      // Game over text
+      if (gameOver) {
+        ctx.fillStyle = "rgba(0,0,0,0.6)";
+        ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = "#fff";
+        ctx.font = "32px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("GAME OVER", W / 2, H / 2 - 10);
+        ctx.font = "18px sans-serif";
+        ctx.fillText("Score: " + score, W / 2, H / 2 + 20);
+        ctx.fillText("Click Restart below to play again", W / 2, H / 2 + 50);
+      }
+    }
+
+    // ====== MAIN LOOP ======
+    function loop(timestamp) {
+      if (!lastTime) lastTime = timestamp;
+      const dt = (timestamp - lastTime) / 1000;
+      lastTime = timestamp;
+
+      update(dt);
+      draw();
+
+      requestAnimationFrame(loop);
+    }
+
+    // Start
+    resetGame();
+    requestAnimationFrame(loop);
+  </script>
 </body>
 </html>

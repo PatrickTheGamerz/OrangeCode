@@ -4,6 +4,8 @@ currentMenuIndex = 0;
 render();
 document.onkeydown = handleKeyDown;
 
+let monsterSelectIndex = 0;
+
 function handleKeyDown(e) {
     const key = e.key.toLowerCase();
 
@@ -53,8 +55,9 @@ function handleKeyDown(e) {
             render();
         } else if (key === "z") {
             if (currentMenuIndex === 0) {
-                // MONSTERS
-                startBattle("dummy");
+                gameState = "monsterSelect";
+                monsterSelectIndex = 0;
+                render();
             } else if (currentMenuIndex === 1) {
                 gameState = "shop";
                 currentMenuIndex = 0;
@@ -74,7 +77,26 @@ function handleKeyDown(e) {
                 render();
             }
         }
-        // X does nothing here now
+        return;
+    }
+
+    if (gameState === "monsterSelect") {
+        if (key === "w") {
+            monsterSelectIndex = (monsterSelectIndex + monsterList.length - 1) % monsterList.length;
+            render();
+        } else if (key === "s") {
+            monsterSelectIndex = (monsterSelectIndex + 1) % monsterList.length;
+            render();
+        } else if (key === "z") {
+            const m = monsterList[monsterSelectIndex];
+            if (currentPlayer.LV >= m.reqLV) {
+                startBattle(m.id);
+            }
+        } else if (key === "x") {
+            gameState = "mainMenu";
+            currentMenuIndex = 0;
+            render();
+        }
         return;
     }
 
@@ -130,7 +152,7 @@ function render() {
 
     if (gameState === "title") {
         g.innerHTML = `
-            <div class="center" style="margin-top:120px;">
+            <div class="center" style="margin-top:160px;">
                 <h1>UNDERTALE: Fallen Timelines</h1>
                 <p class="small-text">Press Z</p>
             </div>
@@ -140,25 +162,28 @@ function render() {
 
     if (gameState === "fileSelect") {
         let html = `<div class="center" style="margin-top:40px;">
-            <div class="undertale-box" style="width:90%;">
+            <div class="undertale-box" style="width:80%;">
                 <p>SELECT A SAVE:</p>
+                <div class="file-container">
         `;
         for (let i = 0; i < SAVE_SLOTS; i++) {
             const s = saves[i];
             const selected = (i === currentMenuIndex) ? "selected" : "";
             html += `<div class="file-slot ${selected}">
-                        <div class="undertale-box">
-                            <p>SAVE ${i + 1}</p>
-                            <p>${s && s.name ? s.name : ""}</p>
-                            <div class="flex-between">
-                                <span>LV ${s ? s.LV : 1}</span>
-                                <span>EXP ${s ? s.EXP : 0}</span>
-                            </div>
-                            <p>G ${s ? s.G : 0}</p>
+                        <div class="file-row">
+                            <span>SAVE ${i + 1}</span>
+                            <span>${s && s.name ? s.name : ""}</span>
+                        </div>
+                        <div class="file-row">
+                            <span>LV ${s ? s.LV : 1}</span>
+                            <span>EXP ${s ? s.EXP : 0}</span>
+                            <span>G ${s ? s.G : 0}</span>
                         </div>
                     </div>`;
         }
-        html += `</div></div>`;
+        html += `</div>
+                <p style="margin-top:10px; font-size:10px;">☞ ᚷᚨᛊᛏᛖᚱ ᚹᛁᚾᛞᛁᚾᚷᛊ ☜</p>
+            </div></div>`;
         g.innerHTML = html;
         return;
     }
@@ -170,13 +195,29 @@ function render() {
 
     if (gameState === "mainMenu") {
         const options = ["MONSTERS", "SHOP", "INVENTORY", "STATS", "SETTINGS", "CREDITS"];
-        let html = `<div class="center" style="margin-top:80px;">`;
+        let html = `<div class="center" style="margin-top:120px;">`;
         options.forEach((opt, i) => {
             html += `<div class="menu-option ${i === currentMenuIndex ? "selected" : ""}">
                         <span>${opt}</span>
                     </div>`;
         });
         html += `</div>`;
+        g.innerHTML = html;
+        return;
+    }
+
+    if (gameState === "monsterSelect") {
+        let html = `<div class="center" style="margin-top:80px;">
+            <div class="undertale-box" style="width:70%;">
+                <p>SELECT MONSTER</p>
+                <div class="monster-list">
+        `;
+        monsterList.forEach((m, i) => {
+            const locked = currentPlayer.LV < m.reqLV;
+            const sel = i === monsterSelectIndex ? "selected" : "";
+            html += `<p class="${sel}">${locked ? "[LOCKED]" : ""} ${m.name} (LV ${m.reqLV}+)</p>`;
+        });
+        html += `</div></div></div>`;
         g.innerHTML = html;
         return;
     }
@@ -338,7 +379,7 @@ function handleNameEntryKey(key) {
 
 function renderNameEntry() {
     const g = document.getElementById("game");
-    let html = `<div class="center" style="margin-top:40px;">
+    let html = `<div class="center" style="margin-top:60px;">
         <p>Name the fallen human.</p>
         <div class="name-grid undertale-box">
     `;
@@ -416,11 +457,10 @@ function buyShopItem(section, item) {
 function renderShop() {
     const g = document.getElementById("game");
     const sections = ["weapon", "armor", "heal"];
-    const sectionNames = ["WEAPON", "ARMOR", "HEAL"];
     const section = sections[shopSectionIndex];
     const items = shopData[section];
 
-    let html = `<div class="center" style="margin-top:60px;">
+    let html = `<div class="center" style="margin-top:80px;">
         <div class="undertale-box" style="width:70%;">
             <p>SHOP</p>
             <p>G: ${currentPlayer.G}</p>

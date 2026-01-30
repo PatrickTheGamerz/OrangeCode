@@ -1,153 +1,157 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Sans Multiversal Simulator</title>
-<style>
+  <meta charset="UTF-8" />
+  <title>Sans AU Simulator</title>
+  <style>
     body {
-        margin: 0;
-        overflow: hidden;
-        background: black;
-        color: white;
-        font-family: monospace;
+      margin: 0;
+      background: black;
+      color: white;
+      font-family: 'Courier New', monospace;
+      overflow: hidden;
     }
-
     #game {
-        position: relative;
-        width: 100vw;
-        height: 100vh;
-        background: radial-gradient(circle, #111, #000);
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
     }
-
-    .sans {
-        position: absolute;
-        width: 60px;
-        height: 60px;
-        background: white;
-        border-radius: 10px;
-        box-shadow: 0 0 20px cyan;
+    canvas {
+      border: 4px solid white;
+      background: #111;
     }
-
-    .bone {
-        position: absolute;
-        width: 20px;
-        height: 80px;
-        background: cyan;
-        border-radius: 5px;
-        box-shadow: 0 0 15px cyan;
+    .menu {
+      margin-top: 20px;
     }
-
-    .blaster {
-        position: absolute;
-        width: 120px;
-        height: 60px;
-        background: white;
-        border-radius: 10px;
-        box-shadow: 0 0 20px purple;
+    button {
+      background: black;
+      color: white;
+      border: 2px solid white;
+      padding: 10px 20px;
+      margin: 5px;
+      font-size: 16px;
+      cursor: pointer;
     }
-
-    #universeLabel {
-        position: absolute;
-        top: 10px;
-        left: 10px;
-        font-size: 22px;
+    .log {
+      margin-top: 10px;
+      max-height: 150px;
+      overflow-y: auto;
+      width: 600px;
+      text-align: left;
+      font-size: 14px;
     }
-</style>
+  </style>
 </head>
 <body>
+  <div id="game">
+    <canvas id="battle" width="600" height="300"></canvas>
+    <div class="menu" id="menu"></div>
+    <div class="log" id="log"></div>
+  </div>
 
-<div id="game">
-    <div id="universeLabel">Universe: 1</div>
-    <div id="sans" class="sans"></div>
-</div>
+  <script>
+    const canvas = document.getElementById('battle');
+    const ctx = canvas.getContext('2d');
+    const menu = document.getElementById('menu');
+    const log = document.getElementById('log');
 
-<script>
-const game = document.getElementById("game");
-const sans = document.getElementById("sans");
-const label = document.getElementById("universeLabel");
+    const AUs = {
+      "Classic Sans": { hp: 100, atk: 15, dodge: 0.2, color: "white" },
+      "Underfell Sans": { hp: 120, atk: 20, dodge: 0.1, color: "red" },
+      "Dusttale Sans": { hp: 80, atk: 30, dodge: 0.15, color: "darkred" },
+      "Ink Sans": { hp: 90, atk: 18, dodge: 0.25, color: "cyan" },
+      "Error Sans": { hp: 110, atk: 22, dodge: 0.2, color: "purple" }
+    };
 
-let x = 300, y = 300;
-let speed = 6;
-let universe = 1;
+    let player = null;
+    let enemy = null;
 
-let keys = {};
+    function logMsg(msg) {
+      const p = document.createElement('p');
+      p.textContent = msg;
+      log.appendChild(p);
+      log.scrollTop = log.scrollHeight;
+    }
 
-document.addEventListener("keydown", e => keys[e.key] = true);
-document.addEventListener("keyup", e => keys[e.key] = false);
+    function drawBattle() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = player.color;
+      ctx.fillRect(50, 200, 50, 50);
+      ctx.fillStyle = enemy.color;
+      ctx.fillRect(500, 50, 50, 50);
+      ctx.fillStyle = "white";
+      ctx.font = "16px Courier New";
+      ctx.fillText(`${player.name} HP: ${player.hp}`, 20, 20);
+      ctx.fillText(`${enemy.name} HP: ${enemy.hp}`, 400, 20);
+    }
 
-function moveSans() {
-    if (keys["w"]) y -= speed;
-    if (keys["s"]) y += speed;
-    if (keys["a"]) x -= speed;
-    if (keys["d"]) x += speed;
+    function attack(attacker, defender) {
+      if (Math.random() < defender.dodge) {
+        logMsg(`${defender.name} dodged the attack!`);
+        return;
+      }
+      const damage = Math.floor(attacker.atk + Math.random() * 10 - 5);
+      defender.hp -= damage;
+      logMsg(`${attacker.name} hits ${defender.name} for ${damage} damage!`);
+    }
 
-    sans.style.left = x + "px";
-    sans.style.top = y + "px";
-}
+    function checkWin() {
+      if (player.hp <= 0) {
+        logMsg("You lost! Refresh to try again.");
+        menu.innerHTML = '';
+        return true;
+      }
+      if (enemy.hp <= 0) {
+        logMsg("You won! Refresh to try again.");
+        menu.innerHTML = '';
+        return true;
+      }
+      return false;
+    }
 
-function summonBone() {
-    const bone = document.createElement("div");
-    bone.className = "bone";
-    bone.style.left = (x + 20) + "px";
-    bone.style.top = (y - 60) + "px";
-    game.appendChild(bone);
+    function playerTurn() {
+      drawBattle();
+      menu.innerHTML = '';
+      const attackBtn = document.createElement('button');
+      attackBtn.textContent = "Attack";
+      attackBtn.onclick = () => {
+        attack(player, enemy);
+        if (!checkWin()) setTimeout(enemyTurn, 1000);
+      };
+      menu.appendChild(attackBtn);
+    }
 
-    let by = y - 60;
-    const interval = setInterval(() => {
-        by -= 10;
-        bone.style.top = by + "px";
-        if (by < -100) {
-            bone.remove();
-            clearInterval(interval);
-        }
-    }, 30);
-}
+    function enemyTurn() {
+      attack(enemy, player);
+      if (!checkWin()) setTimeout(playerTurn, 1000);
+    }
 
-function summonBlaster() {
-    const blaster = document.createElement("div");
-    blaster.className = "blaster";
-    blaster.style.left = (x + 80) + "px";
-    blaster.style.top = (y - 20) + "px";
-    game.appendChild(blaster);
+    function startBattle() {
+      drawBattle();
+      logMsg(`Battle Start! ${player.name} vs ${enemy.name}`);
+      setTimeout(playerTurn, 1000);
+    }
 
-    setTimeout(() => {
-        blaster.style.boxShadow = "0 0 40px red";
-    }, 300);
+    function chooseAU() {
+      menu.innerHTML = '<p>Choose your Sans:</p>';
+      for (let name in AUs) {
+        const btn = document.createElement('button');
+        btn.textContent = name;
+        btn.onclick = () => {
+          player = { ...AUs[name], name };
+          const enemyNames = Object.keys(AUs).filter(n => n !== name);
+          const enemyName = enemyNames[Math.floor(Math.random() * enemyNames.length)];
+          enemy = { ...AUs[enemyName], name: enemyName };
+          startBattle();
+        };
+        menu.appendChild(btn);
+      }
+    }
 
-    setTimeout(() => blaster.remove(), 1000);
-}
-
-function teleport() {
-    x = Math.random() * (window.innerWidth - 100);
-    y = Math.random() * (window.innerHeight - 100);
-}
-
-function switchUniverse() {
-    universe++;
-    if (universe > 5) universe = 1;
-
-    label.textContent = "Universe: " + universe;
-
-    document.body.style.background =
-        universe % 2 === 0
-        ? "radial-gradient(circle, #003, #000)"
-        : "radial-gradient(circle, #111, #000)";
-}
-
-document.addEventListener("keydown", e => {
-    if (e.key === "j") summonBone();
-    if (e.key === "k") summonBlaster();
-    if (e.key === "l") teleport();
-    if (e.key === "m") switchUniverse();
-});
-
-function gameLoop() {
-    moveSans();
-    requestAnimationFrame(gameLoop);
-}
-
-gameLoop();
-</script>
-
+    chooseAU();
+  </script>
 </body>
 </html>

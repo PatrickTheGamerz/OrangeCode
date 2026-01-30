@@ -1,132 +1,155 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Sans AU Simulator - Advanced</title>
+  <meta charset="UTF-8">
+  <title>Sans AU Simulator - Multiversal Battle</title>
   <style>
-    * {
-      box-sizing: border-box;
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      background:black;
+      color:white;
+      font-family:"Courier New",monospace;
+      overflow:hidden;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      height:100vh
     }
-    body {
-      margin: 0;
-      background: black;
-      color: white;
-      font-family: "Courier New", monospace;
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
+    #game{
+      width:960px;
+      height:640px;
+      border:4px solid white;
+      background:#111;
+      display:grid;
+      grid-template-rows:380px 120px 140px;
+      grid-template-columns:1fr
     }
-    #game {
-      width: 900px;
-      height: 600px;
-      border: 4px solid white;
-      background: #111;
-      display: grid;
-      grid-template-rows: 360px 120px 120px;
-      grid-template-columns: 1fr;
+    #battleArea{
+      position:relative;
+      border-bottom:2px solid white
     }
-    #battleArea {
-      position: relative;
-      border-bottom: 2px solid white;
+    #canvas{
+      width:100%;
+      height:100%;
+      image-rendering:pixelated
     }
-    #canvas {
-      width: 100%;
-      height: 100%;
-      image-rendering: pixelated;
+    #infoBar{
+      border-bottom:2px solid white;
+      display:grid;
+      grid-template-columns:1.2fr 0.8fr;
+      padding:8px 12px;
+      font-size:14px
     }
-    #infoBar {
-      border-bottom: 2px solid white;
-      display: grid;
-      grid-template-columns: 1.2fr 0.8fr;
-      padding: 8px 12px;
-      font-size: 14px;
+    #playerInfo,#enemyInfo{
+      display:flex;
+      flex-direction:column;
+      gap:4px
     }
-    #playerInfo, #enemyInfo {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
+    .hpBarContainer{
+      width:100%;
+      height:14px;
+      border:1px solid white;
+      background:#222;
+      position:relative
     }
-    .hpBarContainer {
-      width: 100%;
-      height: 14px;
-      border: 1px solid white;
-      background: #222;
-      position: relative;
+    .hpBar{
+      height:100%;
+      background:#0f0;
+      transition:width .2s
     }
-    .hpBar {
-      height: 100%;
-      background: #0f0;
-      transition: width 0.2s;
+    .hpText{
+      position:absolute;
+      top:-18px;
+      left:0;
+      font-size:12px
     }
-    .hpText {
-      position: absolute;
-      top: -18px;
-      left: 0;
-      font-size: 12px;
+    .staminaBarContainer{
+      width:100%;
+      height:10px;
+      border:1px solid #888;
+      background:#111;
+      position:relative;
+      margin-top:2px
     }
-    #menu {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: flex-start;
-      justify-content: flex-start;
-      padding: 8px 12px;
-      gap: 8px;
+    .staminaBar{
+      height:100%;
+      background:#0af;
+      transition:width .2s
     }
-    button {
-      background: black;
-      color: white;
-      border: 2px solid white;
-      padding: 6px 14px;
-      font-size: 14px;
-      cursor: pointer;
-      transition: background 0.15s, color 0.15s, transform 0.05s;
+    .staminaText{
+      position:absolute;
+      top:-14px;
+      left:0;
+      font-size:11px;
+      color:#aaa
     }
-    button:hover {
-      background: white;
-      color: black;
+    #menu{
+      display:flex;
+      flex-wrap:wrap;
+      align-items:flex-start;
+      justify-content:flex-start;
+      padding:8px 12px;
+      gap:8px;
+      font-size:14px
     }
-    button:active {
-      transform: translateY(1px);
+    button{
+      background:black;
+      color:white;
+      border:2px solid white;
+      padding:6px 14px;
+      font-size:14px;
+      cursor:pointer;
+      transition:background .15s,color .15s,transform .05s
     }
-    #log {
-      font-size: 13px;
-      padding: 4px 12px;
-      overflow-y: auto;
-      max-height: 110px;
+    button:hover{
+      background:white;
+      color:black
     }
-    #log p {
-      margin: 2px 0;
+    button:active{
+      transform:translateY(1px)
     }
-    .centerText {
-      width: 100%;
-      text-align: center;
+    #log{
+      font-size:13px;
+      padding:4px 12px;
+      overflow-y:auto;
+      max-height:136px
     }
-    .title {
-      font-size: 22px;
-      margin-bottom: 8px;
-      text-align: center;
+    #log p{
+      margin:2px 0
     }
-    .subtitle {
-      font-size: 14px;
-      margin-bottom: 12px;
-      text-align: center;
-      color: #ccc;
+    .centerText{
+      width:100%;
+      text-align:center
     }
-    .auButton {
-      min-width: 160px;
+    .title{
+      font-size:22px;
+      margin-bottom:8px;
+      text-align:center
     }
-    .small {
-      font-size: 11px;
-      color: #aaa;
+    .subtitle{
+      font-size:14px;
+      margin-bottom:12px;
+      text-align:center;
+      color:#ccc
+    }
+    .auButton{
+      min-width:170px
+    }
+    .small{
+      font-size:11px;
+      color:#aaa
+    }
+    .phaseTag{
+      font-size:12px;
+      color:#ff0
     }
   </style>
 </head>
 <body>
   <div id="game">
     <div id="battleArea">
-      <canvas id="canvas" width="900" height="360"></canvas>
+      <canvas id="canvas" width="960" height="380"></canvas>
     </div>
     <div id="infoBar">
       <div id="playerInfo">
@@ -135,734 +158,868 @@
           <div class="hpBar" id="playerHpBar"></div>
           <div class="hpText" id="playerHpText"></div>
         </div>
+        <div class="staminaBarContainer">
+          <div class="staminaBar" id="playerStaminaBar"></div>
+          <div class="staminaText" id="playerStaminaText"></div>
+        </div>
         <div id="playerStats"></div>
+        <div id="playerItems" class="small"></div>
       </div>
       <div id="enemyInfo">
-        <div><strong>ENEMY:</strong> <span id="enemyName">-</span></div>
+        <div><strong>ENEMY:</strong> <span id="enemyName">-</span> <span id="enemyPhase" class="phaseTag"></span></div>
         <div class="hpBarContainer">
           <div class="hpBar" id="enemyHpBar"></div>
           <div class="hpText" id="enemyHpText"></div>
         </div>
+        <div class="staminaBarContainer">
+          <div class="staminaBar" id="enemyStaminaBar"></div>
+          <div class="staminaText" id="enemyStaminaText"></div>
+        </div>
         <div id="enemyStats"></div>
+        <div id="enemyItems" class="small"></div>
       </div>
     </div>
     <div id="menu"></div>
     <div id="log"></div>
   </div>
-
   <script>
-    // ====== BASIC SETUP ======
-    const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d");
-
-    const menu = document.getElementById("menu");
-    const logDiv = document.getElementById("log");
-
-    const playerNameEl = document.getElementById("playerName");
-    const enemyNameEl = document.getElementById("enemyName");
-    const playerHpBar = document.getElementById("playerHpBar");
-    const enemyHpBar = document.getElementById("enemyHpBar");
-    const playerHpText = document.getElementById("playerHpText");
-    const enemyHpText = document.getElementById("enemyHpText");
-    const playerStatsEl = document.getElementById("playerStats");
-    const enemyStatsEl = document.getElementById("enemyStats");
-
-    const GAME_WIDTH = canvas.width;
-    const GAME_HEIGHT = canvas.height;
-
-    // ====== GAME DATA ======
-    const AUs = {
-      "Classic Sans": {
-        maxHp: 120,
-        atk: 18,
-        dodge: 0.18,
-        crit: 0.15,
-        color: "white",
-        specialName: "Gaster Blaster",
-        specialDesc: "High damage beam, low accuracy.",
-        specialPower: 40,
-        specialHit: 0.65,
-        healPower: 25
+    const canvas=document.getElementById("canvas");
+    const ctx=canvas.getContext("2d");
+    const menu=document.getElementById("menu");
+    const logDiv=document.getElementById("log");
+    const playerNameEl=document.getElementById("playerName");
+    const enemyNameEl=document.getElementById("enemyName");
+    const enemyPhaseEl=document.getElementById("enemyPhase");
+    const playerHpBar=document.getElementById("playerHpBar");
+    const enemyHpBar=document.getElementById("enemyHpBar");
+    const playerHpText=document.getElementById("playerHpText");
+    const enemyHpText=document.getElementById("enemyHpText");
+    const playerStaminaBar=document.getElementById("playerStaminaBar");
+    const enemyStaminaBar=document.getElementById("enemyStaminaBar");
+    const playerStaminaText=document.getElementById("playerStaminaText");
+    const enemyStaminaText=document.getElementById("enemyStaminaText");
+    const playerStatsEl=document.getElementById("playerStats");
+    const enemyStatsEl=document.getElementById("enemyStats");
+    const playerItemsEl=document.getElementById("playerItems");
+    const enemyItemsEl=document.getElementById("enemyItems");
+    const GAME_WIDTH=canvas.width;
+    const GAME_HEIGHT=canvas.height;
+    const dodgeBox={x:260,y:150,w:440,h:200};
+    const AUs={
+      "Classic Sans":{
+        maxHp:120,atk:18,dodge:0.2,crit:0.15,color:"white",
+        specialName:"Gaster Spiral",specialDesc:"Spiral of white blasters and bones.",
+        specialCost:25,healName:"Ketchup",healPower:30,healUses:2,
+        staminaMax:100,basePattern:"classic"
       },
-      "Underfell Sans": {
-        maxHp: 140,
-        atk: 22,
-        dodge: 0.10,
-        crit: 0.25,
-        color: "red",
-        specialName: "Ruthless Barrage",
-        specialDesc: "Multi-hit attack, each hit weaker.",
-        specialPower: 3,
-        specialHit: 0.85,
-        healPower: 15
+      "Underfell Sans":{
+        maxHp:150,atk:24,dodge:0.1,crit:0.25,color:"red",
+        specialName:"Ruthless Inferno",specialDesc:"Red bones and blazing spears.",
+        specialCost:30,healName:"Mustard",healPower:25,healUses:2,
+        staminaMax:110,basePattern:"underfell"
       },
-      "Dusttale Sans": {
-        maxHp: 90,
-        atk: 30,
-        dodge: 0.20,
-        crit: 0.30,
-        color: "darkred",
-        specialName: "Murderous Intent",
-        specialDesc: "Massive damage, but hurts you too.",
-        specialPower: 55,
-        specialHit: 0.8,
-        recoil: 12,
-        healPower: 10
+      "Dusttale Sans":{
+        maxHp:100,atk:30,dodge:0.22,crit:0.3,color:"darkred",
+        specialName:"Genocidal Flames",specialDesc:"Purple flames and spears, recoil.",
+        specialCost:35,healName:"Dusty Steak",healPower:20,healUses:1,
+        staminaMax:95,basePattern:"dust"
       },
-      "Ink Sans": {
-        maxHp: 110,
-        atk: 20,
-        dodge: 0.28,
-        crit: 0.18,
-        color: "cyan",
-        specialName: "Ink Storm",
-        specialDesc: "Randomized damage, high variance.",
-        specialPower: 50,
-        specialHit: 0.9,
-        healPower: 20
+      "Ink Sans":{
+        maxHp:115,atk:21,dodge:0.3,crit:0.2,color:"cyan",
+        specialName:"Ink Shadow",specialDesc:"Summons a shadow clone to copy attacks.",
+        specialCost:35,healName:"Vial",healPower:35,healUses:3,
+        staminaMax:120,basePattern:"ink"
       },
-      "Error Sans": {
-        maxHp: 130,
-        atk: 24,
-        dodge: 0.22,
-        crit: 0.2,
-        color: "purple",
-        specialName: "String Break",
-        specialDesc: "Ignores dodge, but can miss.",
-        specialPower: 38,
-        specialHit: 0.75,
-        ignoreDodge: true,
-        healPower: 18
+      "Error Sans":{
+        maxHp:135,atk:25,dodge:0.25,crit:0.22,color:"purple",
+        specialName:"String Collapse",specialDesc:"Blue strings and glitchy bones.",
+        specialCost:30,healName:"404 Patch",healPower:25,healUses:2,
+        staminaMax:105,basePattern:"error"
       },
-      "Horror Sans": {
-        maxHp: 160,
-        atk: 26,
-        dodge: 0.08,
-        crit: 0.2,
-        color: "#884400",
-        specialName: "Cleaver Crush",
-        specialDesc: "Slow, heavy hit with big crit chance.",
-        specialPower: 45,
-        specialHit: 0.7,
-        healPower: 20
+      "Horror Sans":{
+        maxHp:170,atk:27,dodge:0.08,crit:0.2,color:"#884400",
+        specialName:"Cleaver Feast",specialDesc:"Heavy cleaver slashes and meat bones.",
+        specialCost:30,healName:"Rotten Food",healPower:40,healUses:1,
+        staminaMax:100,basePattern:"horror"
+      },
+      "Last Breath Sans":{
+        maxHpPhase:[90,70,55],
+        atkPhase:[22,30,38],
+        dodgePhase:[0.22,0.28,0.35],
+        critPhase:[0.2,0.25,0.3],
+        color:"white",
+        specialNamePhase:["Phase 1 Spiral","Phase 2 Judgement","Phase 3 Finale"],
+        specialCostPhase:[30,35,0],
+        healName:"Determined Ketchup",
+        healPower:25,
+        healUses:2,
+        staminaMaxPhase:[110,130,200],
+        basePatternPhase:["lb1","lb2","lb3"]
       }
     };
-
-    let player = null;
-    let enemy = null;
-
-    // ====== LOGGING ======
-    function log(msg) {
-      const p = document.createElement("p");
-      p.textContent = msg;
+    let player=null;
+    let enemy=null;
+    let state="chooseAU";
+    let turn=1;
+    let keys={};
+    let soul={x:0,y:0,r:8,speed:4};
+    let bullets=[];
+    let dodgeTimer=0;
+    let dodgeDuration=2500;
+    let lastFrameTime=0;
+    let dodgeActive=false;
+    let dodgeCallback=null;
+    let cameraShake=0;
+    let cameraShakeTime=0;
+    window.addEventListener("keydown",e=>{keys[e.key]=true});
+    window.addEventListener("keyup",e=>{keys[e.key]=false});
+    function log(msg){
+      const p=document.createElement("p");
+      p.textContent=msg;
       logDiv.appendChild(p);
-      logDiv.scrollTop = logDiv.scrollHeight;
+      logDiv.scrollTop=logDiv.scrollHeight
     }
-
-    function clearLog() {
-      logDiv.innerHTML = "";
+    function clearLog(){logDiv.innerHTML=""}
+    function updateBars(){
+      if(!player||!enemy)return;
+      const pRatio=Math.max(player.hp,0)/player.maxHp;
+      const eRatio=Math.max(enemy.hp,0)/enemy.maxHp;
+      playerHpBar.style.width=(pRatio*100)+"%";
+      enemyHpBar.style.width=(eRatio*100)+"%";
+      playerHpBar.style.background=pRatio>0.4?"#0f0":pRatio>0.2?"#ff0":"#f00";
+      enemyHpBar.style.background=eRatio>0.4?"#0f0":eRatio>0.2?"#ff0":"#f00";
+      playerHpText.textContent=`HP: ${Math.max(0,Math.floor(player.hp))}/${player.maxHp}`;
+      enemyHpText.textContent=`HP: ${Math.max(0,Math.floor(enemy.hp))}/${enemy.maxHp}`;
+      const psRatio=Math.max(player.stamina,0)/player.staminaMax;
+      const esRatio=Math.max(enemy.stamina,0)/enemy.staminaMax;
+      playerStaminaBar.style.width=(psRatio*100)+"%";
+      enemyStaminaBar.style.width=(esRatio*100)+"%";
+      playerStaminaText.textContent=`ST: ${Math.max(0,Math.floor(player.stamina))}/${player.staminaMax}`;
+      enemyStaminaText.textContent=`ST: ${Math.max(0,Math.floor(enemy.stamina))}/${enemy.staminaMax}`;
+      playerStatsEl.textContent=`ATK: ${player.atk} | DODGE: ${(player.dodge*100).toFixed(0)}% | CRIT: ${(player.crit*100).toFixed(0)}%`;
+      enemyStatsEl.textContent=`ATK: ${enemy.atk} | DODGE: ${(enemy.dodge*100).toFixed(0)}% | CRIT: ${(enemy.crit*100).toFixed(0)}%`;
+      playerItemsEl.textContent=`ITEM: ${player.healName} x${player.healUses}`;
+      enemyItemsEl.textContent=`ITEM: ${enemy.healName} x${enemy.healUses}`;
+      if(enemy.isLastBreath){
+        enemyPhaseEl.textContent=`PHASE ${enemy.phase}`;
+      }else{
+        enemyPhaseEl.textContent="";
+      }
     }
-
-    // ====== HP BAR UPDATE ======
-    function updateBars() {
-      if (!player || !enemy) return;
-      const pRatio = Math.max(player.hp, 0) / player.maxHp;
-      const eRatio = Math.max(enemy.hp, 0) / enemy.maxHp;
-
-      playerHpBar.style.width = (pRatio * 100) + "%";
-      enemyHpBar.style.width = (eRatio * 100) + "%";
-
-      playerHpBar.style.background = pRatio > 0.4 ? "#0f0" : pRatio > 0.2 ? "#ff0" : "#f00";
-      enemyHpBar.style.background = eRatio > 0.4 ? "#0f0" : eRatio > 0.2 ? "#ff0" : "#f00";
-
-      playerHpText.textContent = `HP: ${Math.max(0, Math.floor(player.hp))}/${player.maxHp}`;
-      enemyHpText.textContent = `HP: ${Math.max(0, Math.floor(enemy.hp))}/${enemy.maxHp}`;
-
-      playerStatsEl.textContent = `ATK: ${player.atk} | DODGE: ${(player.dodge * 100).toFixed(0)}% | CRIT: ${(player.crit * 100).toFixed(0)}%`;
-      enemyStatsEl.textContent = `ATK: ${enemy.atk} | DODGE: ${(enemy.dodge * 100).toFixed(0)}% | CRIT: ${(enemy.crit * 100).toFixed(0)}%`;
+    function clearCanvas(){
+      ctx.save();
+      ctx.setTransform(1,0,0,1,0,0);
+      ctx.fillStyle="#000";
+      ctx.fillRect(0,0,GAME_WIDTH,GAME_HEIGHT);
+      ctx.restore()
     }
-
-    // ====== DRAWING ======
-    function clearCanvas() {
-      ctx.fillStyle = "#000";
-      ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+    function applyCamera(){
+      if(cameraShakeTime>0){
+        const intensity=cameraShake;
+        const dx=(Math.random()*2-1)*intensity;
+        const dy=(Math.random()*2-1)*intensity;
+        ctx.setTransform(1,0,0,1,dx,dy)
+      }else{
+        ctx.setTransform(1,0,0,1,0,0)
+      }
     }
-
-    function drawCharacters() {
+    function drawCharacters(){
       clearCanvas();
-      if (!player || !enemy) return;
-
-      // Player box
-      ctx.fillStyle = player.color;
-      ctx.fillRect(120, 220, 80, 80);
-      ctx.strokeStyle = "white";
-      ctx.strokeRect(120, 220, 80, 80);
-      ctx.fillStyle = "white";
-      ctx.font = "16px Courier New";
-      ctx.fillText(player.name, 110, 210);
-
-      // Enemy box
-      ctx.fillStyle = enemy.color;
-      ctx.fillRect(700, 60, 80, 80);
-      ctx.strokeStyle = "white";
-      ctx.strokeRect(700, 60, 80, 80);
-      ctx.fillStyle = "white";
-      ctx.fillText(enemy.name, 680, 50);
-
-      // Battle box (for dodge phase)
-      ctx.strokeStyle = "white";
-      ctx.strokeRect(260, 140, 380, 180);
-      ctx.font = "14px Courier New";
-      ctx.fillText("DODGE ZONE", 260, 135);
+      applyCamera();
+      if(!player||!enemy)return;
+      ctx.fillStyle=player.color;
+      ctx.fillRect(120,240,80,80);
+      ctx.strokeStyle="white";
+      ctx.strokeRect(120,240,80,80);
+      ctx.fillStyle="white";
+      ctx.font="16px Courier New";
+      ctx.fillText(player.name,110,230);
+      ctx.fillStyle=enemy.color;
+      ctx.fillRect(760,60,80,80);
+      ctx.strokeStyle="white";
+      ctx.strokeRect(760,60,80,80);
+      ctx.fillStyle="white";
+      ctx.fillText(enemy.name,740,50);
+      ctx.strokeStyle="white";
+      ctx.strokeRect(dodgeBox.x,dodgeBox.y,dodgeBox.w,dodgeBox.h);
+      ctx.font="14px Courier New";
+      ctx.fillText("DODGE ZONE",dodgeBox.x,dodgeBox.y-8)
     }
-
-    // ====== DAMAGE CALC ======
-    function calcDamage(attacker, basePower = attacker.atk, allowCrit = true) {
-      let dmg = basePower + (Math.random() * 6 - 3); // small random
-      let crit = false;
-      if (allowCrit && Math.random() < attacker.crit) {
-        dmg *= 1.7;
-        crit = true;
+    function calcDamage(attacker,basePower,allowCrit=true){
+      let dmg=basePower+(Math.random()*6-3);
+      let crit=false;
+      if(allowCrit&&Math.random()<attacker.crit){
+        dmg*=1.7;
+        crit=true
       }
-      dmg = Math.max(1, Math.round(dmg));
-      return { dmg, crit };
+      dmg=Math.max(1,Math.round(dmg));
+      return{dmg,crit}
     }
-
-    function tryHit(attacker, defender, basePower, hitChance = 1, ignoreDodge = false) {
-      if (Math.random() > hitChance) {
-        return { type: "miss" };
-      }
-      let dodgeChance = ignoreDodge ? 0 : defender.dodge;
-      if (Math.random() < dodgeChance) {
-        return { type: "dodge" };
-      }
-      const { dmg, crit } = calcDamage(attacker, basePower);
-      defender.hp -= dmg;
-      return { type: "hit", dmg, crit };
+    function tryHit(attacker,defender,basePower,hitChance=1,ignoreDodge=false){
+      if(Math.random()>hitChance)return{type:"miss"};
+      let dodgeChance=ignoreDodge?0:defender.dodge;
+      if(Math.random()<dodgeChance)return{type:"dodge"};
+      const{dmg,crit}=calcDamage(attacker,basePower,true);
+      defender.hp-=dmg;
+      return{type:"hit",dmg,crit}
     }
-
-    // ====== STATE MACHINE ======
-    let state = "chooseAU"; // chooseAU, playerTurn, enemyTurn, dodgePhase, end
-    let turn = 1;
-
-    // ====== DODGE PHASE ======
-    const dodgeBox = { x: 260, y: 140, w: 380, h: 180 };
-    let soul = { x: 260 + 190, y: 140 + 90, r: 8, speed: 4 };
-    let keys = {};
-    let bullets = [];
-    let dodgeTimer = 0;
-    let dodgeDuration = 2500; // ms
-    let lastFrameTime = 0;
-    let dodgeActive = false;
-    let dodgeCallback = null;
-
-    window.addEventListener("keydown", (e) => {
-      keys[e.key] = true;
-    });
-    window.addEventListener("keyup", (e) => {
-      keys[e.key] = false;
-    });
-
-    function spawnBullets(patternType) {
-      bullets = [];
-      const bx = dodgeBox.x;
-      const by = dodgeBox.y;
-      const bw = dodgeBox.w;
-      const bh = dodgeBox.h;
-
-      if (patternType === "horizontal") {
-        for (let i = 0; i < 8; i++) {
-          bullets.push({
-            x: bx - 20 - i * 60,
-            y: by + 20 + (i % 4) * 40,
-            w: 20,
-            h: 10,
-            vx: 3 + Math.random() * 1.5,
-            vy: 0
-          });
+    function rectCircleCollide(rx,ry,rw,rh,cx,cy,cr){
+      const tx=Math.max(rx,Math.min(cx,rx+rw));
+      const ty=Math.max(ry,Math.min(cy,ry+rh));
+      const dist=Math.hypot(cx-tx,cy-ty);
+      return dist<=cr
+    }
+    function spawnPattern(pattern,attackerPhaseTag){
+      bullets=[];
+      const bx=dodgeBox.x;
+      const by=dodgeBox.y;
+      const bw=dodgeBox.w;
+      const bh=dodgeBox.h;
+      if(pattern==="classic"){
+        for(let i=0;i<8;i++){
+          bullets.push({x:bx-40-i*70,y:by+30+(i%4)*40,w:26,h:10,vx:3+Math.random()*1.5,vy:0,color:"white",type:"white"});
         }
-      } else if (patternType === "vertical") {
-        for (let i = 0; i < 8; i++) {
-          bullets.push({
-            x: bx + 20 + (i % 4) * 80,
-            y: by - 20 - i * 40,
-            w: 10,
-            h: 20,
-            vx: 0,
-            vy: 3 + Math.random() * 1.5
-          });
+      }else if(pattern==="underfell"){
+        for(let i=0;i<10;i++){
+          bullets.push({x:bx+Math.random()*bw,y:by-30-i*25,w:12,h:26,vx:0,vy:3+Math.random()*1.5,color:"red",type:"white"});
         }
-      } else if (patternType === "cross") {
-        for (let i = 0; i < 6; i++) {
-          bullets.push({
-            x: bx - 20 - i * 60,
-            y: by + bh / 2 - 5,
-            w: 20,
-            h: 10,
-            vx: 3.5,
-            vy: 0
-          });
-          bullets.push({
-            x: bx + bw / 2 - 5,
-            y: by - 20 - i * 40,
-            w: 10,
-            h: 20,
-            vx: 0,
-            vy: 3.5
-          });
+      }else if(pattern==="dust"){
+        for(let i=0;i<6;i++){
+          bullets.push({x:bx-30-i*60,y:by+20+(i%3)*50,w:20,h:12,vx:3.2,vy:0,color:"purple",type:"white"});
+          bullets.push({x:bx+20+(i%3)*120,y:by+bh+30+i*20,w:14,h:28,vx:0,vy:-3.2,color:"orange",type:"orange"});
         }
-      } else {
-        // random
-        for (let i = 0; i < 10; i++) {
-          const side = Math.floor(Math.random() * 4);
-          let x, y, vx, vy;
-          if (side === 0) { // left
-            x = bx - 20;
-            y = by + Math.random() * bh;
-            vx = 2 + Math.random() * 2;
-            vy = 0;
-          } else if (side === 1) { // right
-            x = bx + bw + 20;
-            y = by + Math.random() * bh;
-            vx = -2 - Math.random() * 2;
-            vy = 0;
-          } else if (side === 2) { // top
-            x = bx + Math.random() * bw;
-            y = by - 20;
-            vx = 0;
-            vy = 2 + Math.random() * 2;
-          } else { // bottom
-            x = bx + Math.random() * bw;
-            y = by + bh + 20;
-            vx = 0;
-            vy = -2 - Math.random() * 2;
-          }
-          bullets.push({
-            x, y, w: 14, h: 14, vx, vy
-          });
+      }else if(pattern==="ink"){
+        for(let i=0;i<7;i++){
+          bullets.push({x:bx-40-i*60,y:by+40+(i%3)*50,w:20,h:10,vx:3+Math.random()*1.5,vy:0,color:"cyan",type:"white"});
+        }
+        bullets.push({x:bx+bw/2-20,y:by-40,w:40,h:40,vx:0,vy:3.5,color:"cyan",type:"white",shadow:true});
+      }else if(pattern==="error"){
+        for(let i=0;i<10;i++){
+          const side=Math.floor(Math.random()*4);
+          let x,y,vx,vy;
+          if(side===0){x=bx-30;y=by+Math.random()*bh;vx=3.2;vy:0}
+          else if(side===1){x=bx+bw+30;y=by+Math.random()*bh;vx=-3.2;vy=0}
+          else if(side===2){x=bx+Math.random()*bw;y=by-30;vx=0;vy=3.2}
+          else{x=bx+Math.random()*bw;y=by+bh+30;vx=0;vy=-3.2}
+          bullets.push({x,y,w:16,h:16,vx,vy,color:"blue",type:"blue"});
+        }
+      }else if(pattern==="horror"){
+        for(let i=0;i<6;i++){
+          bullets.push({x:bx-40-i*70,y:by+bh/2-10,w:30,h:20,vx:3.5,vy:0,color:"#884400",type:"white"});
+        }
+      }else if(pattern==="lb1"){
+        for(let i=0;i<8;i++){
+          bullets.push({x:bx-40-i*60,y:by+30+(i%4)*40,w:24,h:10,vx:3.5,vy:0,color:"white",type:"white"});
+        }
+        for(let i=0;i<4;i++){
+          bullets.push({x:bx+bw/2-20+i*40,y:by-40,w:30,h:30,vx:0,vy:3.5,color:"white",type:"white",blaster:true});
+        }
+      }else if(pattern==="lb2"){
+        for(let i=0;i<10;i++){
+          bullets.push({x:bx-40-i*60,y:by+30+(i%5)*30,w:22,h:10,vx:3.8,vy:0,color:"blue",type:"blue"});
+          bullets.push({x:bx+20+(i%5)*70,y:by+bh+30+i*10,w:14,h:24,vx:0,vy:-3.8,color:"orange",type:"orange"});
+        }
+      }else if(pattern==="lb3"){
+        bullets=[];
+        for(let i=0;i<14;i++){
+          bullets.push({x:bx-40-i*50,y:by+20+(i%4)*40,w:22,h:10,vx:4.2,vy:0,color:"blue",type:"blue"});
+          bullets.push({x:bx+20+(i%4)*90,y:by+bh+40+i*10,w:14,h:24,vx:0,vy:-4.2,color:"orange",type:"orange"});
+        }
+        for(let i=0;i<6;i++){
+          bullets.push({x:bx+bw/2-20+i*30,y:by-50,w:30,h:30,vx:0,vy:4.2,color:"white",type:"white",blaster:true});
         }
       }
+      if(attackerPhaseTag==="shadow"){
+        bullets.forEach(b=>{b.color="cyan"})
+      }
     }
-
-    function startDodgePhase(attacker, defender, baseDamage, onEnd) {
-      state = "dodgePhase";
-      dodgeActive = true;
-      dodgeCallback = onEnd;
-      dodgeTimer = 0;
-      lastFrameTime = performance.now();
-      soul.x = dodgeBox.x + dodgeBox.w / 2;
-      soul.y = dodgeBox.y + dodgeBox.h / 2;
-
-      const patterns = ["horizontal", "vertical", "cross", "random"];
-      const pattern = patterns[Math.floor(Math.random() * patterns.length)];
-      spawnBullets(pattern);
-
-      log(`${attacker.name} is attacking! Use arrow keys to dodge!`);
-      animateDodge(attacker, defender, baseDamage);
+    function startDodgePhase(attacker,defender,baseDamage,pattern,extra){
+      state="dodgePhase";
+      dodgeActive=true;
+      dodgeCallback=extra&&extra.callback?extra.callback:null;
+      dodgeTimer=0;
+      lastFrameTime=performance.now();
+      dodgeDuration=extra&&extra.duration?extra.duration:2500;
+      soul.x=dodgeBox.x+dodgeBox.w/2;
+      soul.y=dodgeBox.y+dodgeBox.h/2;
+      spawnPattern(pattern,extra&&extra.tag?extra.tag:null);
+      log(`${attacker.name} attacks! Use arrow keys to dodge in the box!`);
+      animateDodge(attacker,defender,baseDamage,pattern,extra)
     }
-
-    function animateDodge(attacker, defender, baseDamage) {
-      if (!dodgeActive) return;
-      const now = performance.now();
-      const dt = now - lastFrameTime;
-      lastFrameTime = now;
-      dodgeTimer += dt;
-
-      // Move soul
-      let dx = 0, dy = 0;
-      if (keys["ArrowLeft"]) dx -= 1;
-      if (keys["ArrowRight"]) dx += 1;
-      if (keys["ArrowUp"]) dy -= 1;
-      if (keys["ArrowDown"]) dy += 1;
-      const len = Math.hypot(dx, dy) || 1;
-      soul.x += (dx / len) * soul.speed;
-      soul.y += (dy / len) * soul.speed;
-
-      // Clamp to dodge box
-      soul.x = Math.max(dodgeBox.x + soul.r, Math.min(dodgeBox.x + dodgeBox.w - soul.r, soul.x));
-      soul.y = Math.max(dodgeBox.y + soul.r, Math.min(dodgeBox.y + dodgeBox.h - soul.r, soul.y));
-
-      // Move bullets
-      bullets.forEach(b => {
-        b.x += b.vx;
-        b.y += b.vy;
+    function animateDodge(attacker,defender,baseDamage,pattern,extra){
+      if(!dodgeActive)return;
+      const now=performance.now();
+      const dt=now-lastFrameTime;
+      lastFrameTime=now;
+      dodgeTimer+=dt;
+      cameraShakeTime=Math.max(0,cameraShakeTime-dt);
+      let dx=0,dy=0;
+      if(keys["ArrowLeft"])dx-=1;
+      if(keys["ArrowRight"])dx+=1;
+      if(keys["ArrowUp"])dy-=1;
+      if(keys["ArrowDown"])dy+=1;
+      const moving=Math.abs(dx)+Math.abs(dy)>0;
+      const len=Math.hypot(dx,dy)||1;
+      soul.x+=dx/len*soul.speed;
+      soul.y+=dy/len*soul.speed;
+      soul.x=Math.max(dodgeBox.x+soul.r,Math.min(dodgeBox.x+dodgeBox.w-soul.r,soul.x));
+      soul.y=Math.max(dodgeBox.y+soul.r,Math.min(dodgeBox.y+dodgeBox.h-soul.r,soul.y));
+      bullets.forEach(b=>{
+        b.x+=b.vx;
+        b.y+=b.vy;
       });
-
-      // Collision
-      let hits = 0;
-      bullets.forEach(b => {
-        if (rectCircleCollide(b.x, b.y, b.w, b.h, soul.x, soul.y, soul.r)) {
+      let hits=0;
+      bullets.forEach(b=>{
+        if(rectCircleCollide(b.x,b.y,b.w,b.h,soul.x,soul.y,soul.r)){
+          if(b.type==="blue"&&moving)return;
+          if(b.type==="orange"&&!moving)return;
           hits++;
-          // move bullet off-screen to avoid multi-hit
-          b.x = -9999;
-          b.y = -9999;
+          b.x=-9999;
+          b.y=-9999
         }
       });
-
-      // Apply damage per hit
-      if (hits > 0) {
-        const perHit = baseDamage / 4;
-        const total = perHit * hits;
-        defender.hp -= total;
+      if(hits>0){
+        const perHit=baseDamage/5;
+        const total=perHit*hits;
+        defender.hp-=total;
+        cameraShake=4;
+        cameraShakeTime=200;
         log(`${defender.name} was hit ${hits} time(s) for ${Math.round(total)} damage!`);
         updateBars();
-        if (defender.hp <= 0) {
-          endBattle(attacker === player ? "player" : "enemy");
-          dodgeActive = false;
-          return;
+        if(defender.hp<=0){
+          endOrPhase(attacker,defender);
+          dodgeActive=false;
+          return
         }
       }
-
-      // Draw
       clearCanvas();
+      applyCamera();
       drawCharacters();
-      // Draw dodge box again
-      ctx.strokeStyle = "white";
-      ctx.strokeRect(dodgeBox.x, dodgeBox.y, dodgeBox.w, dodgeBox.h);
-
-      // Draw bullets
-      ctx.fillStyle = "#ddd";
-      bullets.forEach(b => {
-        ctx.fillRect(b.x, b.y, b.w, b.h);
+      ctx.strokeStyle="white";
+      ctx.strokeRect(dodgeBox.x,dodgeBox.y,dodgeBox.w,dodgeBox.h);
+      bullets.forEach(b=>{
+        ctx.fillStyle=b.color;
+        ctx.fillRect(b.x,b.y,b.w,b.h);
       });
-
-      // Draw soul
-      ctx.fillStyle = "red";
+      ctx.fillStyle="red";
       ctx.beginPath();
-      ctx.arc(soul.x, soul.y, soul.r, 0, Math.PI * 2);
+      ctx.arc(soul.x,soul.y,soul.r,0,Math.PI*2);
       ctx.fill();
-
-      // Timer bar
-      const remaining = Math.max(0, dodgeDuration - dodgeTimer);
-      const ratio = remaining / dodgeDuration;
-      ctx.fillStyle = "yellow";
-      ctx.fillRect(dodgeBox.x, dodgeBox.y - 10, dodgeBox.w * ratio, 6);
-
-      if (dodgeTimer >= dodgeDuration) {
-        dodgeActive = false;
-        if (dodgeCallback) dodgeCallback();
-        return;
+      const remaining=Math.max(0,dodgeDuration-dodgeTimer);
+      const ratio=remaining/dodgeDuration;
+      ctx.fillStyle="yellow";
+      ctx.fillRect(dodgeBox.x,dodgeBox.y-10,dodgeBox.w*ratio,6);
+      if(dodgeTimer>=dodgeDuration){
+        dodgeActive=false;
+        if(dodgeCallback)dodgeCallback();
+        else{
+          if(!checkEnd())showPlayerMenu()
+        }
+        return
       }
-
-      requestAnimationFrame(() => animateDodge(attacker, defender, baseDamage));
+      requestAnimationFrame(()=>animateDodge(attacker,defender,baseDamage,pattern,extra))
     }
-
-    function rectCircleCollide(rx, ry, rw, rh, cx, cy, cr) {
-      const testX = Math.max(rx, Math.min(cx, rx + rw));
-      const testY = Math.max(ry, Math.min(cy, ry + rh));
-      const dist = Math.hypot(cx - testX, cy - testY);
-      return dist <= cr;
+    function endBattle(winner){
+      state="end";
+      menu.innerHTML="";
+      if(winner==="player")log("You won the battle. Timeline saved.");
+      else if(winner==="enemy")log("You died. The timeline shatters.");
+      else if(winner==="spare")log("You spared Sans. A fragile peace remains.")
     }
-
-    // ====== BATTLE FLOW ======
-    function endBattle(winner) {
-      state = "end";
-      menu.innerHTML = "";
-      if (winner === "player") {
-        log("You won the battle! Refresh or press F5 to play again.");
-      } else {
-        log("You lost the battle... Refresh or press F5 to try again.");
-      }
-    }
-
-    function checkEnd() {
-      if (player.hp <= 0) {
-        player.hp = 0;
-        updateBars();
-        endBattle("enemy");
-        return true;
-      }
-      if (enemy.hp <= 0) {
-        enemy.hp = 0;
-        updateBars();
-        endBattle("player");
-        return true;
-      }
-      return false;
-    }
-
-    function showPlayerMenu() {
-      if (state === "end") return;
-      state = "playerTurn";
-      menu.innerHTML = "";
-
-      const info = document.createElement("div");
-      info.className = "centerText";
-      info.innerHTML = `<div>Turn ${turn}</div><div>Choose your action:</div>`;
-      menu.appendChild(info);
-
-      const attackBtn = document.createElement("button");
-      attackBtn.textContent = "ATTACK";
-      attackBtn.onclick = () => {
-        playerAttack();
-      };
-      menu.appendChild(attackBtn);
-
-      const specialBtn = document.createElement("button");
-      specialBtn.textContent = `SPECIAL (${player.specialName})`;
-      specialBtn.title = player.specialDesc;
-      specialBtn.onclick = () => {
-        playerSpecial();
-      };
-      menu.appendChild(specialBtn);
-
-      const healBtn = document.createElement("button");
-      healBtn.textContent = "HEAL";
-      healBtn.onclick = () => {
-        playerHeal();
-      };
-      menu.appendChild(healBtn);
-
-      const infoSmall = document.createElement("div");
-      infoSmall.className = "small";
-      infoSmall.textContent = "Tip: After your action, the enemy will attack. During their attack, use arrow keys to dodge in the white box.";
-      menu.appendChild(infoSmall);
-    }
-
-    function playerAttack() {
-      menu.innerHTML = "";
-      log(`${player.name} attacks!`);
-      const result = tryHit(player, enemy, player.atk, 1, false);
-      if (result.type === "miss") {
-        log(`${player.name}'s attack missed!`);
-      } else if (result.type === "dodge") {
-        log(`${enemy.name} dodged the attack!`);
-      } else if (result.type === "hit") {
-        log(`${player.name} hits ${enemy.name} for ${result.dmg} damage${result.crit ? " (CRIT!)" : ""}.`);
-      }
-      updateBars();
-      if (!checkEnd()) {
-        setTimeout(enemyTurn, 700);
-      }
-    }
-
-    function playerSpecial() {
-      menu.innerHTML = "";
-      log(`${player.name} uses SPECIAL: ${player.specialName}!`);
-
-      if (player.name === "Underfell Sans") {
-        // multi-hit
-        let hits = 3;
-        let total = 0;
-        for (let i = 0; i < hits; i++) {
-          const r = tryHit(player, enemy, player.specialPower, player.specialHit, false);
-          if (r.type === "hit") {
-            total += r.dmg;
+    function endOrPhase(attacker,defender){
+      if(defender.isLastBreath&&defender.phase<3){
+        if(defender.phase===1){
+          defender.phase=2;
+          defender.maxHp=enemy.base.maxHpPhase[1];
+          defender.hp=defender.maxHp;
+          defender.atk=enemy.base.atkPhase[1];
+          defender.dodge=enemy.base.dodgePhase[1];
+          defender.crit=enemy.base.critPhase[1];
+          defender.staminaMax=enemy.base.staminaMaxPhase[1];
+          defender.stamina=defender.staminaMax;
+          defender.basePattern=enemy.base.basePatternPhase[1];
+          log("Last Breath Sans refuses to die... Phase 2 begins!");
+          updateBars();
+          setTimeout(()=>{showPlayerMenu()},900)
+        }else if(defender.phase===2){
+          const surviveRoll=Math.random();
+          if(surviveRoll<2/3){
+            defender.phase=3;
+            defender.maxHp=enemy.base.maxHpPhase[2];
+            defender.hp=defender.maxHp*0.2;
+            defender.atk=enemy.base.atkPhase[2];
+            defender.dodge=enemy.base.dodgePhase[2];
+            defender.crit=enemy.base.critPhase[2];
+            defender.staminaMax=enemy.base.staminaMaxPhase[2];
+            defender.stamina=defender.staminaMax;
+            defender.basePattern=enemy.base.basePatternPhase[2];
+            log("Against all odds, Last Breath Sans clings to life... Phase 3 AWAKENS.");
+            updateBars();
+            setTimeout(()=>{lastBreathFinalPhase()},900)
+          }else{
+            defender.hp=0;
+            updateBars();
+            endBattle(attacker===player?"player":"enemy")
           }
         }
-        if (total === 0) {
-          log(`${enemy.name} avoided the entire barrage!`);
-        } else {
-          log(`${enemy.name} is hit by the barrage for ${total} total damage!`);
-        }
-      } else if (player.name === "Dusttale Sans") {
-        const r = tryHit(player, enemy, player.specialPower, player.specialHit, false);
-        if (r.type === "miss") {
-          log("The murderous strike missed!");
-        } else if (r.type === "dodge") {
-          log(`${enemy.name} barely dodged the murderous strike!`);
-        } else {
-          log(`${enemy.name} takes ${r.dmg} massive damage!`);
-        }
-        if (player.recoil) {
-          player.hp -= player.recoil;
-          log(`${player.name} is hurt by recoil for ${player.recoil} HP!`);
-        }
-      } else if (player.name === "Ink Sans") {
-        const variance = Math.random() * player.specialPower;
-        const base = player.atk + variance;
-        const r = tryHit(player, enemy, base, player.specialHit, false);
-        if (r.type === "miss") {
-          log("The ink storm whiffs completely!");
-        } else if (r.type === "dodge") {
-          log(`${enemy.name} dances through the ink storm!`);
-        } else {
-          log(`${enemy.name} is splattered for ${r.dmg} chaotic damage!`);
-        }
-      } else if (player.name === "Error Sans") {
-        const r = tryHit(player, enemy, player.specialPower, player.specialHit, true);
-        if (r.type === "miss") {
-          log("The strings fail to connect!");
-        } else {
-          log(`${enemy.name}'s defenses are ignored! ${r.dmg} damage dealt${r.crit ? " (CRIT!)" : ""}.`);
-        }
-      } else {
-        // default special (Classic, Horror, etc.)
-        const r = tryHit(player, enemy, player.specialPower, player.specialHit, false);
-        if (r.type === "miss") {
-          log("The special attack missed!");
-        } else if (r.type === "dodge") {
-          log(`${enemy.name} dodged the special attack!`);
-        } else {
-          log(`${enemy.name} is blasted for ${r.dmg} damage${r.crit ? " (CRIT!)" : ""}.`);
-        }
-      }
-
-      updateBars();
-      if (!checkEnd()) {
-        setTimeout(enemyTurn, 900);
+      }else{
+        if(attacker===player)endBattle("player");
+        else endBattle("enemy")
       }
     }
-
-    function playerHeal() {
-      menu.innerHTML = "";
-      const healAmount = player.healPower + Math.random() * 8 - 4;
-      const healed = Math.round(Math.max(5, healAmount));
-      player.hp = Math.min(player.maxHp, player.hp + healed);
-      log(`${player.name} heals for ${healed} HP.`);
-      updateBars();
-      setTimeout(enemyTurn, 700);
+    function checkEnd(){
+      if(player.hp<=0){
+        player.hp=0;
+        updateBars();
+        endBattle("enemy");
+        return true
+      }
+      if(enemy.hp<=0){
+        enemy.hp=0;
+        updateBars();
+        endOrPhase(player,enemy);
+        return true
+      }
+      return false
     }
-
-    function enemyTurn() {
-      if (state === "end") return;
-      state = "enemyTurn";
+    function showPlayerMenu(){
+      if(state==="end")return;
+      state="playerTurn";
+      menu.innerHTML="";
+      const info=document.createElement("div");
+      info.className="centerText";
+      info.innerHTML=`<div>Turn ${turn}</div><div>Choose your action:</div>`;
+      menu.appendChild(info);
+      const fightBtn=document.createElement("button");
+      fightBtn.textContent="FIGHT";
+      fightBtn.onclick=()=>{playerFight()};
+      menu.appendChild(fightBtn);
+      const magicBtn=document.createElement("button");
+      magicBtn.textContent="MAGIC";
+      magicBtn.onclick=()=>{playerMagic()};
+      menu.appendChild(magicBtn);
+      const itemBtn=document.createElement("button");
+      itemBtn.textContent="ITEM";
+      itemBtn.onclick=()=>{playerItem()};
+      menu.appendChild(itemBtn);
+      const mercyBtn=document.createElement("button");
+      mercyBtn.textContent="MERCY";
+      mercyBtn.onclick=()=>{playerMercy()};
+      menu.appendChild(mercyBtn);
+      const tip=document.createElement("div");
+      tip.className="small";
+      tip.textContent="During enemy attacks, move the red SOUL with arrow keys. Blue bones hurt only if you move; orange if you stand still.";
+      menu.appendChild(tip)
+    }
+    function playerSpendStamina(cost){
+      if(player.stamina<cost)return false;
+      player.stamina-=cost;
+      updateBars();
+      return true
+    }
+    function enemySpendStamina(cost){
+      if(enemy.stamina<cost)return false;
+      enemy.stamina-=cost;
+      updateBars();
+      return true
+    }
+    function playerFight(){
+      menu.innerHTML="";
+      const cost=15;
+      if(!playerSpendStamina(cost)){
+        log("You are too tired to attack.");
+        setTimeout(enemyTurn,700);
+        return
+      }
+      log(`${player.name} attacks!`);
+      const res=tryHit(player,enemy,player.atk,1,false);
+      if(res.type==="miss")log("Your attack missed.");
+      else if(res.type==="dodge")log(`${enemy.name} dodged your attack.`);
+      else log(`You hit ${enemy.name} for ${res.dmg} damage${res.crit?" (CRIT!)":""}.`);
+      updateBars();
+      if(!checkEnd())setTimeout(enemyTurn,800)
+    }
+    function playerMagic(){
+      menu.innerHTML="";
+      const cost=player.specialCost;
+      if(!playerSpendStamina(cost)){
+        log("Not enough stamina for MAGIC.");
+        setTimeout(enemyTurn,700);
+        return
+      }
+      log(`${player.name} uses MAGIC: ${player.specialName}!`);
+      if(player.basePattern==="classic"){
+        const res=tryHit(player,enemy,player.atk*2,0.9,false);
+        if(res.type==="miss")log("The spiral of blasters missed.");
+        else if(res.type==="dodge")log(`${enemy.name} slipped through the spiral.`);
+        else log(`${enemy.name} is torn by the spiral for ${res.dmg} damage${res.crit?" (CRIT!)":""}.`);
+      }else if(player.basePattern==="underfell"){
+        let total=0;
+        for(let i=0;i<4;i++){
+          const r=tryHit(player,enemy,player.atk*0.9,0.9,false);
+          if(r.type==="hit")total+=r.dmg
+        }
+        if(total===0)log(`${enemy.name} avoided the inferno.`);
+        else log(`${enemy.name} is scorched for ${total} damage.`);
+      }else if(player.basePattern==="dust"){
+        const r=tryHit(player,enemy,player.atk*2.2,0.85,false);
+        if(r.type==="miss")log("The genocidal flames miss.");
+        else if(r.type==="dodge")log(`${enemy.name} barely escapes the flames.`);
+        else log(`${enemy.name} is engulfed for ${r.dmg} damage.`);
+        player.hp-=10;
+        log(`${player.name} is hurt by recoil (10 HP).`);
+      }else if(player.basePattern==="ink"){
+        log("Ink Sans summons a SHADOW clone!");
+        const base=player.atk+Math.random()*player.atk*1.5;
+        const r=tryHit(player,enemy,base,0.95,false);
+        if(r.type==="miss")log("The shadow clone whiffs.");
+        else if(r.type==="dodge")log(`${enemy.name} dodges the shadow's strike.`);
+        else log(`Shadow Sans copies your fury for ${r.dmg} damage.`);
+      }else if(player.basePattern==="error"){
+        const r=tryHit(player,enemy,player.atk*2,0.85,true);
+        if(r.type==="miss")log("The strings fail to connect.");
+        else log(`Blue strings bind ${enemy.name} for ${r.dmg} damage${r.crit?" (CRIT!)":""}.`);
+      }else if(player.basePattern==="horror"){
+        const r=tryHit(player,enemy,player.atk*2.1,0.8,false);
+        if(r.type==="miss")log("The cleaver misses the mark.");
+        else if(r.type==="dodge")log(`${enemy.name} narrowly avoids the cleaver.`);
+        else log(`${enemy.name} is cleaved for ${r.dmg} brutal damage.`);
+      }
+      updateBars();
+      if(!checkEnd())setTimeout(enemyTurn,900)
+    }
+    function playerItem(){
+      menu.innerHTML="";
+      if(player.healUses<=0){
+        log("You have no items left.");
+        setTimeout(enemyTurn,700);
+        return
+      }
+      const cost=10;
+      if(!playerSpendStamina(cost)){
+        log("Too tired to use an item.");
+        setTimeout(enemyTurn,700);
+        return
+      }
+      const heal=player.healPower+Math.random()*8-4;
+      const healed=Math.round(Math.max(5,heal));
+      player.hp=Math.min(player.maxHp,player.hp+healed);
+      player.healUses--;
+      log(`You use ${player.healName} and heal ${healed} HP.`);
+      updateBars();
+      setTimeout(enemyTurn,700)
+    }
+    function playerMercy(){
+      menu.innerHTML="";
+      if(enemy.isLastBreath&&enemy.phase===3&&enemy.finalDone){
+        log("You offer MERCY to Last Breath Sans...");
+        setTimeout(()=>{endBattle("spare")},1000);
+        return
+      }
+      log("You tried to show mercy, but nothing happened.");
+      setTimeout(enemyTurn,700)
+    }
+    function enemyTurn(){
+      if(state==="end")return;
+      state="enemyTurn";
       turn++;
       log(`${enemy.name}'s turn!`);
-
-      // Decide enemy action
-      const roll = Math.random();
-      if (roll < 0.6) {
-        enemyBasicAttack();
-      } else if (roll < 0.85) {
-        enemySpecialAttack();
-      } else {
-        enemyHeal();
-      }
-    }
-
-    function enemyBasicAttack() {
-      const base = enemy.atk;
-      const baseDamage = base * 1.4; // used for dodge phase
-      startDodgePhase(enemy, player, baseDamage, () => {
-        if (!checkEnd()) {
-          showPlayerMenu();
-        }
-      });
-    }
-
-    function enemySpecialAttack() {
-      let baseDamage = enemy.specialPower || (enemy.atk * 1.8);
-      if (enemy.name === "Underfell Sans") {
-        baseDamage *= 1.2;
-      } else if (enemy.name === "Dusttale Sans") {
-        baseDamage *= 1.3;
-      }
-      startDodgePhase(enemy, player, baseDamage, () => {
-        if (!checkEnd()) {
-          showPlayerMenu();
-        }
-      });
-    }
-
-    function enemyHeal() {
-      const healAmount = enemy.healPower + Math.random() * 6 - 3;
-      const healed = Math.round(Math.max(5, healAmount));
-      enemy.hp = Math.min(enemy.maxHp, enemy.hp + healed);
-      log(`${enemy.name} heals for ${healed} HP.`);
+      enemy.stamina=Math.min(enemy.staminaMax,enemy.stamina+15);
       updateBars();
-      setTimeout(() => {
-        if (!checkEnd()) {
-          showPlayerMenu();
-        }
-      }, 700);
+      const roll=Math.random();
+      if(enemy.isLastBreath&&enemy.phase===3&&!enemy.finalDone){
+        lastBreathFinalPhase();
+        return
+      }
+      if(roll<0.6){
+        enemyBasicAttack();
+      }else if(roll<0.85){
+        enemySpecialAttack();
+      }else{
+        enemyHeal()
+      }
     }
-
-    // ====== AU SELECTION ======
-    function showAUSelection() {
-      state = "chooseAU";
+    function enemyBasicAttack(){
+      const cost=15;
+      if(!enemySpendStamina(cost)){
+        log(`${enemy.name} is too tired to attack.`);
+        setTimeout(showPlayerMenu,700);
+        return
+      }
+      let pattern=enemy.basePattern;
+      if(enemy.isLastBreath)pattern=enemy.basePattern;
+      const base=enemy.atk*1.4;
+      startDodgePhase(enemy,player,base,pattern,{duration:2600})
+    }
+    function enemySpecialAttack(){
+      const cost=enemy.specialCost;
+      if(cost>0&&!enemySpendStamina(cost)){
+        enemyBasicAttack();
+        return
+      }
+      let pattern=enemy.basePattern;
+      let base=enemy.atk*1.9;
+      if(enemy.isLastBreath){
+        if(enemy.phase===1)pattern="lb1";
+        else if(enemy.phase===2)pattern="lb2";
+        base=enemy.atk*2.1
+      }
+      if(enemy.basePattern==="ink")pattern="ink";
+      if(enemy.basePattern==="error")pattern="error";
+      if(enemy.basePattern==="dust")pattern="dust";
+      if(enemy.basePattern==="underfell")pattern="underfell";
+      if(enemy.basePattern==="classic")pattern="classic";
+      if(enemy.basePattern==="horror")pattern="horror";
+      startDodgePhase(enemy,player,base,pattern,{duration:3000})
+    }
+    function enemyHeal(){
+      if(enemy.healUses<=0||enemy.hp>enemy.maxHp*0.7){
+        enemyBasicAttack();
+        return
+      }
+      const cost=15;
+      if(!enemySpendStamina(cost)){
+        enemyBasicAttack();
+        return
+      }
+      const heal=enemy.healPower+Math.random()*6-3;
+      const healed=Math.round(Math.max(5,heal));
+      enemy.hp=Math.min(enemy.maxHp,enemy.hp+healed);
+      enemy.healUses--;
+      log(`${enemy.name} uses ${enemy.healName} and heals ${healed} HP.`);
+      updateBars();
+      setTimeout(showPlayerMenu,700)
+    }
+    function lastBreathFinalPhase(){
+      state="dodgePhase";
+      enemy.finalDone=false;
+      log("Last Breath Sans: 'This is your last chance.'");
+      dodgeActive=true;
+      dodgeTimer=0;
+      lastFrameTime=performance.now();
+      dodgeDuration=9000;
+      soul.x=dodgeBox.x+dodgeBox.w/2;
+      soul.y=dodgeBox.y+dodgeBox.h/2;
+      spawnPattern("lb3");
+      cameraShake=6;
+      cameraShakeTime=9000;
+      animateFinalLB()
+    }
+    function animateFinalLB(){
+      if(!dodgeActive)return;
+      const now=performance.now();
+      const dt=now-lastFrameTime;
+      lastFrameTime=now;
+      dodgeTimer+=dt;
+      cameraShakeTime=Math.max(0,cameraShakeTime-dt);
+      let dx=0,dy=0;
+      if(keys["ArrowLeft"])dx-=1;
+      if(keys["ArrowRight"])dx+=1;
+      if(keys["ArrowUp"])dy-=1;
+      if(keys["ArrowDown"])dy+=1;
+      const moving=Math.abs(dx)+Math.abs(dy)>0;
+      const len=Math.hypot(dx,dy)||1;
+      soul.x+=dx/len*soul.speed*1.1;
+      soul.y+=dy/len*soul.speed*1.1;
+      soul.x=Math.max(dodgeBox.x+soul.r,Math.min(dodgeBox.x+dodgeBox.w-soul.r,soul.x));
+      soul.y=Math.max(dodgeBox.y+soul.r,Math.min(dodgeBox.y+dodgeBox.h-soul.r,soul.y));
+      bullets.forEach(b=>{
+        b.x+=b.vx;
+        b.y+=b.vy
+      });
+      let hits=0;
+      bullets.forEach(b=>{
+        if(rectCircleCollide(b.x,b.y,b.w,b.h,soul.x,soul.y,soul.r)){
+          if(b.type==="blue"&&moving)return;
+          if(b.type==="orange"&&!moving)return;
+          hits++;
+          b.x=-9999;
+          b.y=-9999
+        }
+      });
+      if(hits>0){
+        const perHit=enemy.atk*1.2;
+        const total=perHit*hits;
+        player.hp-=total;
+        log(`Finale hits you ${hits} time(s) for ${Math.round(total)} damage!`);
+        updateBars();
+        if(player.hp<=0){
+          player.hp=0;
+          updateBars();
+          dodgeActive=false;
+          endBattle("enemy");
+          return
+        }
+      }
+      clearCanvas();
+      applyCamera();
+      drawCharacters();
+      ctx.strokeStyle="white";
+      ctx.strokeRect(dodgeBox.x,dodgeBox.y,dodgeBox.w,dodgeBox.h);
+      bullets.forEach(b=>{
+        ctx.fillStyle=b.color;
+        ctx.fillRect(b.x,b.y,b.w,b.h)
+      });
+      ctx.fillStyle="red";
+      ctx.beginPath();
+      ctx.arc(soul.x,soul.y,soul.r,0,Math.PI*2);
+      ctx.fill();
+      const remaining=Math.max(0,dodgeDuration-dodgeTimer);
+      const ratio=remaining/dodgeDuration;
+      ctx.fillStyle="yellow";
+      ctx.fillRect(dodgeBox.x,dodgeBox.y-10,dodgeBox.w*ratio,6);
+      ctx.fillStyle="white";
+      ctx.font="18px Courier New";
+      ctx.fillText("W I N G D I N G S",dodgeBox.x+140,dodgeBox.y+20);
+      if(dodgeTimer>=dodgeDuration){
+        dodgeActive=false;
+        enemy.finalDone=true;
+        showSpareChoice();
+        return
+      }
+      requestAnimationFrame(()=>animateFinalLB())
+    }
+    function showSpareChoice(){
+      state="spareChoice";
+      menu.innerHTML="";
+      log("Last Breath Sans is exhausted. You feel something change.");
+      const info=document.createElement("div");
+      info.className="centerText";
+      info.innerHTML="<div>Only two options remain.</div>";
+      menu.appendChild(info);
+      const fightBtn=document.createElement("button");
+      fightBtn.textContent="FIGHT";
+      fightBtn.onclick=()=>{
+        log("You strike down Last Breath Sans.");
+        enemy.hp=0;
+        updateBars();
+        endBattle("player")
+      };
+      menu.appendChild(fightBtn);
+      const mercyBtn=document.createElement("button");
+      mercyBtn.textContent="MERCY";
+      mercyBtn.onclick=()=>{
+        enemy.finalDone=true;
+        playerMercy()
+      };
+      menu.appendChild(mercyBtn)
+    }
+    function showAUSelection(){
+      state="chooseAU";
       clearCanvas();
       clearLog();
-      menu.innerHTML = "";
-
-      const title = document.createElement("div");
-      title.className = "title";
-      title.textContent = "SANS AU SIMULATOR";
+      menu.innerHTML="";
+      const title=document.createElement("div");
+      title.className="title";
+      title.textContent="SANS AU SIMULATOR - MULTIVERSAL";
       menu.appendChild(title);
-
-      const subtitle = document.createElement("div");
-      subtitle.className = "subtitle";
-      subtitle.textContent = "Choose your Sans AU to begin the battle.";
+      const subtitle=document.createElement("div");
+      subtitle.className="subtitle";
+      subtitle.textContent="Choose your Sans AU. Then face another Sans from a different timeline.";
       menu.appendChild(subtitle);
-
-      Object.keys(AUs).forEach(name => {
-        const data = AUs[name];
-        const btn = document.createElement("button");
-        btn.className = "auButton";
-        btn.textContent = name;
-        btn.style.borderColor = data.color;
-        btn.onclick = () => {
-          startGameWithAU(name);
-        };
-        menu.appendChild(btn);
+      Object.keys(AUs).forEach(name=>{
+        const btn=document.createElement("button");
+        btn.className="auButton";
+        btn.textContent=name;
+        const data=AUs[name];
+        btn.style.borderColor=data.color||"white";
+        btn.onclick=()=>startGameWithAU(name);
+        menu.appendChild(btn)
       });
-
-      const hint = document.createElement("div");
-      hint.className = "small centerText";
-      hint.textContent = "Controls during dodge: Arrow keys to move the red SOUL inside the white box.";
+      const hint=document.createElement("div");
+      hint.className="small centerText";
+      hint.textContent="Controls: Arrow keys to dodge. Blue bones hurt only when moving; orange bones hurt only when still.";
       menu.appendChild(hint);
-
-      playerNameEl.textContent = "-";
-      enemyNameEl.textContent = "-";
-      playerHpBar.style.width = "0%";
-      enemyHpBar.style.width = "0%";
-      playerHpText.textContent = "";
-      enemyHpText.textContent = "";
-      playerStatsEl.textContent = "";
-      enemyStatsEl.textContent = "";
+      playerNameEl.textContent="-";
+      enemyNameEl.textContent="-";
+      enemyPhaseEl.textContent="";
+      playerHpBar.style.width="0%";
+      enemyHpBar.style.width="0%";
+      playerHpText.textContent="";
+      enemyHpText.textContent="";
+      playerStaminaBar.style.width="0%";
+      enemyStaminaBar.style.width="0%";
+      playerStaminaText.textContent="";
+      enemyStaminaText.textContent="";
+      playerStatsEl.textContent="";
+      enemyStatsEl.textContent="";
+      playerItemsEl.textContent="";
+      enemyItemsEl.textContent=""
     }
-
-    function startGameWithAU(playerAUName) {
-      const pData = AUs[playerAUName];
-      player = {
-        name: playerAUName,
-        maxHp: pData.maxHp,
-        hp: pData.maxHp,
-        atk: pData.atk,
-        dodge: pData.dodge,
-        crit: pData.crit,
-        color: pData.color,
-        specialName: pData.specialName,
-        specialDesc: pData.specialDesc,
-        specialPower: pData.specialPower,
-        specialHit: pData.specialHit,
-        recoil: pData.recoil || 0,
-        ignoreDodge: pData.ignoreDodge || false,
-        healPower: pData.healPower || 18
+    function startGameWithAU(playerAUName){
+      const base=AUs[playerAUName];
+      player={
+        name:playerAUName,
+        maxHp:base.maxHp||base.maxHpPhase[0],
+        hp:base.maxHp||base.maxHpPhase[0],
+        atk:base.atk||base.atkPhase[0],
+        dodge:base.dodge||base.dodgePhase[0],
+        crit:base.crit||base.critPhase[0],
+        color:base.color,
+        specialName:base.specialName||base.specialNamePhase[0],
+        specialCost:base.specialCost||base.specialCostPhase[0],
+        healName:base.healName,
+        healPower:base.healPower,
+        healUses:base.healUses,
+        staminaMax:base.staminaMax||base.staminaMaxPhase[0],
+        stamina:base.staminaMax||base.staminaMaxPhase[0],
+        basePattern:base.basePattern||base.basePatternPhase[0],
+        isLastBreath:false
       };
-
-      const enemyNames = Object.keys(AUs).filter(n => n !== playerAUName);
-      const enemyName = enemyNames[Math.floor(Math.random() * enemyNames.length)];
-      const eData = AUs[enemyName];
-      enemy = {
-        name: enemyName,
-        maxHp: eData.maxHp,
-        hp: eData.maxHp,
-        atk: eData.atk,
-        dodge: eData.dodge,
-        crit: eData.crit,
-        color: eData.color,
-        specialName: eData.specialName,
-        specialDesc: eData.specialDesc,
-        specialPower: eData.specialPower,
-        specialHit: eData.specialHit,
-        recoil: eData.recoil || 0,
-        ignoreDodge: eData.ignoreDodge || false,
-        healPower: eData.healPower || 18
-      };
-
-      playerNameEl.textContent = player.name;
-      enemyNameEl.textContent = enemy.name;
-
-      turn = 1;
+      const enemyNames=Object.keys(AUs).filter(n=>n!==playerAUName);
+      const enemyName=enemyNames[Math.floor(Math.random()*enemyNames.length)];
+      const eBase=AUs[enemyName];
+      if(enemyName==="Last Breath Sans"){
+        enemy={
+          name:enemyName,
+          base:eBase,
+          phase:1,
+          maxHp:eBase.maxHpPhase[0],
+          hp:eBase.maxHpPhase[0],
+          atk:eBase.atkPhase[0],
+          dodge:eBase.dodgePhase[0],
+          crit:eBase.critPhase[0],
+          color:eBase.color,
+          specialName:eBase.specialNamePhase[0],
+          specialCost:eBase.specialCostPhase[0],
+          healName:eBase.healName,
+          healPower:eBase.healPower,
+          healUses:eBase.healUses,
+          staminaMax:eBase.staminaMaxPhase[0],
+          stamina:eBase.staminaMaxPhase[0],
+          basePattern:eBase.basePatternPhase[0],
+          isLastBreath:true,
+          finalDone:false
+        }
+      }else{
+        enemy={
+          name:enemyName,
+          maxHp:eBase.maxHp,
+          hp:eBase.maxHp,
+          atk:eBase.atk,
+          dodge:eBase.dodge,
+          crit:eBase.crit,
+          color:eBase.color,
+          specialName:eBase.specialName,
+          specialCost:eBase.specialCost,
+          healName:eBase.healName,
+          healPower:eBase.healPower,
+          healUses:eBase.healUses,
+          staminaMax:eBase.staminaMax,
+          stamina:eBase.staminaMax,
+          basePattern:eBase.basePattern,
+          isLastBreath:false
+        }
+      }
+      playerNameEl.textContent=player.name;
+      enemyNameEl.textContent=enemy.name;
+      turn=1;
       clearLog();
-      log(`A new timeline opens... ${player.name} vs ${enemy.name}!`);
+      log(`A new multiversal battle begins: ${player.name} vs ${enemy.name}!`);
       drawCharacters();
       updateBars();
-      setTimeout(showPlayerMenu, 800);
+      setTimeout(showPlayerMenu,900)
     }
-
-    // ====== START ======
     showAUSelection();
   </script>
 </body>

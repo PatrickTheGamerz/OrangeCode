@@ -1,5 +1,3 @@
-// data.js – player data, saves, monsters, shop, and stat functions
-
 const SAVE_SLOTS = 4;
 
 const defaultPlayer = () => ({
@@ -21,11 +19,11 @@ const defaultPlayer = () => ({
 });
 
 function totalAT(p) {
-    return (Number(p.baseAT) || 0) + (Number(p.weaponBonus) || 0);
+    return p.baseAT + p.weaponBonus;
 }
 
 function totalDF(p) {
-    return (Number(p.baseDF) || 0) + (Number(p.armorBonus) || 0);
+    return p.baseDF + p.armorBonus;
 }
 
 let saves = [];
@@ -34,6 +32,7 @@ let currentPlayer = null;
 let gameState = "title";
 let currentMenuIndex = 0;
 
+// monster list for MONSTERS menu
 const monsterList = [
     { id: "dummy",       name: "DUMMY",            reqLV: 1 },
     { id: "mad_dummy",   name: "MAD DUMMY",        reqLV: 2 },
@@ -43,6 +42,7 @@ const monsterList = [
     { id: "us_sans",     name: "UNDERSWAP SANS",   reqLV: 9 },
 ];
 
+// shop
 const shopData = {
     weapon: [
         { name: "STICK", cost: 0, at: 0 },
@@ -61,6 +61,7 @@ const shopData = {
     ]
 };
 
+// enemies
 const enemies = [
     {
         id: "dummy",
@@ -72,7 +73,7 @@ const enemies = [
         exp: 5,
         spareTalks: 2,
         soulType: "red",
-        patterns: ["simpleHorizontal", "simpleHorizontalOffset"]
+        pattern: "simpleHorizontal"
     },
     {
         id: "mad_dummy",
@@ -84,7 +85,7 @@ const enemies = [
         exp: 8,
         spareTalks: 3,
         soulType: "red",
-        patterns: ["multiHorizontal", "multiDiagonal"]
+        pattern: "multiHorizontal"
     },
     {
         id: "toriel",
@@ -96,7 +97,7 @@ const enemies = [
         exp: 12,
         spareTalks: 3,
         soulType: "red",
-        patterns: ["fallingFire", "fallingFireWaves"]
+        pattern: "fallingFire"
     },
     {
         id: "papyrus",
@@ -108,7 +109,7 @@ const enemies = [
         exp: 15,
         spareTalks: 4,
         soulType: "blue",
-        patterns: ["bonesHorizontal", "bonesJump"]
+        pattern: "bonesHorizontal"
     },
     {
         id: "p_sans",
@@ -120,7 +121,7 @@ const enemies = [
         exp: 20,
         spareTalks: 5,
         soulType: "blue",
-        patterns: ["fastBones", "fastBonesSide"]
+        pattern: "fastBones"
     },
     {
         id: "us_sans",
@@ -132,42 +133,18 @@ const enemies = [
         exp: 25,
         spareTalks: 5,
         soulType: "blue",
-        patterns: ["mixedBones", "mixedBonesRain"]
+        pattern: "mixedBones"
     }
 ];
 
 let currentEnemy = null;
-
-function migrateSave(rawObj) {
-    const base = defaultPlayer();
-    const p = Object.assign({}, base, rawObj || {});
-
-    p.LV        = Number(p.LV)        || 1;
-    p.G         = Number(p.G)         || 0;
-    p.HP        = Number(p.HP)        || 20;
-    p.maxHP     = Number(p.maxHP)     || p.HP;
-    p.baseAT    = Number(p.baseAT)    || 5;
-    p.baseDF    = Number(p.baseDF)    || 0;
-    p.weaponBonus = Number(p.weaponBonus) || 0;
-    p.armorBonus  = Number(p.armorBonus)  || 0;
-    p.EXP       = Number(p.EXP)       || 0;
-    p.NEXT      = Number(p.NEXT)      || 10;
-    p.kills     = Number(p.kills)     || 0;
-
-    if (!Array.isArray(p.inventory)) p.inventory = [];
-    if (!p.weapon) p.weapon = "STICK";
-    if (!p.armor)  p.armor  = "BANDAGE";
-
-    return p;
-}
 
 function loadSaves() {
     saves = [];
     for (let i = 0; i < SAVE_SLOTS; i++) {
         const raw = localStorage.getItem("fallen_save_" + i);
         if (raw) {
-            const parsed = JSON.parse(raw);
-            saves.push(migrateSave(parsed));
+            saves.push(JSON.parse(raw));
         } else {
             saves.push(null);
         }
@@ -188,7 +165,5 @@ function createNewSave(index, name) {
 
 function useSave(index) {
     currentSlot = index;
-    currentPlayer = migrateSave(saves[index] || {});
-    saves[index] = currentPlayer;
-    saveSlot(index);
+    currentPlayer = saves[index];
 }

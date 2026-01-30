@@ -1,3 +1,5 @@
+// data.js - player data, saves, enemies and shop
+
 const SAVE_SLOTS = 4;
 
 const defaultPlayer = () => ({
@@ -15,15 +17,15 @@ const defaultPlayer = () => ({
     weapon: "STICK",
     armor: "BANDAGE",
     kills: 0,
-    inventory: ["MONSTER CANDY"],
+    inventory: ["MONSTER CANDY"]
 });
 
 function totalAT(p) {
-    return p.baseAT + p.weaponBonus;
+    return (p.baseAT || 0) + (p.weaponBonus || 0);
 }
 
 function totalDF(p) {
-    return p.baseDF + p.armorBonus;
+    return (p.baseDF || 0) + (p.armorBonus || 0);
 }
 
 let saves = [];
@@ -32,36 +34,33 @@ let currentPlayer = null;
 let gameState = "title";
 let currentMenuIndex = 0;
 
-// monster list for MONSTERS menu
 const monsterList = [
     { id: "dummy",       name: "DUMMY",            reqLV: 1 },
     { id: "mad_dummy",   name: "MAD DUMMY",        reqLV: 2 },
     { id: "toriel",      name: "TORIEL",           reqLV: 3 },
     { id: "papyrus",     name: "PAPYRUS",          reqLV: 5 },
     { id: "p_sans",      name: "PACIFIST SANS",    reqLV: 8 },
-    { id: "us_sans",     name: "UNDERSWAP SANS",   reqLV: 9 },
+    { id: "us_sans",     name: "UNDERSWAP SANS",   reqLV: 9 }
 ];
 
-// shop
 const shopData = {
     weapon: [
         { name: "STICK", cost: 0, at: 0 },
         { name: "TOY KNIFE", cost: 20, at: 3 },
-        { name: "TOUGH GLOVE", cost: 40, at: 5 },
+        { name: "TOUGH GLOVE", cost: 40, at: 5 }
     ],
     armor: [
         { name: "BANDAGE", cost: 0, df: 0 },
         { name: "FADED RIBBON", cost: 25, df: 3 },
-        { name: "MANLY BANDANNA", cost: 45, df: 5 },
+        { name: "MANLY BANDANNA", cost: 45, df: 5 }
     ],
     heal: [
         { name: "MONSTER CANDY", cost: 5, heal: 10 },
         { name: "SPIDER DONUT", cost: 15, heal: 12 },
-        { name: "BUTTERSCOTCH PIE", cost: 60, heal: 99 },
+        { name: "BUTTERSCOTCH PIE", cost: 60, heal: 99 }
     ]
 };
 
-// enemies
 const enemies = [
     {
         id: "dummy",
@@ -73,7 +72,8 @@ const enemies = [
         exp: 5,
         spareTalks: 2,
         soulType: "red",
-        pattern: "simpleHorizontal"
+        pattern: "simpleHorizontal",
+        patterns: ["simpleHorizontal", "dummySpiral", "dummyRain"]
     },
     {
         id: "mad_dummy",
@@ -85,7 +85,8 @@ const enemies = [
         exp: 8,
         spareTalks: 3,
         soulType: "red",
-        pattern: "multiHorizontal"
+        pattern: "multiHorizontal",
+        patterns: ["multiHorizontal", "dummySpiral", "dummyRain"]
     },
     {
         id: "toriel",
@@ -97,7 +98,8 @@ const enemies = [
         exp: 12,
         spareTalks: 3,
         soulType: "red",
-        pattern: "fallingFire"
+        pattern: "fallingFire",
+        patterns: ["fallingFire", "fallingFireWave"]
     },
     {
         id: "papyrus",
@@ -109,7 +111,8 @@ const enemies = [
         exp: 15,
         spareTalks: 4,
         soulType: "blue",
-        pattern: "bonesHorizontal"
+        pattern: "bonesHorizontal",
+        patterns: ["bonesHorizontal", "boneRain", "sideBones"]
     },
     {
         id: "p_sans",
@@ -121,7 +124,8 @@ const enemies = [
         exp: 20,
         spareTalks: 5,
         soulType: "blue",
-        pattern: "fastBones"
+        pattern: "fastBones",
+        patterns: ["fastBones", "sansKarma", "sansSideSpam"]
     },
     {
         id: "us_sans",
@@ -133,7 +137,8 @@ const enemies = [
         exp: 25,
         spareTalks: 5,
         soulType: "blue",
-        pattern: "mixedBones"
+        pattern: "mixedBones",
+        patterns: ["mixedBones", "boneRain", "sansSideSpam"]
     }
 ];
 
@@ -144,7 +149,16 @@ function loadSaves() {
     for (let i = 0; i < SAVE_SLOTS; i++) {
         const raw = localStorage.getItem("fallen_save_" + i);
         if (raw) {
-            saves.push(JSON.parse(raw));
+            const parsed = JSON.parse(raw);
+            const base = defaultPlayer();
+            const merged = Object.assign(base, parsed);
+            if (typeof merged.weaponBonus !== "number") merged.weaponBonus = 0;
+            if (typeof merged.armorBonus !== "number") merged.armorBonus = 0;
+            if (typeof merged.baseAT !== "number") merged.baseAT = 5;
+            if (typeof merged.baseDF !== "number") merged.baseDF = 0;
+            if (typeof merged.maxHP !== "number") merged.maxHP = 20;
+            if (typeof merged.HP !== "number") merged.HP = merged.maxHP;
+            saves.push(merged);
         } else {
             saves.push(null);
         }

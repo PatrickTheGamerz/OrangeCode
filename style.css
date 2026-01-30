@@ -4,16 +4,40 @@ body {
     color: white;
     font-family: "Courier New", monospace;
     image-rendering: pixelated;
+    overflow: hidden;
+}
+
+/* fake static background */
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background:
+        repeating-linear-gradient(0deg, rgba(255,255,255,0.05) 0, rgba(255,255,255,0.05) 1px, transparent 1px, transparent 3px),
+        repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 3px);
+    mix-blend-mode: screen;
+    opacity: 0.4;
+    pointer-events: none;
+    animation: staticMove 1s steps(4) infinite;
+}
+
+@keyframes staticMove {
+    0% { transform: translate(0,0); }
+    25% { transform: translate(2px,-2px); }
+    50% { transform: translate(-2px,1px); }
+    75% { transform: translate(1px,2px); }
+    100% { transform: translate(0,0); }
 }
 
 #game {
-    width: 640px;
-    height: 480px;
+    width: 800px;
+    height: 600px;
     margin: 20px auto;
     border: 4px solid white;
-    padding: 16px;
+    padding: 24px;
     box-sizing: border-box;
     position: relative;
+    background: black;
 }
 
 .center {
@@ -22,28 +46,29 @@ body {
 
 .undertale-box {
     border: 4px solid white;
-    padding: 12px;
+    padding: 16px;
     display: inline-block;
     margin: 8px auto;
 }
 
 .menu-option {
-    margin: 4px 0;
+    margin: 6px 0;
 }
 
 .menu-option span {
     padding: 2px 4px;
 }
 
-.selected span {
+.selected span,
+.selected {
     color: #ffff00;
 }
 
 .button-box {
     border: 2px solid white;
-    padding: 4px 10px;
+    padding: 6px 14px;
     display: inline-block;
-    margin: 4px;
+    margin: 6px;
 }
 
 .button-box.selected {
@@ -53,7 +78,7 @@ body {
 
 .bottom-menu {
     position: absolute;
-    bottom: 8px;
+    bottom: 12px;
     left: 0;
     width: 100%;
     text-align: center;
@@ -61,8 +86,8 @@ body {
 
 .battle-box {
     border: 4px solid white;
-    width: 480px;
-    height: 220px;
+    width: 520px;
+    height: 260px;
     margin: 40px auto 0;
     position: relative;
 }
@@ -91,12 +116,17 @@ body {
 }
 
 .file-slot {
-    margin: 8px 0;
+    margin: 10px 0;
 }
 
 .file-slot .undertale-box {
-    width: 80%;
+    width: 90%;
     text-align: left;
+}
+
+.file-slot.selected .undertale-box {
+    border-color: #ffff00;
+    color: #ffff00;
 }
 
 .name-grid {
@@ -110,7 +140,7 @@ body {
 }
 
 .name-cell {
-    width: 24px;
+    width: 28px;
     text-align: center;
     padding: 2px;
 }
@@ -141,4 +171,44 @@ body {
 .flex-between {
     display: flex;
     justify-content: space-between;
+}
+
+/* fight bar */
+.fight-bar {
+    width: 300px;
+    height: 12px;
+    border: 2px solid white;
+    margin: 12px auto;
+    position: relative;
+}
+
+.fight-marker {
+    position: absolute;
+    top: -4px;
+    width: 4px;
+    height: 20px;
+    background: #ffff00;
+}
+
+/* soul box */
+.soul-box {
+    border: 4px solid white;
+    width: 260px;
+    height: 160px;
+    margin: 10px auto 0;
+    position: relative;
+}
+
+.soul {
+    width: 10px;
+    height: 10px;
+    background: #ff0000;
+    position: absolute;
+}
+
+.bullet {
+    width: 8px;
+    height: 8px;
+    background: #ffffff;
+    position: absolute;
 }

@@ -89,7 +89,11 @@
     const JUMP_SPEED = -550;
     const FRICTION = 0.85;
 
-    const BONE_SPEED = 500;
+    const BONE_SPEED = 520;
+    const BONE_SPIN_TIME = 0.28;
+    const BONE_SPIN_SPEED_START = 10;
+    const BONE_SPIN_SPEED_END = 26;
+
     const ENEMY_SPEED_MIN = 80;
     const ENEMY_SPEED_MAX = 160;
     const ENEMY_SPAWN_INTERVAL = 1.2;
@@ -100,9 +104,14 @@
     const STAMINA_COST_BLASTER = 10;
     const STRESS_PER_DODGE = 6;
     const STRESS_PER_ATTACK = 3;
-    const REST_THRESHOLD = 5;
-    const REST_STAMINA_REGEN = 8;
-    const REST_STRESS_DRAIN = 6;
+
+    const REST_IDLE_TIME = 2;
+    const NAP_TIME = 2;
+    const REST_STAMINA_REGEN = 10;
+    const REST_STRESS_DRAIN = 7;
+    const NAP_STAMINA_REGEN = 26;
+    const NAP_STRESS_DRAIN = 4;
+
     const BADTIME_STRESS_DRAIN = 10;
     const BADTIME_STAMINA_DRAIN = 12;
 
@@ -129,8 +138,26 @@
     const enemies = [];
     const misses = [];
     const blasters = [];
+    const zs = [];
 
     let lastActionTime = 0;
+    let isResting = false;
+    let restStartTime = 0;
+    let isNapping = false;
+    let napStartTime = 0;
+
+    let gameOverStartTime = 0;
+    let papyrusLines = [
+      "SANS! YOU CAN'T JUST NAP THROUGH A FIGHT.",
+      "SANS! I EXPECTED MORE THAN... LYING DOWN.",
+      "SANS! GET UP! THE HUMAN ISN'T GOING TO WAIT.",
+      "SANS! THIS IS NO TIME FOR A BREAK.",
+      "SANS! YOU CALL THAT 'DEFENSE'?",
+      "SANS! YOU FELL ASLEEP AGAIN, DIDN'T YOU?"
+    ];
+    let papyrusText = "";
+    let papyrusShown = 0;
+    let papyrusTimer = 0;
 
     window.addEventListener("keydown", (e) => {
       keys[e.key.toLowerCase()] = true;
@@ -172,6 +199,7 @@
       enemies.length = 0;
       misses.length = 0;
       blasters.length = 0;
+      zs.length = 0;
       score = 0;
       enemySpawnTimer = 0;
       gameOver = false;
@@ -181,10 +209,17 @@
       stressEl.textContent = Math.round(player.stress);
       scoreEl.textContent = score;
       lastActionTime = performance.now() / 1000;
+      isResting = false;
+      isNapping = false;
+      papyrusText = "";
+      papyrusShown = 0;
+      papyrusTimer = 0;
     }
 
     function markAction() {
       lastActionTime = performance.now() / 1000;
+      isResting = false;
+      isNapping = false;
     }
 
     function shootBone() {
@@ -196,24 +231,28 @@
       markAction();
       const dir = player.facing || 1;
       if (player.badTime) {
-        spawnBoneRain(dir);
+        spawnBoneRain();
       } else {
-        const boneWidth = 18;
-        const boneHeight = 6;
+        const spinSpeed = BONE_SPIN_SPEED_START;
         bones.push({
-          x: player.x + player.w / 2 + dir * 10,
+          mode: "spin",
+          angle: dir === 1 ? 0 : Math.PI,
+          spinTime: BONE_SPIN_TIME,
+          spinSpeed: spinSpeed,
+          x: player.x + player.w / 2,
           y: player.y + player.h / 2,
-          w: boneWidth,
-          h: boneHeight,
-          vx: dir * BONE_SPEED
+          w: 18,
+          h: 6,
+          vx: 0,
+          vy: 0
         });
       }
       staminaEl.textContent = Math.round(player.stamina);
       stressEl.textContent = Math.round(player.stress);
     }
 
-    function spawnBoneRain(dir) {
-      const count = 14;
+    function spawnBoneRain() {
+      const count = 16;
       for (let i = 0; i < count; i++) {
         const bx = Math.random() * W;
         const by = -Math.random() * 200 - 40;
@@ -364,8 +403,51 @@
       });
     }
 
+    function spawnZ() {
+      zs.push({
+        x: player.x + player.w / 2 + (Math.random() * 10 - 5),
+        y: player.y - 10 + (Math.random() * 6 - 3),
+        vy: -20 - Math.random() * 20,
+        life: 1.2
+      });
+    }
+
+    function charDelay(c) {
+      if (c === ",") return 0.2;
+      if (c === ".") return 1.0;
+      if (c === " ") return 0.05;
+      return 0.05;
+    }
+
+    function startGameOver() {
+      if (gameOverStartTime === 0) {
+        gameOverStartTime = performance.now() / 1000;
+        papyrusText = papyrusLines[Math.floor(Math.random() * papyrusLines.length)];
+        papyrusShown = 0;
+        papyrusTimer = 0;
+      }
+    }
+
+    function updatePapyrus(dt) {
+      if (!gameOver || papyrusShown >= papyrusText.length) return;
+      papyrusTimer += dt;
+      while (papyrusShown < papyrusText.length) {
+        const c = papyrusText[papyrusShown];
+        const d = charDelay(c);
+        if (papyrusTimer >= d) {
+          papyrusTimer -= d;
+          papyrusShown++;
+        } else {
+          break;
+        }
+      }
+    }
+
     function update(dt) {
-      if (gameOver) return;
+      if (gameOver) {
+        updatePapyrus(dt);
+        return;
+      }
 
       const now = performance.now() / 1000;
 
@@ -409,8 +491,36 @@
 
       for (let i = bones.length - 1; i >= 0; i--) {
         const b = bones[i];
-        b.x += b.vx * dt;
-        if (b.x < -50 || b.x > W + 50) {
+        if (b.mode === "spin") {
+          b.spinTime -= dt;
+          const t = 1 - Math.max(0, b.spinTime) / BONE_SPIN_TIME;
+          b.spinSpeed = BONE_SPIN_SPEED_START + (BONE_SPIN_SPEED_END - BONE_SPIN_SPEED_START) * t;
+          b.angle += b.spinSpeed * dt;
+          const radius = 26;
+          b.x = player.x + player.w / 2 + Math.cos(b.angle) * radius;
+          b.y = player.y + player.h / 2 + Math.sin(b.angle) * radius;
+          if (b.spinTime <= 0) {
+            const target = nearestEnemy();
+            let dx, dy;
+            if (target) {
+              dx = target.cx - b.x;
+              dy = target.cy - b.y;
+            } else {
+              dx = player.facing === 1 ? 1 : -1;
+              dy = 0;
+            }
+            const len = Math.sqrt(dx * dx + dy * dy) || 1;
+            dx /= len;
+            dy /= len;
+            b.vx = dx * BONE_SPEED;
+            b.vy = dy * BONE_SPEED * 0.6;
+            b.mode = "fly";
+          }
+        } else {
+          b.x += b.vx * dt;
+          b.y += b.vy * dt;
+        }
+        if (b.x < -80 || b.x > W + 80 || b.y < -80 || b.y > H + 80) {
           bones.splice(i, 1);
         }
       }
@@ -453,7 +563,8 @@
         const e = enemies[i];
         for (let j = bones.length - 1; j >= 0; j--) {
           const b = bones[j];
-          if (rectsOverlap(e, b)) {
+          const rectB = { x: b.x, y: b.y, w: b.w, h: b.h };
+          if (rectsOverlap(e, rectB)) {
             bones.splice(j, 1);
             e.hp -= 1;
             if (e.hp <= 0) {
@@ -486,6 +597,7 @@
             if (player.hp <= 0) {
               gameOver = true;
               restartBtn.style.display = "inline-block";
+              startGameOver();
             }
           }
         }
@@ -510,6 +622,7 @@
             if (player.hp <= 0) {
               gameOver = true;
               restartBtn.style.display = "inline-block";
+              startGameOver();
             }
           }
         }
@@ -573,15 +686,39 @@
         }
       }
 
+      for (let i = zs.length - 1; i >= 0; i--) {
+        const z = zs[i];
+        z.life -= dt;
+        z.y += z.vy * dt;
+        if (z.life <= 0) {
+          zs.splice(i, 1);
+        }
+      }
+
       if (!player.badTime && player.stress >= 100) {
         player.badTime = true;
       }
 
       if (!player.badTime) {
         const idleTime = now - lastActionTime;
-        if (idleTime >= REST_THRESHOLD) {
-          player.stamina = Math.min(100, player.stamina + REST_STAMINA_REGEN * dt);
-          player.stress = Math.max(0, player.stress - REST_STRESS_DRAIN * dt);
+        if (!moveLeft && !moveRight && !jumpKey && idleTime >= REST_IDLE_TIME) {
+          if (!isResting) {
+            isResting = true;
+            restStartTime = now;
+          }
+          const restDuration = now - restStartTime;
+          if (!isNapping && restDuration >= NAP_TIME) {
+            isNapping = true;
+            napStartTime = now;
+          }
+          if (isNapping) {
+            player.stamina = Math.min(100, player.stamina + NAP_STAMINA_REGEN * dt);
+            player.stress = Math.max(0, player.stress - NAP_STRESS_DRAIN * dt);
+            spawnZ();
+          } else {
+            player.stamina = Math.min(100, player.stamina + REST_STAMINA_REGEN * dt);
+            player.stress = Math.max(0, player.stress - REST_STRESS_DRAIN * dt);
+          }
           staminaEl.textContent = Math.round(player.stamina);
           stressEl.textContent = Math.round(player.stress);
         }
@@ -593,6 +730,7 @@
         if (player.stress <= 0 && player.stamina <= 0) {
           gameOver = true;
           restartBtn.style.display = "inline-block";
+          startGameOver();
         }
       }
     }
@@ -601,16 +739,17 @@
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, W, H);
 
-      const grad = ctx.createLinearGradient(0, H - 120, 0, H);
-      grad.addColorStop(0, "#222");
+      const grad = ctx.createLinearGradient(0, H - 140, 0, H);
+      grad.addColorStop(0, "#111");
+      grad.addColorStop(0.4, "#333");
       grad.addColorStop(1, "#fff");
       ctx.fillStyle = grad;
-      ctx.fillRect(0, H - 60, W, 60);
+      ctx.fillRect(0, H - 70, W, 70);
 
       ctx.fillStyle = "#444";
-      for (let i = 0; i < 5; i++) {
-        const x = 40 + i * 120;
-        ctx.fillRect(x, H - 160, 24, 100);
+      for (let i = 0; i < 6; i++) {
+        const x = 30 + i * 110;
+        ctx.fillRect(x, H - 180, 20, 110);
       }
 
       ctx.save();
@@ -681,10 +820,14 @@
 
     function drawBones() {
       for (const b of bones) {
+        ctx.save();
+        ctx.translate(b.x + b.w / 2, b.y + b.h / 2);
+        ctx.rotate(b.mode === "spin" ? b.angle : 0);
         ctx.fillStyle = "#fff";
-        ctx.fillRect(b.x, b.y, b.w, b.h);
-        ctx.fillRect(b.x - 4, b.y - 2, 4, 10);
-        ctx.fillRect(b.x + b.w, b.y - 2, 4, 10);
+        ctx.fillRect(-b.w / 2, -b.h / 2, b.w, b.h);
+        ctx.fillRect(-b.w / 2 - 4, -b.h / 2 - 2, 4, 10);
+        ctx.fillRect(b.w / 2, -b.h / 2 - 2, 4, 10);
+        ctx.restore();
       }
     }
 
@@ -763,17 +906,32 @@
       ctx.restore();
     }
 
+    function drawZs() {
+      ctx.save();
+      ctx.fillStyle = "#fff";
+      ctx.font = "14px monospace";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      for (const z of zs) {
+        const alpha = Math.max(0, z.life / 1.2);
+        ctx.globalAlpha = alpha;
+        ctx.fillText("Z", z.x, z.y);
+      }
+      ctx.restore();
+    }
+
     function drawGameOver() {
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, W, H);
       ctx.fillStyle = "#fff";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.font = "40px monospace";
-      ctx.fillText("GAME OVER", W / 2, H / 2 - 30);
-      ctx.font = "20px monospace";
-      ctx.fillText("Roksana!", W / 2, H / 2 + 10);
-      ctx.fillText("Stay determined...", W / 2, H / 2 + 40);
+      ctx.font = "64px monospace";
+      ctx.fillText("GAME OVER", W / 2, H / 2 - 40);
+      ctx.font = "22px monospace";
+      const shownText = papyrusText.slice(0, papyrusShown);
+      ctx.fillText("SANS!", W / 2, H / 2 + 10);
+      ctx.fillText(shownText, W / 2, H / 2 + 40);
     }
 
     function draw() {
@@ -785,6 +943,7 @@
       drawEnemies();
       drawBlasters();
       drawMisses();
+      drawZs();
       if (gameOver) {
         drawGameOver();
       }

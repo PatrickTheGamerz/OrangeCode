@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Mini Bonetale-like Game</title>
+  <title>Mini Bonetale Sans vs Chara</title>
   <style>
     html, body {
       margin: 0;
@@ -21,20 +21,20 @@
       height: 100vh;
     }
 
-    #ui {
-      margin-top: 10px;
-      text-align: center;
-    }
-
     canvas {
       border: 2px solid #fff;
       background: #111;
       image-rendering: pixelated;
     }
 
-    #controls {
+    #ui {
+      margin-top: 8px;
+      text-align: center;
       font-size: 14px;
-      margin-top: 6px;
+    }
+
+    #controls {
+      margin-top: 4px;
       color: #ccc;
     }
 
@@ -56,10 +56,15 @@
   <div id="gameContainer">
     <canvas id="game" width="640" height="360"></canvas>
     <div id="ui">
-      <div id="info">HP: <span id="hp">5</span> | Score: <span id="score">0</span></div>
+      <div>
+        HP: <span id="hp">1</span> |
+        Stamina: <span id="stam">100</span> |
+        Time survived: <span id="time">0.0</span>s
+      </div>
       <div id="controls">
-        Move: A / D or ← / → &nbsp;|&nbsp;
-        Jump: W or ↑ or Space &nbsp;|&nbsp;
+        Move: A/D or ←/→ &nbsp;|&nbsp;
+        Jump: W / ↑ / Space &nbsp;|&nbsp;
+        Dash: Shift &nbsp;|&nbsp;
         Shoot bone: J
       </div>
       <button id="restartBtn" style="display:none;">Restart</button>
@@ -67,57 +72,73 @@
   </div>
 
   <script>
-    // ====== BASIC SETUP ======
     const canvas = document.getElementById("game");
     const ctx = canvas.getContext("2d");
-
     const hpEl = document.getElementById("hp");
-    const scoreEl = document.getElementById("score");
+    const stamEl = document.getElementById("stam");
+    const timeEl = document.getElementById("time");
     const restartBtn = document.getElementById("restartBtn");
 
     const W = canvas.width;
     const H = canvas.height;
 
-    // ====== GAME STATE ======
-    let lastTime = 0;
-    let keys = {};
-    let gameOver = false;
-
-    const GRAVITY = 1500;      // px/s^2
-    const MOVE_SPEED = 260;    // px/s
-    const JUMP_SPEED = -550;   // px/s
+    // ===== GAME CONSTANTS =====
+    const GRAVITY = 1500;
+    const MOVE_SPEED = 220;
+    const DASH_SPEED = 420;
+    const JUMP_SPEED = -550;
     const FRICTION = 0.85;
 
-    const BONE_SPEED = 500;
-    const ENEMY_SPEED_MIN = 80;
-    const ENEMY_SPEED_MAX = 160;
-    const ENEMY_SPAWN_INTERVAL = 1.2; // seconds
+    const BONE_SPEED = 520;
+    const BONE_COST = 8;
+    const JUMP_COST = 5;
+    const DASH_COST_PER_SEC = 25;
 
-    let enemySpawnTimer = 0;
-    let score = 0;
+    const STAM_MAX = 100;
+    const STAM_REGEN_IDLE = 15; // per second when not doing actions
+
+    const FLOOR_Y = H - 60;
+
+    const KNIFE_SPEED = 260;
+    const KNIFE_INTERVAL = 1.0; // seconds
+
+    // ===== GAME STATE =====
+    let keys = {};
+    let lastTime = 0;
+    let gameOver = false;
+    let elapsed = 0;
 
     const player = {
-      x: 80,
-      y: H - 80,
+      x: W / 2 - 16,
+      y: FLOOR_Y - 48,
       w: 32,
       h: 48,
       vx: 0,
       vy: 0,
       onGround: false,
-      facing: 1, // 1 right, -1 left
-      hp: 5
+      facing: 1,
+      hp: 1,
+      stamina: STAM_MAX,
+      dashing: false
+    };
+
+    const chara = {
+      x: W / 2 - 16,
+      y: 40,
+      w: 32,
+      h: 48
     };
 
     const bones = [];
-    const enemies = [];
+    const knives = [];
+    let knifeTimer = 0;
 
-    // ====== INPUT HANDLING ======
+    // ===== INPUT =====
     window.addEventListener("keydown", (e) => {
       keys[e.key.toLowerCase()] = true;
       if (["ArrowLeft", "ArrowRight", "ArrowUp", " "].includes(e.key)) {
         e.preventDefault();
       }
-      // Shoot bone with J
       if (e.key.toLowerCase() === "j" && !gameOver) {
         shootBone();
       }
@@ -127,61 +148,35 @@
       keys[e.key.toLowerCase()] = false;
     });
 
-    // ====== RESTART BUTTON ======
     restartBtn.addEventListener("click", () => {
       resetGame();
     });
 
-    // ====== GAME FUNCTIONS ======
+    // ===== RESET =====
     function resetGame() {
-      player.x = 80;
-      player.y = H - 80;
+      player.x = W / 2 - 16;
+      player.y = FLOOR_Y - 48;
       player.vx = 0;
       player.vy = 0;
-      player.hp = 5;
       player.onGround = false;
       player.facing = 1;
+      player.hp = 1;
+      player.stamina = STAM_MAX;
+      player.dashing = false;
+
       bones.length = 0;
-      enemies.length = 0;
-      score = 0;
-      enemySpawnTimer = 0;
+      knives.length = 0;
+      knifeTimer = 0;
+      elapsed = 0;
       gameOver = false;
       restartBtn.style.display = "none";
+
       hpEl.textContent = player.hp;
-      scoreEl.textContent = score;
+      stamEl.textContent = Math.round(player.stamina);
+      timeEl.textContent = elapsed.toFixed(1);
     }
 
-    function shootBone() {
-      const boneWidth = 18;
-      const boneHeight = 6;
-      const dir = player.facing || 1;
-      bones.push({
-        x: player.x + player.w / 2 + dir * 10,
-        y: player.y + player.h / 2,
-        w: boneWidth,
-        h: boneHeight,
-        vx: dir * BONE_SPEED
-      });
-    }
-
-    function spawnEnemy() {
-      const size = 32;
-      const side = Math.random() < 0.5 ? "left" : "right";
-      const y = H - 64; // ground-ish
-      const speed =
-        ENEMY_SPEED_MIN +
-        Math.random() * (ENEMY_SPEED_MAX - ENEMY_SPEED_MIN);
-
-      enemies.push({
-        x: side === "left" ? -size : W + size,
-        y: y,
-        w: size,
-        h: size,
-        vx: side === "left" ? speed : -speed,
-        hp: 1
-      });
-    }
-
+    // ===== UTILS =====
     function rectsOverlap(a, b) {
       return !(
         a.x + a.w < b.x ||
@@ -191,29 +186,78 @@
       );
     }
 
-    // ====== UPDATE LOOP ======
+    // ===== ACTIONS =====
+    function shootBone() {
+      if (player.stamina <= BONE_COST || gameOver) return;
+      player.stamina -= BONE_COST;
+      const dir = player.facing || 1;
+      bones.push({
+        x: player.x + player.w / 2 + dir * 10,
+        y: player.y + player.h / 2,
+        w: 18,
+        h: 6,
+        vx: dir * BONE_SPEED
+      });
+    }
+
+    function spawnKnife() {
+      // Chara throws a knife from random x at top towards bottom
+      const size = 16;
+      const x = Math.random() * (W - size);
+      knives.push({
+        x: x,
+        y: chara.y + chara.h,
+        w: size,
+        h: size,
+        vy: KNIFE_SPEED
+      });
+    }
+
+    // ===== UPDATE =====
     function update(dt) {
       if (gameOver) return;
 
-      // --- Player movement ---
+      elapsed += dt;
+      timeEl.textContent = elapsed.toFixed(1);
+
       let moveLeft = keys["a"] || keys["arrowleft"];
       let moveRight = keys["d"] || keys["arrowright"];
       let jumpKey = keys["w"] || keys["arrowup"] || keys[" "];
+      let dashKey = keys["shift"];
 
+      let doingAction = false;
+
+      // Horizontal movement
       if (moveLeft && !moveRight) {
         player.vx = -MOVE_SPEED;
         player.facing = -1;
+        doingAction = true;
       } else if (moveRight && !moveLeft) {
         player.vx = MOVE_SPEED;
         player.facing = 1;
+        doingAction = true;
       } else {
         player.vx *= FRICTION;
         if (Math.abs(player.vx) < 5) player.vx = 0;
       }
 
-      if (jumpKey && player.onGround) {
+      // Dash
+      if (dashKey && player.stamina > 0) {
+        player.dashing = true;
+        const dashDir = player.facing || 1;
+        player.vx = dashDir * DASH_SPEED;
+        player.stamina -= DASH_COST_PER_SEC * dt;
+        doingAction = true;
+      } else {
+        player.dashing = false;
+      }
+
+      // Jump
+      if (jumpKey && player.onGround && player.stamina > JUMP_COST) {
         player.vy = JUMP_SPEED;
         player.onGround = false;
+        player.stamina -= JUMP_COST;
+        doingAction = true;
       }
 
       // Gravity
@@ -223,19 +267,30 @@
       player.x += player.vx * dt;
       player.y += player.vy * dt;
 
-      // Floor collision
-      const floorY = H - 40;
-      if (player.y + player.h > floorY) {
-        player.y = floorY - player.h;
+      // Floor
+      if (player.y + player.h > FLOOR_Y) {
+        player.y = FLOOR_Y - player.h;
         player.vy = 0;
         player.onGround = true;
       }
 
-      // Wall bounds
+      // Walls
       if (player.x < 0) player.x = 0;
       if (player.x + player.w > W) player.x = W - player.w;
 
-      // --- Update bones ---
+      // Stamina regen when idle
+      if (!doingAction && player.stamina < STAM_MAX) {
+        player.stamina += STAM_REGEN_IDLE * dt;
+      }
+      if (player.stamina > STAM_MAX) player.stamina = STAM_MAX;
+
+      // If stamina runs out → Sans is done
+      if (player.stamina <= 0) {
+        player.stamina = 0;
+        endGame("Sans ran out of stamina...");
+      }
+
+      // Update bones
       for (let i = bones.length - 1; i >= 0; i--) {
         const b = bones[i];
         b.x += b.vx * dt;
@@ -244,59 +299,63 @@
         }
       }
 
-      // --- Spawn enemies ---
-      enemySpawnTimer += dt;
-      if (enemySpawnTimer >= ENEMY_SPAWN_INTERVAL) {
-        enemySpawnTimer = 0;
-        spawnEnemy();
+      // Knife spawn
+      knifeTimer += dt;
+      if (knifeTimer >= KNIFE_INTERVAL) {
+        knifeTimer = 0;
+        spawnKnife();
       }
 
-      // --- Update enemies ---
-      for (let i = enemies.length - 1; i >= 0; i--) {
-        const e = enemies[i];
-        e.x += e.vx * dt;
-
-        // Remove if off-screen far
-        if (e.x < -100 || e.x > W + 100) {
-          enemies.splice(i, 1);
+      // Update knives
+      for (let i = knives.length - 1; i >= 0; i--) {
+        const k = knives[i];
+        k.y += k.vy * dt;
+        if (k.y > H + 40) {
+          knives.splice(i, 1);
           continue;
         }
       }
 
-      // --- Collisions: bones vs enemies ---
-      for (let i = enemies.length - 1; i >= 0; i--) {
-        const e = enemies[i];
-        for (let j = bones.length - 1; j >= 0; j--) {
-          const b = bones[j];
-          if (rectsOverlap(e, b)) {
-            bones.splice(j, 1);
-            e.hp -= 1;
-            if (e.hp <= 0) {
-              enemies.splice(i, 1);
-              score += 10;
-              scoreEl.textContent = score;
-            }
-            break;
-          }
+      // Bones vs Chara (just for fun, no HP)
+      for (let i = bones.length - 1; i >= 0; i--) {
+        const b = bones[i];
+        if (rectsOverlap(b, chara)) {
+          // small knockback visual effect: move chara slightly
+          chara.x += (b.vx > 0 ? 1 : -1) * 4;
+          bones.splice(i, 1);
         }
       }
 
-      // --- Collisions: enemies vs player ---
-      for (let i = enemies.length - 1; i >= 0; i--) {
-        const e = enemies[i];
-        if (rectsOverlap(e, player)) {
-          enemies.splice(i, 1);
+      // Knives vs player
+      for (let i = knives.length - 1; i >= 0; i--) {
+        const k = knives[i];
+        if (rectsOverlap(k, player)) {
+          knives.splice(i, 1);
           player.hp -= 1;
           hpEl.textContent = player.hp;
           if (player.hp <= 0) {
-            gameOver = true;
-            restartBtn.style.display = "inline-block";
+            endGame("Sans took a hit...");
           }
         }
       }
+
+      // Clamp chara position
+      if (chara.x < 20) chara.x = 20;
+      if (chara.x + chara.w > W - 20) chara.x = W - 20 - chara.w;
+
+      // Update UI
+      stamEl.textContent = Math.round(player.stamina);
     }
 
-    // ====== DRAW LOOP ======
+    function endGame(reason) {
+      if (gameOver) return;
+      gameOver = true;
+      restartBtn.style.display = "inline-block";
+      // You can log reason if you want to debug:
+      // console.log(reason);
+    }
+
+    // ===== DRAW =====
     function draw() {
       ctx.clearRect(0, 0, W, H);
 
@@ -306,9 +365,9 @@
 
       // Floor
       ctx.fillStyle = "#222";
-      ctx.fillRect(0, H - 40, W, 40);
+      ctx.fillRect(0, FLOOR_Y, W, H - FLOOR_Y);
 
-      // Player (simple skeleton-like)
+      // Sans (player)
       ctx.save();
       ctx.translate(player.x + player.w / 2, player.y + player.h / 2);
       ctx.scale(player.facing, 1);
@@ -332,6 +391,14 @@
 
       ctx.restore();
 
+      // Chara
+      ctx.fillStyle = "#f33";
+      ctx.fillRect(chara.x, chara.y, chara.w, chara.h);
+      ctx.fillStyle = "#000";
+      ctx.fillRect(chara.x + 6, chara.y + 10, 6, 6);
+      ctx.fillRect(chara.x + chara.w - 12, chara.y + 10, 6, 6);
+      ctx.fillRect(chara.x + 8, chara.y + chara.h - 10, chara.w - 16, 4);
+
       // Bones
       for (const b of bones) {
         ctx.fillStyle = "#fff";
@@ -340,31 +407,42 @@
         ctx.fillRect(b.x + b.w, b.y - 2, 4, 10);
       }
 
-      // Enemies (simple red squares)
-      for (const e of enemies) {
-        ctx.fillStyle = "#f33";
-        ctx.fillRect(e.x, e.y, e.w, e.h);
-        ctx.fillStyle = "#000";
-        ctx.fillRect(e.x + 6, e.y + 8, 6, 6);
-        ctx.fillRect(e.x + e.w - 12, e.y + 8, 6, 6);
-        ctx.fillRect(e.x + 8, e.y + e.h - 10, e.w - 16, 4);
+      // Knives
+      for (const k of knives) {
+        ctx.fillStyle = "#f00";
+        ctx.fillRect(k.x, k.y, k.w, k.h);
+        ctx.fillStyle = "#900";
+        ctx.fillRect(k.x + 4, k.y + 4, k.w - 8, k.h - 8);
       }
 
-      // Game over text
+      // UI bars (HP and stamina)
+      // HP bar (1 HP, just visual)
+      ctx.fillStyle = "#444";
+      ctx.fillRect(20, 20, 100, 10);
+      ctx.fillStyle = player.hp > 0 ? "#0f0" : "#400";
+      ctx.fillRect(20, 20, (player.hp / 1) * 100, 10);
+
+      // Stamina bar
+      ctx.fillStyle = "#444";
+      ctx.fillRect(20, 40, 150, 10);
+      ctx.fillStyle = "#0ff";
+      ctx.fillRect(20, 40, (player.stamina / STAM_MAX) * 150, 10);
+
+      // Game over overlay
       if (gameOver) {
         ctx.fillStyle = "rgba(0,0,0,0.6)";
         ctx.fillRect(0, 0, W, H);
         ctx.fillStyle = "#fff";
-        ctx.font = "32px sans-serif";
+        ctx.font = "28px sans-serif";
         ctx.textAlign = "center";
         ctx.fillText("GAME OVER", W / 2, H / 2 - 10);
         ctx.font = "18px sans-serif";
-        ctx.fillText("Score: " + score, W / 2, H / 2 + 20);
-        ctx.fillText("Click Restart below to play again", W / 2, H / 2 + 50);
+        ctx.fillText("Time survived: " + elapsed.toFixed(1) + "s", W / 2, H / 2 + 20);
+        ctx.fillText("Click Restart below to try again", W / 2, H / 2 + 50);
       }
     }
 
-    // ====== MAIN LOOP ======
+    // ===== MAIN LOOP =====
     function loop(timestamp) {
       if (!lastTime) lastTime = timestamp;
       const dt = (timestamp - lastTime) / 1000;
@@ -376,7 +454,6 @@
       requestAnimationFrame(loop);
     }
 
-    // Start
     resetGame();
     requestAnimationFrame(loop);
   </script>

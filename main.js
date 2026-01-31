@@ -1,4 +1,4 @@
-// main.js - game states, menus, shop, name entry and rendering
+// main.js - game states, input handling, menus, shop, name entry and rendering
 
 loadSaves();
 gameState = "title";
@@ -11,8 +11,8 @@ let monsterSelectIndex = 0;
 let nameGrid = [];
 let nameCursor = { row: 0, col: 0 };
 let chosenName = "";
-let nameConfirmIndex = 0;
 let pendingName = "";
+let nameConfirmIndex = 0;
 let nameEntryMessage = "";
 
 let shopSectionIndex = 0;
@@ -123,7 +123,11 @@ function handleKeyDown(e) {
     }
 
     if (gameState === "item") {
-        handleItemMenuKey(key);
+        if (key === "z" || key === "x") {
+            gameState = "mainMenu";
+            currentMenuIndex = 2;
+            render();
+        }
         return;
     }
 
@@ -158,15 +162,6 @@ function handleKeyDown(e) {
         battleKeyDown(e);
         return;
     }
-
-    if (gameState === "gameOver") {
-        if (key === "z") {
-            gameState = "mainMenu";
-            currentMenuIndex = 0;
-            render();
-        }
-        return;
-    }
 }
 
 function render() {
@@ -186,8 +181,8 @@ function render() {
     if (gameState === "fileSelect") {
         document.body.classList.add("file-select-bg-active");
         let wing = `<div class="wingdings-layer">`;
-        const chars = ["ᚷ","ᚨ","ᛊ","ᛏ","ᛖ","ᚱ","ᚹ","ᛁ","ᚾ","ᛞ","ᛁ","ᚾ","ᚷ","ᛊ"];
-        for (let i = 0; i < 60; i++) {
+        const chars = ["ᚷ","ᚨ","ᛊ","ᛏ","ᛖ","ᚱ","ᚹ","ᛁ","ᚾ","ᛞ"];
+        for (let i = 0; i < 80; i++) {
             const ch = chars[i % chars.length];
             const top = Math.random() * 100;
             const left = Math.random() * 100;
@@ -237,7 +232,7 @@ function render() {
         const options = ["MONSTERS", "SHOP", "ITEM", "STATS", "SETTINGS", "CREDITS"];
         let html = `<div class="center" style="margin-top:120px;">`;
         options.forEach((opt, i) => {
-            html += `<div class="menu-option ${i === currentMenuIndex ? "selected" : ""}">
+            html += `<div class="menu-option menu-large ${i === currentMenuIndex ? "selected" : ""}">
                         <span>${opt}</span>
                     </div>`;
         });
@@ -268,7 +263,17 @@ function render() {
     }
 
     if (gameState === "item") {
-        renderItemMenu();
+        let html = `<div class="center" style="margin-top:80px;">
+            <div class="undertale-box"><p>ITEM</p>`;
+        if (currentPlayer.inventory.length === 0) {
+            html += `<p>(empty)</p>`;
+        } else {
+            currentPlayer.inventory.forEach(i => {
+                html += `<p>${i}</p>`;
+            });
+        }
+        html += `</div></div>`;
+        g.innerHTML = html;
         return;
     }
 
@@ -331,16 +336,12 @@ function render() {
         renderBattle();
         return;
     }
-
-    if (gameState === "gameOver") {
-        renderGameOver();
-        return;
-    }
 }
 
 function startNameEntry() {
     gameState = "nameEntry";
     chosenName = "";
+    pendingName = "";
     nameEntryMessage = "";
     nameCursor = { row: 0, col: 0 };
     const rows = [
@@ -392,15 +393,17 @@ function handleNameEntryKey(key) {
             if (chosenName.length > 0) {
                 pendingName = chosenName;
                 nameConfirmIndex = 0;
+                nameEntryMessage = "";
                 gameState = "nameConfirm";
+                renderNameConfirm();
+                return;
             }
         } else {
             if (chosenName.length < 8) {
                 chosenName += val;
             }
         }
-        if (gameState === "nameEntry") renderNameEntry();
-        else renderNameConfirm();
+        renderNameEntry();
     } else if (key === "x") {
         gameState = "fileSelect";
         currentMenuIndex = 0;
@@ -408,21 +411,51 @@ function handleNameEntryKey(key) {
     }
 }
 
+function handleSpecialName(name) {
+    const n = name.toLowerCase();
+    if (n === "gaster") {
+        nameEntryMessage = "* ........";
+        return "refresh";
+    }
+    if (n === "sans") {
+        nameEntryMessage = "* no.";
+        return "lock";
+    }
+    if (n === "toriel") {
+        nameEntryMessage = "* You really think you should?";
+        return "lock";
+    }
+    if (n === "asgore") {
+        nameEntryMessage = "* Not very creative...";
+        return "lock";
+    }
+    if (n === "frisk") {
+        nameEntryMessage = "* You feel something familiar...";
+        return "ok";
+    }
+    if (n === "chara") {
+        nameEntryMessage = "* The true name.";
+        return "ok";
+    }
+    if (n === "papyrus") {
+        nameEntryMessage = "* I, THE GREAT PAPYRUS, APPROVE!";
+        return "ok";
+    }
+    nameEntryMessage = "";
+    return "ok";
+}
+
 function handleNameConfirmKey(key) {
     if (key === "a" || key === "d") {
-        nameConfirmIndex = 1 - nameConfirmIndex;
+        const special = handleSpecialName(pendingName);
+        if (special !== "lock") {
+            nameConfirmIndex = 1 - nameConfirmIndex;
+        }
         renderNameConfirm();
     } else if (key === "z") {
-        if (nameConfirmIndex === 0) {
-            const special = handleSpecialName(pendingName);
-            if (special === "reject") {
-                gameState = "nameEntry";
-                chosenName = "";
-                renderNameEntry();
-                return;
-            }
-            if (special === "reset") {
-                localStorage.clear();
+        const special = handleSpecialName(pendingName);
+        if (nameConfirmIndex === 0 && special !== "lock") {
+            if (special === "refresh") {
                 location.reload();
                 return;
             }
@@ -441,49 +474,10 @@ function handleNameConfirmKey(key) {
     }
 }
 
-function handleSpecialName(name) {
-    const n = name.toLowerCase();
-    if (n === "gaster") {
-        nameEntryMessage = "* ........";
-        return "reset";
-    }
-    if (n === "sans") {
-        nameEntryMessage = "* no.";
-        return "reject";
-    }
-    if (n === "toriel") {
-        nameEntryMessage = "* You really think you should?";
-        return "reject";
-    }
-    if (n === "asgore") {
-        nameEntryMessage = "* Not very creative...";
-        return "reject";
-    }
-    if (n === "frisk") {
-        const p = defaultPlayer();
-        p.name = name;
-        p.hardMode = true;
-        saves[currentSlot] = p;
-        saveSlot(currentSlot);
-        currentPlayer = p;
-        return "ok";
-    }
-    if (n === "chara") {
-        nameEntryMessage = "* The true name.";
-        return "ok";
-    }
-    if (n === "papyrus") {
-        nameEntryMessage = "* I, THE GREAT PAPYRUS, APPROVE!";
-        return "ok";
-    }
-    return "ok";
-}
-
 function renderNameEntry() {
     const g = document.getElementById("game");
     let html = `<div class="center" style="margin-top:60px;">
         <p>Name the fallen human.</p>
-        ${nameEntryMessage ? `<p>${nameEntryMessage}</p>` : ""}
         <div class="name-grid undertale-box">
     `;
     for (let r = 0; r < nameGrid.length; r++) {
@@ -509,16 +503,21 @@ function renderNameEntry() {
 
 function renderNameConfirm() {
     const g = document.getElementById("game");
+    const special = handleSpecialName(pendingName);
     const yesSel = nameConfirmIndex === 0 ? "selected" : "";
     const noSel = nameConfirmIndex === 1 ? "selected" : "";
+    const yesLocked = special === "lock";
     g.innerHTML = `
         <div class="center" style="margin-top:80px;">
             <div class="undertale-box">
                 <p>"${pendingName}"</p>
                 <p>Is this name correct?</p>
                 <p>
-                    <span class="${yesSel}">YES</span> / <span class="${noSel}">NO</span>
+                    ${yesLocked ? `<span style="color:#555;">YES</span>` : `<span class="${yesSel}">YES</span>`}
+                    /
+                    <span class="${noSel}">NO</span>
                 </p>
+                ${nameEntryMessage ? `<p>${nameEntryMessage}</p>` : ""}
             </div>
         </div>
     `;
@@ -559,13 +558,17 @@ function buyShopItem(section, item) {
     if (section === "weapon") {
         currentPlayer.weapon = item.name;
         currentPlayer.weaponBonus = item.at;
-        currentPlayer.inventory.push({ name: item.name, type: "weapon" });
+        if (!currentPlayer.inventory.includes(item.name)) {
+            currentPlayer.inventory.push(item.name);
+        }
     } else if (section === "armor") {
         currentPlayer.armor = item.name;
         currentPlayer.armorBonus = item.df;
-        currentPlayer.inventory.push({ name: item.name, type: "armor" });
+        if (!currentPlayer.inventory.includes(item.name)) {
+            currentPlayer.inventory.push(item.name);
+        }
     } else if (section === "heal") {
-        currentPlayer.inventory.push({ name: item.name, type: "heal" });
+        currentPlayer.inventory.push(item.name);
     }
     saves[currentSlot] = currentPlayer;
     saveSlot(currentSlot);
@@ -595,99 +598,4 @@ function renderShop() {
 
     html += `</div></div>`;
     g.innerHTML = html;
-}
-
-let itemMenuIndex = 0;
-let itemSubMode = "list";
-
-function handleItemMenuKey(key) {
-    if (itemSubMode === "list") {
-        if (key === "w") {
-            if (currentPlayer.inventory.length === 0) return;
-            itemMenuIndex = (itemMenuIndex + currentPlayer.inventory.length - 1) % currentPlayer.inventory.length;
-            renderItemMenu();
-        } else if (key === "s") {
-            if (currentPlayer.inventory.length === 0) return;
-            itemMenuIndex = (itemMenuIndex + 1) % currentPlayer.inventory.length;
-            renderItemMenu();
-        } else if (key === "z") {
-            if (currentPlayer.inventory.length === 0) return;
-            itemSubMode = "action";
-            renderItemMenu();
-        } else if (key === "x") {
-            gameState = "mainMenu";
-            currentMenuIndex = 2;
-            render();
-        }
-    } else if (itemSubMode === "action") {
-        if (key === "a" || key === "d") {
-            itemActionIndex = 1 - itemActionIndex;
-            renderItemMenu();
-        } else if (key === "w" || key === "s") {
-            itemActionIndex = (itemActionIndex + 1) % 3;
-            renderItemMenu();
-        } else if (key === "z") {
-            performItemAction();
-            if (gameState === "item") renderItemMenu();
-        } else if (key === "x") {
-            itemSubMode = "list";
-            renderItemMenu();
-        }
-    }
-}
-
-let itemActionIndex = 0;
-
-function renderItemMenu() {
-    const g = document.getElementById("game");
-    let html = `<div class="center" style="margin-top:80px;">
-        <div class="undertale-box"><p>ITEM</p>`;
-    if (currentPlayer.inventory.length === 0) {
-        html += `<p>(empty)</p>`;
-    } else {
-        currentPlayer.inventory.forEach((it, i) => {
-            const sel = i === itemMenuIndex && itemSubMode === "list" ? "selected" : "";
-            html += `<p class="${sel}">${it.name}</p>`;
-        });
-    }
-    if (itemSubMode === "action" && currentPlayer.inventory.length > 0) {
-        const actions = ["USE/EQUIP", "INFO", "THROW"];
-        html += `<p>----------------</p><p>`;
-        actions.forEach((a, i) => {
-            const sel = i === itemActionIndex ? "selected" : "";
-            html += `<span class="${sel}" style="margin:0 4px;">${a}</span>`;
-        });
-        html += `</p>`;
-    }
-    html += `</div></div>`;
-    g.innerHTML = html;
-}
-
-function performItemAction() {
-    const item = currentPlayer.inventory[itemMenuIndex];
-    if (!item) {
-        itemSubMode = "list";
-        return;
-    }
-    if (itemActionIndex === 0) {
-        if (item.type === "weapon") {
-            const w = shopData.weapon.find(w => w.name === item.name);
-            if (w) {
-                currentPlayer.weapon = w.name;
-                currentPlayer.weaponBonus = w.at;
-            }
-        } else if (item.type === "armor") {
-            const a = shopData.armor.find(a => a.name === item.name);
-            if (a) {
-                currentPlayer.armor = a.name;
-                currentPlayer.armorBonus = a.df;
-            }
-        }
-    } else if (itemActionIndex === 2) {
-        currentPlayer.inventory.splice(itemMenuIndex, 1);
-        if (itemMenuIndex >= currentPlayer.inventory.length) itemMenuIndex = Math.max(0, currentPlayer.inventory.length - 1);
-    }
-    saves[currentSlot] = currentPlayer;
-    saveSlot(currentSlot);
-    itemSubMode = "list";
 }

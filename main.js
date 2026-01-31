@@ -18,6 +18,10 @@ let nameEntryMessage = "";
 let shopSectionIndex = 0;
 let shopItemIndex = 0;
 
+let itemMenuIndex = 0; // which item in list
+let itemActionIndex = 0; // USE / INFO / DROP / EQUIP
+const ITEM_ACTIONS = ["USE", "INFO", "DROP", "EQUIP"];
+
 function handleKeyDown(e) {
     const key = e.key.toLowerCase();
 
@@ -62,14 +66,6 @@ function handleKeyDown(e) {
         return;
     }
 
-    if (gameState === "gameOver") {
-        if (key === "z") {
-            gameState = "title";
-            render();
-        }
-        return;
-    }
-
     if (gameState === "mainMenu") {
         const max = 5;
         if (key === "w") {
@@ -89,7 +85,8 @@ function handleKeyDown(e) {
                 render();
             } else if (currentMenuIndex === 2) {
                 gameState = "item";
-                currentMenuIndex = 0;
+                itemMenuIndex = 0;
+                itemActionIndex = 0;
                 render();
             } else if (currentMenuIndex === 3) {
                 gameState = "stats";
@@ -131,11 +128,7 @@ function handleKeyDown(e) {
     }
 
     if (gameState === "item") {
-        if (key === "z" || key === "x") {
-            gameState = "mainMenu";
-            currentMenuIndex = 2;
-            render();
-        }
+        handleItemMenuKey(key);
         return;
     }
 
@@ -179,7 +172,7 @@ function render() {
     if (gameState === "title") {
         g.innerHTML = `
             <div class="center" style="margin-top:160px;">
-                <h1 style="font-size:32px;">UNDERTALE: Fallen Timelines</h1>
+                <h1>UNDERTALE: Fallen Timelines</h1>
                 <p class="small-text">Press Z</p>
             </div>
         `;
@@ -188,17 +181,7 @@ function render() {
 
     if (gameState === "fileSelect") {
         document.body.classList.add("file-select-bg-active");
-        let wing = `<div class="wingdings-layer">`;
-        const chars = ["ᚷ","ᚨ","ᛊ","ᛏ","ᛖ","ᚱ","ᚹ","ᛁ","ᚾ","ᛞ"];
-        for (let i = 0; i < 40; i++) {
-            const ch = chars[i % chars.length];
-            const top = Math.random() * 100;
-            const left = Math.random() * 100;
-            const delay = Math.random() * 4;
-            const dur = 4 + Math.random() * 4;
-            wing += `<span class="wingding" style="top:${top}%;left:${left}%;animation-delay:${delay}s;animation-duration:${dur}s;">${ch}</span>`;
-        }
-        wing += `</div>`;
+        const wing = buildWingdingsLayer(5); // way more wingdings
         let html = `${wing}<div class="center" style="margin-top:40px;">
             <div class="undertale-box" style="width:80%;">
                 <p>SELECT A SAVE:</p>
@@ -271,17 +254,7 @@ function render() {
     }
 
     if (gameState === "item") {
-        let html = `<div class="center" style="margin-top:80px;">
-            <div class="undertale-box"><p>ITEM</p>`;
-        if (currentPlayer.inventory.length === 0) {
-            html += `<p>(empty)</p>`;
-        } else {
-            currentPlayer.inventory.forEach(i => {
-                html += `<p>${i.name}</p>`;
-            });
-        }
-        html += `</div></div>`;
-        g.innerHTML = html;
+        renderItemMenu();
         return;
     }
 
@@ -346,6 +319,8 @@ function render() {
     }
 }
 
+/* Name entry */
+
 function startNameEntry() {
     gameState = "nameEntry";
     chosenName = "";
@@ -398,7 +373,7 @@ function handleNameEntryKey(key) {
         if (val === "DEL") {
             chosenName = chosenName.slice(0, -1);
         } else if (val === "END") {
-            if (chosenName.length > 0) {
+            if (chosenName.length > 0 && chosenName.length <= 6) {
                 pendingName = chosenName;
                 nameConfirmIndex = 0;
                 nameEntryMessage = "";
@@ -419,23 +394,119 @@ function handleNameEntryKey(key) {
     }
 }
 
+function handleSpecialName(name) {
+    const n = name.toLowerCase();
+    if (n === "gaster") {
+        nameEntryMessage = "* ........";
+        return "refresh";
+    }
+    if (n === "sans") {
+        nameEntryMessage = "* nope.";
+        return "lock";
+    }
+    if (n === "toriel") {
+        nameEntryMessage = "* I think you should choose your own name, my child.";
+        return "lock";
+    }
+    if (n === "asgore") {
+        nameEntryMessage = "* You cannot.";
+        return "lock";
+    }
+    if (n === "asriel") {
+        nameEntryMessage = "* ...";
+        return "lock";
+    }
+    if (n === "alphys") {
+        nameEntryMessage = "* D-don't do that.";
+        return "lock";
+    }
+    if (n === "undyne") {
+        nameEntryMessage = "* Get your OWN name!";
+        return "lock";
+    }
+    if (n === "flowey") {
+        nameEntryMessage = "* I already CHOSE that name.";
+        return "lock";
+    }
+    if (n === "frisk") {
+        nameEntryMessage = "* Warning: This name will make your life hell. Proceed anyway?";
+        return "ok";
+    }
+    if (n === "chara") {
+        nameEntryMessage = "* The true name.";
+        return "ok";
+    }
+    if (n === "papyrus") {
+        nameEntryMessage = "* I, THE GREAT PAPYRUS, APPROVE!";
+        return "ok";
+    }
+    if (n === "bratty") {
+        nameEntryMessage = "* Like, OK I guess.";
+        return "ok";
+    }
+    if (n === "catty") {
+        nameEntryMessage = "* Bratty! Bratty! That's MY name!!";
+        return "ok";
+    }
+    if (n === "temmie") {
+        nameEntryMessage = "* hOI!";
+        return "ok";
+    }
+    if (n === "gerson") {
+        nameEntryMessage = "* Whaaaat's your name?";
+        return "ok";
+    }
+    if (n === "mettaton" || n === "mettat") {
+        nameEntryMessage = "* OOOOOOOOH!!! ARE YOU PROMOTING MY BRAND?";
+        return "ok";
+    }
+    if (n === "napstablook" || n === "napsta") {
+        nameEntryMessage = "* ...";
+        return "ok";
+    }
+    if (n === "bpants") {
+        nameEntryMessage = "* You're gonna have a BAD time.";
+        return "ok";
+    }
+    if (n === "murder") {
+        nameEntryMessage = "* That's a little on-the-nose, isn't it...?";
+        return "ok";
+    }
+    if (n === "mercy") {
+        nameEntryMessage = "* The true name.";
+        return "ok";
+    }
+    if (n === "shyren") {
+        nameEntryMessage = "* ...";
+        return "ok";
+    }
+    if (n === "aaaaaa") {
+        nameEntryMessage = "* Not very creative...";
+        return "ok";
+    }
+    if (n === "orange") {
+        nameEntryMessage = "* NOT a true name.";
+        return "ok";
+    }
+    nameEntryMessage = "";
+    return "ok";
+}
+
 function handleNameConfirmKey(key) {
     if (key === "a" || key === "d") {
-        const meta = getNameMeta(pendingName);
-        if (meta.behavior !== "lock") {
+        const special = handleSpecialName(pendingName);
+        if (special !== "lock") {
             nameConfirmIndex = 1 - nameConfirmIndex;
         }
-        nameEntryMessage = meta.message || "";
         renderNameConfirm();
     } else if (key === "z") {
-        const meta = getNameMeta(pendingName);
-        nameEntryMessage = meta.message || "";
-        if (nameConfirmIndex === 0 && meta.behavior !== "lock") {
-            if (meta.behavior === "refresh") {
+        const special = handleSpecialName(pendingName);
+        if (nameConfirmIndex === 0 && special !== "lock") {
+            if (special === "refresh") {
                 location.reload();
                 return;
             }
-            createNewSave(currentSlot, pendingName, meta.hardMode);
+            createNewSave(currentSlot, pendingName);
             useSave(currentSlot);
             gameState = "mainMenu";
             currentMenuIndex = 0;
@@ -479,10 +550,10 @@ function renderNameEntry() {
 
 function renderNameConfirm() {
     const g = document.getElementById("game");
-    const meta = getNameMeta(pendingName);
+    const special = handleSpecialName(pendingName);
     const yesSel = nameConfirmIndex === 0 ? "selected" : "";
     const noSel = nameConfirmIndex === 1 ? "selected" : "";
-    const yesLocked = meta.behavior === "lock";
+    const yesLocked = special === "lock";
     g.innerHTML = `
         <div class="center" style="margin-top:80px;">
             <div class="undertale-box">
@@ -493,11 +564,13 @@ function renderNameConfirm() {
                     /
                     <span class="${noSel}">NO</span>
                 </p>
-                ${meta.message ? `<p>${meta.message.replace(/\n/g,"<br>")}</p>` : ""}
+                ${nameEntryMessage ? `<p>${nameEntryMessage}</p>` : ""}
             </div>
         </div>
     `;
 }
+
+/* Shop */
 
 function handleShopKey(key) {
     const sections = ["weapon", "armor", "heal"];
@@ -530,21 +603,30 @@ function handleShopKey(key) {
 
 function buyShopItem(section, item) {
     if (currentPlayer.G < item.cost) return;
+    if (currentPlayer.inventory.length >= INVENTORY_LIMIT && section === "heal") return;
+
     currentPlayer.G -= item.cost;
     if (section === "weapon") {
         currentPlayer.weapon = item.name;
         currentPlayer.weaponBonus = item.at;
-        if (!currentPlayer.inventory.find(i => i.name === item.name)) {
-            currentPlayer.inventory.push({ name: item.name, type: "weapon" });
+        // Put old weapon into inventory if space
+        if (currentPlayer.inventory.length < INVENTORY_LIMIT) {
+            currentPlayer.inventory.push({ name: "STICK", type: "weapon", at: 0, info: "Weapon AT 0. A useless stick." });
         }
     } else if (section === "armor") {
         currentPlayer.armor = item.name;
         currentPlayer.armorBonus = item.df;
-        if (!currentPlayer.inventory.find(i => i.name === item.name)) {
-            currentPlayer.inventory.push({ name: item.name, type: "armor" });
+        // Put old armor into inventory if space
+        if (currentPlayer.inventory.length < INVENTORY_LIMIT) {
+            currentPlayer.inventory.push({ name: "BANDAGE", type: "armor", df: 0, info: "Armor DF 0. It has already been used several times." });
         }
     } else if (section === "heal") {
-        currentPlayer.inventory.push({ name: item.name, type: "heal" });
+        currentPlayer.inventory.push({
+            name: item.name,
+            type: "heal",
+            heal: item.heal,
+            info: item.info
+        });
     }
     saves[currentSlot] = currentPlayer;
     saveSlot(currentSlot);
@@ -573,5 +655,145 @@ function renderShop() {
     });
 
     html += `</div></div>`;
+    g.innerHTML = html;
+}
+
+/* ITEM menu (USE / INFO / DROP / EQUIP) */
+
+function handleItemMenuKey(key) {
+    const inv = currentPlayer.inventory;
+
+    if (key === "x") {
+        gameState = "mainMenu";
+        currentMenuIndex = 2;
+        render();
+        return;
+    }
+
+    if (inv.length === 0) {
+        if (key === "z") {
+            gameState = "mainMenu";
+            currentMenuIndex = 2;
+            render();
+        }
+        return;
+    }
+
+    if (key === "w") {
+        itemMenuIndex = (itemMenuIndex + inv.length - 1) % inv.length;
+        renderItemMenu();
+    } else if (key === "s") {
+        itemMenuIndex = (itemMenuIndex + 1) % inv.length;
+        renderItemMenu();
+    } else if (key === "a") {
+        itemActionIndex = (itemActionIndex + ITEM_ACTIONS.length - 1) % ITEM_ACTIONS.length;
+        renderItemMenu();
+    } else if (key === "d") {
+        itemActionIndex = (itemActionIndex + 1) % ITEM_ACTIONS.length;
+        renderItemMenu();
+    } else if (key === "z") {
+        performItemAction();
+        renderItemMenu();
+    }
+}
+
+function performItemAction() {
+    const inv = currentPlayer.inventory;
+    const item = inv[itemMenuIndex];
+    if (!item) return;
+
+    const action = ITEM_ACTIONS[itemActionIndex];
+
+    if (action === "USE") {
+        if (item.type === "heal") {
+            currentPlayer.HP = Math.min(currentPlayer.maxHP, currentPlayer.HP + (item.heal || 0));
+            inv.splice(itemMenuIndex, 1);
+        } else if (item.type === "weapon") {
+            // Equip weapon
+            const oldWeapon = currentPlayer.weapon;
+            const oldBonus = currentPlayer.weaponBonus;
+            currentPlayer.weapon = item.name;
+            currentPlayer.weaponBonus = item.at || 0;
+            inv.splice(itemMenuIndex, 1);
+            if (oldWeapon && oldWeapon !== item.name && inv.length < INVENTORY_LIMIT) {
+                inv.push({ name: oldWeapon, type: "weapon", at: oldBonus });
+            }
+        } else if (item.type === "armor") {
+            const oldArmor = currentPlayer.armor;
+            const oldBonus = currentPlayer.armorBonus;
+            currentPlayer.armor = item.name;
+            currentPlayer.armorBonus = item.df || 0;
+            inv.splice(itemMenuIndex, 1);
+            if (oldArmor && oldArmor !== item.name && inv.length < INVENTORY_LIMIT) {
+                inv.push({ name: oldArmor, type: "armor", df: oldBonus });
+            }
+        }
+    } else if (action === "INFO") {
+        // Just show info in console for now; battle text box will use this later
+        console.log(item.info || item.name);
+    } else if (action === "DROP") {
+        inv.splice(itemMenuIndex, 1);
+        if (itemMenuIndex >= inv.length) {
+            itemMenuIndex = Math.max(0, inv.length - 1);
+        }
+    } else if (action === "EQUIP") {
+        if (item.type === "weapon") {
+            const oldWeapon = currentPlayer.weapon;
+            const oldBonus = currentPlayer.weaponBonus;
+            currentPlayer.weapon = item.name;
+            currentPlayer.weaponBonus = item.at || 0;
+            inv.splice(itemMenuIndex, 1);
+            if (oldWeapon && oldWeapon !== item.name && inv.length < INVENTORY_LIMIT) {
+                inv.push({ name: oldWeapon, type: "weapon", at: oldBonus });
+            }
+        } else if (item.type === "armor") {
+            const oldArmor = currentPlayer.armor;
+            const oldBonus = currentPlayer.armorBonus;
+            currentPlayer.armor = item.name;
+            currentPlayer.armorBonus = item.df || 0;
+            inv.splice(itemMenuIndex, 1);
+            if (oldArmor && oldArmor !== item.name && inv.length < INVENTORY_LIMIT) {
+                inv.push({ name: oldArmor, type: "armor", df: oldBonus });
+            }
+        }
+    }
+
+    saves[currentSlot] = currentPlayer;
+    saveSlot(currentSlot);
+}
+
+function renderItemMenu() {
+    const g = document.getElementById("game");
+    const inv = currentPlayer.inventory;
+
+    let html = `<div class="center" style="margin-top:80px;">
+        <div class="item-main-box">
+            <p>ITEM</p>
+            <div class="item-list">
+    `;
+
+    if (inv.length === 0) {
+        html += `<p>(empty)</p>`;
+    } else {
+        inv.forEach((it, i) => {
+            const sel = (i === itemMenuIndex) ? "item-entry selected" : "item-entry";
+            html += `<p class="${sel}">${it.name}</p>`;
+        });
+    }
+
+    html += `</div>
+            <div class="item-actions">
+    `;
+
+    ITEM_ACTIONS.forEach((act, i) => {
+        const sel = (i === itemActionIndex) ? "item-action selected" : "item-action";
+        html += `<span class="${sel}">${act}</span>`;
+        if (i < ITEM_ACTIONS.length - 1) html += " ";
+    });
+
+    html += `</div>
+        </div>
+    </div>`;
+
     g.innerHTML = html;
 }

@@ -1,6 +1,7 @@
 // data.js - player data, saves, enemies and shop
 
 const SAVE_SLOTS = 4;
+const INVENTORY_LIMIT = 8;
 
 const defaultPlayer = () => ({
     name: "",
@@ -46,74 +47,94 @@ const monsterList = [
 
 const shopData = {
     weapon: [
-        { name: "STICK", cost: 0, at: 0 },
-        { name: "TOY KNIFE", cost: 20, at: 3 },
-        { name: "TOUGH GLOVE", cost: 40, at: 5 }
+        { name: "STICK", cost: 0, at: 0, desc: "STICK - Weapon\n* A simple stick." },
+        { name: "TOY KNIFE", cost: 20, at: 3, desc: "TOY KNIFE - Weapon\n* Made of plastic. A rarity nowadays." },
+        { name: "TOUGH GLOVE", cost: 40, at: 5, desc: "TOUGH GLOVE - Weapon\n* A worn pink leather glove." }
     ],
     armor: [
-        { name: "BANDAGE", cost: 0, df: 0 },
-        { name: "FADED RIBBON", cost: 25, df: 3 },
-        { name: "MANLY BANDANNA", cost: 45, df: 5 }
+        { name: "BANDAGE", cost: 0, df: 0, desc: "BANDAGE - Armor\n* It has already been used several times." },
+        { name: "FADED RIBBON", cost: 25, df: 3, desc: "FADED RIBBON - Armor\n* If you're cuter, monsters won't hit you as hard." },
+        { name: "MANLY BANDANNA", cost: 45, df: 5, desc: "MANLY BANDANNA - Armor\n* It has seen some wear. It has abs drawn on it." }
     ],
     heal: [
-        { name: "MONSTER CANDY", cost: 5, heal: 10 },
-        { name: "SPIDER DONUT", cost: 15, heal: 12 },
-        { name: "BUTTERSCOTCH PIE", cost: 60, heal: 99 }
+        { name: "MONSTER CANDY", cost: 5, heal: 10, desc: "MONSTER CANDY - Heals 10 HP\n* Has a distinct, non-licorice flavor." },
+        { name: "SPIDER DONUT", cost: 15, heal: 12, desc: "SPIDER DONUT - Heals 12 HP\n* A donut made with Spider Cider in the batter." },
+        { name: "BUTTERSCOTCH PIE", cost: 60, heal: 99, desc: "BUTTERSCOTCH PIE - Heals all HP\n* Butterscotch-cinnamon pie, one slice." }
     ]
 };
+
+// quick lookup for item descriptions
+function getItemMeta(name) {
+    for (const cat of ["weapon", "armor", "heal"]) {
+        const found = shopData[cat].find(i => i.name === name);
+        if (found) return { ...found, type: cat === "heal" ? "heal" : cat };
+    }
+    // fallback
+    return { name, type: "heal", heal: 10, desc: `${name} - ???` };
+}
 
 const enemies = [
     {
         id: "dummy",
         name: "DUMMY",
         maxHP: 30,
-        AT: 4,
-        DF: 0,
-        gold: 5,
-        exp: 5,
+        AT: 1,
+        DF: 1,
+        gold: 2,
+        exp: 0,
+        spareBonusGold: 3,
+        noExpOnSpare: true,
         spareTalks: 2,
         soulType: "red",
         pattern: "simpleHorizontal",
-        patterns: ["simpleHorizontal"]
+        patterns: ["simpleHorizontal"],
+        introText: "* DUMMY blocks the way!",
+        checkText: "* DUMMY - 1 ATK 1 DEF\n* A cotton heart and a button eye."
     },
     {
         id: "mad_dummy",
         name: "MAD DUMMY",
-        maxHP: 40,
-        AT: 6,
-        DF: 1,
+        maxHP: 60,
+        AT: 5,
+        DF: 2,
         gold: 10,
         exp: 8,
         spareTalks: 3,
         soulType: "red",
         pattern: "multiHorizontal",
-        patterns: ["multiHorizontal", "dummyAim", "dummyAimBurst"]
+        patterns: ["multiHorizontal", "dummyAim", "dummyAimBurst"],
+        introText: "* Mad Dummy blocks the way!",
+        checkText: "* MAD DUMMY - ATK 30 DEF YES\n* The dummy looks mad."
     },
     {
         id: "toriel",
         name: "TORIEL",
-        maxHP: 60,
-        AT: 7,
-        DF: 2,
-        gold: 15,
-        exp: 12,
+        maxHP: 440,
+        AT: 10,
+        DF: 4,
+        gold: 30,
+        exp: 40,
         spareTalks: 3,
         soulType: "red",
         pattern: "fallingFire",
-        patterns: ["fallingFire", "torielSideFire", "torielWaveFire"]
+        patterns: ["fallingFire", "torielSideFire", "torielWaveFire"],
+        introText: "* Toriel is acting aloof.",
+        checkText: "* TORIEL - ATK 80 DEF 80\n* Knows best for you."
     },
     {
         id: "papyrus",
         name: "PAPYRUS",
-        maxHP: 70,
+        maxHP: 680,
         AT: 8,
-        DF: 3,
-        gold: 20,
-        exp: 15,
+        DF: 2,
+        gold: 40,
+        exp: 80,
         spareTalks: 4,
         soulType: "blue",
         pattern: "bonesHorizontal",
-        patterns: ["bonesHorizontal", "boneRain", "sideBones"]
+        patterns: ["bonesHorizontal", "boneRain", "sideBones"],
+        introText: "* Papyrus blocks the way!",
+        checkText: "* PAPYRUS - ATK 8 DEF 2\n* He likes to say: 'Nyeh heh heh!'"
     },
     {
         id: "p_sans",
@@ -126,7 +147,9 @@ const enemies = [
         spareTalks: 5,
         soulType: "blue",
         pattern: "fastBones",
-        patterns: ["fastBones", "sansKarma", "sansSideSpam"]
+        patterns: ["fastBones", "sansKarma", "sansSideSpam"],
+        introText: "* Sans is judging you.",
+        checkText: "* SANS - ATK 1 DEF 1\n* The easiest enemy. Can only deal 1 damage."
     },
     {
         id: "us_sans",
@@ -139,7 +162,9 @@ const enemies = [
         spareTalks: 5,
         soulType: "blue",
         pattern: "mixedBones",
-        patterns: ["mixedBones", "boneRain", "sansSideSpam"]
+        patterns: ["mixedBones", "boneRain", "sansSideSpam"],
+        introText: "* Blueberry appears!",
+        checkText: "* SANS? - ATK 11 DEF 5\n* He looks... different."
     }
 ];
 
@@ -158,16 +183,11 @@ function loadSaves() {
             } else {
                 merged.inventory = merged.inventory.map(it => {
                     if (typeof it === "string") {
-                        const heal = shopData.heal.find(h => h.name === it);
-                        if (heal) return { name: it, type: "heal" };
-                        const w = shopData.weapon.find(w => w.name === it);
-                        if (w) return { name: it, type: "weapon" };
-                        const a = shopData.armor.find(a => a.name === it);
-                        if (a) return { name: it, type: "armor" };
-                        return { name: it, type: "heal" };
+                        const meta = getItemMeta(it);
+                        return { name: meta.name, type: meta.type };
                     }
                     return it;
-                });
+                }).slice(0, INVENTORY_LIMIT);
             }
             if (typeof merged.weaponBonus !== "number") merged.weaponBonus = 0;
             if (typeof merged.armorBonus !== "number") merged.armorBonus = 0;

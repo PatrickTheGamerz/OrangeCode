@@ -1,7 +1,6 @@
 // data.js - player data, saves, enemies and shop
 
 const SAVE_SLOTS = 4;
-const ITEM_LIMIT = 8;
 
 const defaultPlayer = () => ({
     name: "",
@@ -19,9 +18,7 @@ const defaultPlayer = () => ({
     armor: "BANDAGE",
     kills: 0,
     hardMode: false,
-    inventory: [
-        { name: "MONSTER CANDY", type: "heal", heal: 10, info: "Heals 10 HP." }
-    ]
+    inventory: [{ name: "MONSTER CANDY", type: "heal" }]
 });
 
 function totalAT(p) {
@@ -49,158 +46,100 @@ const monsterList = [
 
 const shopData = {
     weapon: [
-        { name: "STICK", cost: 0, at: 0, info: "Its bark is worse than its bite." },
-        { name: "TOY KNIFE", cost: 20, at: 3, info: "Made of plastic. A rarity nowadays." },
-        { name: "TOUGH GLOVE", cost: 40, at: 5, info: "A worn pink leather glove." }
+        { name: "STICK", cost: 0, at: 0 },
+        { name: "TOY KNIFE", cost: 20, at: 3 },
+        { name: "TOUGH GLOVE", cost: 40, at: 5 }
     ],
     armor: [
-        { name: "BANDAGE", cost: 0, df: 0, info: "It has already been used several times." },
-        { name: "FADED RIBBON", cost: 25, df: 3, info: "If you're cuter, monsters won't hit you as hard." },
-        { name: "MANLY BANDANNA", cost: 45, df: 5, info: "It has seen some wear. It has abs drawn on it." }
+        { name: "BANDAGE", cost: 0, df: 0 },
+        { name: "FADED RIBBON", cost: 25, df: 3 },
+        { name: "MANLY BANDANNA", cost: 45, df: 5 }
     ],
     heal: [
-        { name: "MONSTER CANDY", cost: 5, heal: 10, info: "Heals 10 HP. Has a distinct, non-licorice flavor." },
-        { name: "SPIDER DONUT", cost: 15, heal: 12, info: "Heals 12 HP. Made with Spider Cider in the batter." },
-        { name: "BUTTERSCOTCH PIE", cost: 60, heal: 99, info: "Heals all HP. Butterscotch-cinnamon pie, one slice." }
+        { name: "MONSTER CANDY", cost: 5, heal: 10 },
+        { name: "SPIDER DONUT", cost: 15, heal: 12 },
+        { name: "BUTTERSCOTCH PIE", cost: 60, heal: 99 }
     ]
 };
-
-/*
-   Enemies: adjusted AT/DF, HP, and rewards.
-   killExp/killGold: for killing
-   spareGold: for sparing (no EXP)
-*/
 
 const enemies = [
     {
         id: "dummy",
         name: "DUMMY",
         maxHP: 30,
-        HP: 30,
-        AT: 1,
-        DF: 1,
-        killExp: 3,
-        killGold: 2,
-        spareGold: 4,
+        AT: 4,
+        DF: 0,
+        gold: 5,
+        exp: 5,
         spareTalks: 2,
         soulType: "red",
-        pattern: "dummySimple",
-        patterns: ["dummySimple"],
-        introText: "* DUMMY blocks the way!",
-        checkText: "* DUMMY - 1 ATK 1 DEF\n* A cotton heart and a button eye.",
-        dialogueLines: [
-            "* ...",
-            "* The dummy just stands there."
-        ]
+        pattern: "simpleHorizontal",
+        patterns: ["simpleHorizontal"]
     },
     {
         id: "mad_dummy",
         name: "MAD DUMMY",
         maxHP: 40,
-        HP: 40,
-        AT: 5,
-        DF: 2,
-        killExp: 10,
-        killGold: 8,
-        spareGold: 12,
+        AT: 6,
+        DF: 1,
+        gold: 10,
+        exp: 8,
         spareTalks: 3,
         soulType: "red",
-        pattern: "madDummySimple",
-        patterns: ["madDummySimple", "madDummyWalls", "madDummyChase"],
-        introText: "* Mad Dummy blocks the way!",
-        checkText: "* MAD DUMMY - ATK 30 DEF YES\n* The dummy looks mad.",
-        dialogueLines: [
-            "* Mad Dummy glares into the distance.",
-            "* Mad Dummy is hopping mad."
-        ]
+        pattern: "multiHorizontal",
+        patterns: ["multiHorizontal", "dummyAim", "dummyAimBurst"]
     },
     {
         id: "toriel",
         name: "TORIEL",
-        maxHP: 440,
-        HP: 440,
-        AT: 10,
-        DF: 4,
-        killExp: 80,
-        killGold: 40,
-        spareGold: 60,
+        maxHP: 60,
+        AT: 7,
+        DF: 2,
+        gold: 15,
+        exp: 12,
         spareTalks: 3,
         soulType: "red",
-        pattern: "torielFireRain",
-        patterns: ["torielFireRain", "torielFireWalls", "torielHandShot"],
-        introText: "* Toriel is acting aloof.",
-        checkText: "* TORIEL - ATK 80 DEF 80\n* Knows best for you.",
-        dialogueLines: [
-            "* Toriel looks through you.",
-            "* Toriel takes a deep breath.",
-            "* Toriel prepares a magical attack."
-        ]
+        pattern: "fallingFire",
+        patterns: ["fallingFire", "torielSideFire", "torielWaveFire"]
     },
     {
         id: "papyrus",
         name: "PAPYRUS",
-        maxHP: 680,
-        HP: 680,
+        maxHP: 70,
         AT: 8,
-        DF: 2,
-        killExp: 120,
-        killGold: 50,
-        spareGold: 80,
+        DF: 3,
+        gold: 20,
+        exp: 15,
         spareTalks: 4,
         soulType: "blue",
-        pattern: "papyrusPhase1",
-        patterns: ["papyrusPhase1", "papyrusPhase2", "papyrusBlueAttack", "papyrusSpecial"],
-        introText: "* Papyrus blocks the way!",
-        checkText: "* PAPYRUS - ATK 8 DEF 2\n* He likes to say: 'Nyeh heh heh!'",
-        dialogueLines: [
-            "* NYEH HEH HEH!",
-            "* Papyrus is thinking about what to wear.",
-            "* Papyrus is rattling his bones."
-        ]
+        pattern: "bonesHorizontal",
+        patterns: ["bonesHorizontal", "boneRain", "sideBones"]
     },
     {
         id: "p_sans",
         name: "PACIFIST SANS",
         maxHP: 80,
-        HP: 80,
         AT: 10,
         DF: 4,
-        killExp: 0,
-        killGold: 0,
-        spareGold: 0,
+        gold: 30,
+        exp: 20,
         spareTalks: 5,
         soulType: "blue",
-        pattern: "sansFastBones",
-        patterns: ["sansFastBones", "sansKarma", "sansSideSpam"],
-        introText: "* Sans is taking it easy.",
-        checkText: "* SANS - ATK ? DEF ?\n* The easiest enemy. Can only deal 1 damage.",
-        dialogueLines: [
-            "* heya.",
-            "* sans is smiling.",
-            "* sans is sleeping."
-        ]
+        pattern: "fastBones",
+        patterns: ["fastBones", "sansKarma", "sansSideSpam"]
     },
     {
         id: "us_sans",
         name: "UNDERSWAP SANS",
         maxHP: 90,
-        HP: 90,
         AT: 11,
         DF: 5,
-        killExp: 0,
-        killGold: 0,
-        spareGold: 0,
+        gold: 35,
+        exp: 25,
         spareTalks: 5,
         soulType: "blue",
-        pattern: "usSansMixedBones",
-        patterns: ["usSansMixedBones", "boneRain", "sansSideSpam"],
-        introText: "* Swap Sans is ready!",
-        checkText: "* SANS? - ATK ?? DEF ??\n* He looks different...",
-        dialogueLines: [
-            "* ...",
-            "* He hums a tune.",
-            "* He seems excited."
-        ]
+        pattern: "mixedBones",
+        patterns: ["mixedBones", "boneRain", "sansSideSpam"]
     }
 ];
 
@@ -214,25 +153,22 @@ function loadSaves() {
             const parsed = JSON.parse(raw);
             const base = defaultPlayer();
             const merged = Object.assign(base, parsed);
-
             if (!Array.isArray(merged.inventory)) {
                 merged.inventory = base.inventory.slice();
             } else {
                 merged.inventory = merged.inventory.map(it => {
                     if (typeof it === "string") {
-                        // convert legacy string items to objects
                         const heal = shopData.heal.find(h => h.name === it);
-                        if (heal) return { name: it, type: "heal", heal: heal.heal, info: heal.info };
+                        if (heal) return { name: it, type: "heal" };
                         const w = shopData.weapon.find(w => w.name === it);
-                        if (w) return { name: it, type: "weapon", at: w.at, info: w.info };
+                        if (w) return { name: it, type: "weapon" };
                         const a = shopData.armor.find(a => a.name === it);
-                        if (a) return { name: it, type: "armor", df: a.df, info: a.info };
-                        return { name: it, type: "heal", heal: 10, info: "Heals 10 HP." };
+                        if (a) return { name: it, type: "armor" };
+                        return { name: it, type: "heal" };
                     }
                     return it;
                 });
             }
-
             if (typeof merged.weaponBonus !== "number") merged.weaponBonus = 0;
             if (typeof merged.armorBonus !== "number") merged.armorBonus = 0;
             if (typeof merged.baseAT !== "number") merged.baseAT = 5;
@@ -252,9 +188,10 @@ function saveSlot(index) {
     localStorage.setItem("fallen_save_" + index, JSON.stringify(saves[index]));
 }
 
-function createNewSave(index, name) {
+function createNewSave(index, name, hardModeFlag) {
     const p = defaultPlayer();
     p.name = name;
+    p.hardMode = !!hardModeFlag;
     saves[index] = p;
     saveSlot(index);
 }

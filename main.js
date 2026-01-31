@@ -189,13 +189,13 @@ function render() {
     if (gameState === "fileSelect") {
         document.body.classList.add("file-select-bg-active");
         let wing = `<div class="wingdings-layer">`;
-        const chars = ["ᚷ","ᚨ","ᛊ","ᛏ","ᛖ","ᚱ","ᚹ","ᛁ","ᚾ","ᛞ"];
-        for (let i = 0; i < 40; i++) {
-            const ch = chars[i % chars.length];
+        const chars = ["ᚷ","ᚨ","ᛊ","ᛏ","ᛖ","ᚱ","ᚹ","ᛁ","ᚾ","ᛞ","✶","✹","✺","✦","✧"];
+        for (let i = 0; i < 200; i++) {
+            const ch = chars[Math.floor(Math.random() * chars.length)];
             const top = Math.random() * 100;
             const left = Math.random() * 100;
-            const delay = Math.random() * 4;
-            const dur = 4 + Math.random() * 4;
+            const delay = Math.random() * 2;
+            const dur = 2 + Math.random() * 3;
             wing += `<span class="wingding" style="top:${top}%;left:${left}%;animation-delay:${delay}s;animation-duration:${dur}s;">${ch}</span>`;
         }
         wing += `</div>`;
@@ -530,17 +530,18 @@ function handleShopKey(key) {
 
 function buyShopItem(section, item) {
     if (currentPlayer.G < item.cost) return;
+    if (section === "heal" && currentPlayer.inventory.length >= INVENTORY_LIMIT) return;
+    if ((section === "weapon" || section === "armor") && currentPlayer.inventory.length >= INVENTORY_LIMIT) {
+        // still allow equip via stats later, but not stack more
+    }
     currentPlayer.G -= item.cost;
     if (section === "weapon") {
-        currentPlayer.weapon = item.name;
-        currentPlayer.weaponBonus = item.at;
-        if (!currentPlayer.inventory.find(i => i.name === item.name)) {
+        // goes to inventory, must equip
+        if (!currentPlayer.inventory.find(i => i.name === item.name) && currentPlayer.inventory.length < INVENTORY_LIMIT) {
             currentPlayer.inventory.push({ name: item.name, type: "weapon" });
         }
     } else if (section === "armor") {
-        currentPlayer.armor = item.name;
-        currentPlayer.armorBonus = item.df;
-        if (!currentPlayer.inventory.find(i => i.name === item.name)) {
+        if (!currentPlayer.inventory.find(i => i.name === item.name) && currentPlayer.inventory.length < INVENTORY_LIMIT) {
             currentPlayer.inventory.push({ name: item.name, type: "armor" });
         }
     } else if (section === "heal") {

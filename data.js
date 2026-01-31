@@ -1,7 +1,7 @@
 // data.js - player data, saves, enemies and shop
 
 const SAVE_SLOTS = 4;
-const INVENTORY_LIMIT = 8;
+const ITEM_LIMIT = 8;
 
 const defaultPlayer = () => ({
     name: "",
@@ -20,7 +20,7 @@ const defaultPlayer = () => ({
     kills: 0,
     hardMode: false,
     inventory: [
-        { name: "MONSTER CANDY", type: "heal", heal: 10 }
+        { name: "MONSTER CANDY", type: "heal", heal: 10, info: "Heals 10 HP." }
     ]
 });
 
@@ -49,124 +49,158 @@ const monsterList = [
 
 const shopData = {
     weapon: [
-        { name: "STICK", cost: 0, at: 0, info: "Weapon AT 0. A useless stick." },
-        { name: "TOY KNIFE", cost: 20, at: 3, info: "Weapon AT 3. Made of plastic." },
-        { name: "TOUGH GLOVE", cost: 40, at: 5, info: "Weapon AT 5. For strong punches." }
+        { name: "STICK", cost: 0, at: 0, info: "Its bark is worse than its bite." },
+        { name: "TOY KNIFE", cost: 20, at: 3, info: "Made of plastic. A rarity nowadays." },
+        { name: "TOUGH GLOVE", cost: 40, at: 5, info: "A worn pink leather glove." }
     ],
     armor: [
-        { name: "BANDAGE", cost: 0, df: 0, info: "Armor DF 0. It has already been used several times." },
-        { name: "FADED RIBBON", cost: 25, df: 3, info: "Armor DF 3. If you're cuter, monsters won't hit you as hard." },
-        { name: "MANLY BANDANNA", cost: 45, df: 5, info: "Armor DF 5. It has seen some wear." }
+        { name: "BANDAGE", cost: 0, df: 0, info: "It has already been used several times." },
+        { name: "FADED RIBBON", cost: 25, df: 3, info: "If you're cuter, monsters won't hit you as hard." },
+        { name: "MANLY BANDANNA", cost: 45, df: 5, info: "It has seen some wear. It has abs drawn on it." }
     ],
     heal: [
         { name: "MONSTER CANDY", cost: 5, heal: 10, info: "Heals 10 HP. Has a distinct, non-licorice flavor." },
-        { name: "SPIDER DONUT", cost: 15, heal: 12, info: "Heals 12 HP. Made with spiders in spider webs." },
+        { name: "SPIDER DONUT", cost: 15, heal: 12, info: "Heals 12 HP. Made with Spider Cider in the batter." },
         { name: "BUTTERSCOTCH PIE", cost: 60, heal: 99, info: "Heals all HP. Butterscotch-cinnamon pie, one slice." }
     ]
 };
+
+/*
+   Enemies: adjusted AT/DF, HP, and rewards.
+   killExp/killGold: for killing
+   spareGold: for sparing (no EXP)
+*/
 
 const enemies = [
     {
         id: "dummy",
         name: "DUMMY",
         maxHP: 30,
+        HP: 30,
         AT: 1,
         DF: 1,
-        goldKill: 3,
-        goldSpare: 5,
-        expKill: 1,
-        expSpare: 0,
+        killExp: 3,
+        killGold: 2,
+        spareGold: 4,
         spareTalks: 2,
         soulType: "red",
         pattern: "dummySimple",
         patterns: ["dummySimple"],
+        introText: "* DUMMY blocks the way!",
         checkText: "* DUMMY - 1 ATK 1 DEF\n* A cotton heart and a button eye.",
-        introText: "* DUMMY blocks the way!"
+        dialogueLines: [
+            "* ...",
+            "* The dummy just stands there."
+        ]
     },
     {
         id: "mad_dummy",
         name: "MAD DUMMY",
-        maxHP: 60,
+        maxHP: 40,
+        HP: 40,
         AT: 5,
         DF: 2,
-        goldKill: 20,
-        goldSpare: 25,
-        expKill: 10,
-        expSpare: 0,
+        killExp: 10,
+        killGold: 8,
+        spareGold: 12,
         spareTalks: 3,
         soulType: "red",
-        pattern: "madDummyPhase1",
-        patterns: ["madDummyPhase1", "madDummyWalls", "madDummyChase"],
+        pattern: "madDummySimple",
+        patterns: ["madDummySimple", "madDummyWalls", "madDummyChase"],
+        introText: "* Mad Dummy blocks the way!",
         checkText: "* MAD DUMMY - ATK 30 DEF YES\n* The dummy looks mad.",
-        introText: "* Mad Dummy blocks the way!"
+        dialogueLines: [
+            "* Mad Dummy glares into the distance.",
+            "* Mad Dummy is hopping mad."
+        ]
     },
     {
         id: "toriel",
         name: "TORIEL",
         maxHP: 440,
+        HP: 440,
         AT: 10,
         DF: 4,
-        goldKill: 40,
-        goldSpare: 50,
-        expKill: 30,
-        expSpare: 0,
+        killExp: 80,
+        killGold: 40,
+        spareGold: 60,
         spareTalks: 3,
         soulType: "red",
-        pattern: "torielFire",
-        patterns: ["torielFire", "torielWalls", "torielHand"],
+        pattern: "torielFireRain",
+        patterns: ["torielFireRain", "torielFireWalls", "torielHandShot"],
+        introText: "* Toriel is acting aloof.",
         checkText: "* TORIEL - ATK 80 DEF 80\n* Knows best for you.",
-        introText: "* Toriel is acting aloof."
+        dialogueLines: [
+            "* Toriel looks through you.",
+            "* Toriel takes a deep breath.",
+            "* Toriel prepares a magical attack."
+        ]
     },
     {
         id: "papyrus",
         name: "PAPYRUS",
         maxHP: 680,
+        HP: 680,
         AT: 8,
         DF: 2,
-        goldKill: 60,
-        goldSpare: 70,
-        expKill: 40,
-        expSpare: 0,
+        killExp: 120,
+        killGold: 50,
+        spareGold: 80,
         spareTalks: 4,
         soulType: "blue",
         pattern: "papyrusPhase1",
         patterns: ["papyrusPhase1", "papyrusPhase2", "papyrusBlueAttack", "papyrusSpecial"],
+        introText: "* Papyrus blocks the way!",
         checkText: "* PAPYRUS - ATK 8 DEF 2\n* He likes to say: 'Nyeh heh heh!'",
-        introText: "* Papyrus blocks the way!"
+        dialogueLines: [
+            "* NYEH HEH HEH!",
+            "* Papyrus is thinking about what to wear.",
+            "* Papyrus is rattling his bones."
+        ]
     },
     {
         id: "p_sans",
         name: "PACIFIST SANS",
         maxHP: 80,
+        HP: 80,
         AT: 10,
         DF: 4,
-        goldKill: 30,
-        goldSpare: 35,
-        expKill: 20,
-        expSpare: 0,
+        killExp: 0,
+        killGold: 0,
+        spareGold: 0,
         spareTalks: 5,
         soulType: "blue",
-        pattern: "fastBones",
-        patterns: ["fastBones", "sansKarma", "sansSideSpam"],
-        checkText: "* PACIFIST SANS - ATK ? DEF ?\n* He seems lazy, but serious.",
-        introText: "* Sans stands there, smiling."
+        pattern: "sansFastBones",
+        patterns: ["sansFastBones", "sansKarma", "sansSideSpam"],
+        introText: "* Sans is taking it easy.",
+        checkText: "* SANS - ATK ? DEF ?\n* The easiest enemy. Can only deal 1 damage.",
+        dialogueLines: [
+            "* heya.",
+            "* sans is smiling.",
+            "* sans is sleeping."
+        ]
     },
     {
         id: "us_sans",
         name: "UNDERSWAP SANS",
         maxHP: 90,
+        HP: 90,
         AT: 11,
         DF: 5,
-        goldKill: 35,
-        goldSpare: 40,
-        expKill: 25,
-        expSpare: 0,
+        killExp: 0,
+        killGold: 0,
+        spareGold: 0,
         spareTalks: 5,
         soulType: "blue",
-        pattern: "mixedBones",
-        patterns: ["mixedBones", "boneRain", "sansSideSpam"],
-        checkText: "* US!SANS - ATK 11 DEF 5\n* He looks excited to fight.",
-        introText: "* Sans bounces in place!"
+        pattern: "usSansMixedBones",
+        patterns: ["usSansMixedBones", "boneRain", "sansSideSpam"],
+        introText: "* Swap Sans is ready!",
+        checkText: "* SANS? - ATK ?? DEF ??\n* He looks different...",
+        dialogueLines: [
+            "* ...",
+            "* He hums a tune.",
+            "* He seems excited."
+        ]
     }
 ];
 
@@ -186,14 +220,14 @@ function loadSaves() {
             } else {
                 merged.inventory = merged.inventory.map(it => {
                     if (typeof it === "string") {
-                        // Try to resolve from shop data
+                        // convert legacy string items to objects
                         const heal = shopData.heal.find(h => h.name === it);
                         if (heal) return { name: it, type: "heal", heal: heal.heal, info: heal.info };
                         const w = shopData.weapon.find(w => w.name === it);
                         if (w) return { name: it, type: "weapon", at: w.at, info: w.info };
                         const a = shopData.armor.find(a => a.name === it);
                         if (a) return { name: it, type: "armor", df: a.df, info: a.info };
-                        return { name: it, type: "heal", heal: 10 };
+                        return { name: it, type: "heal", heal: 10, info: "Heals 10 HP." };
                     }
                     return it;
                 });
@@ -206,7 +240,6 @@ function loadSaves() {
             if (typeof merged.maxHP !== "number") merged.maxHP = 20;
             if (typeof merged.HP !== "number") merged.HP = merged.maxHP;
             if (typeof merged.hardMode !== "boolean") merged.hardMode = false;
-
             saves.push(merged);
         } else {
             saves.push(null);

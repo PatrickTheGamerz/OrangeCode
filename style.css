@@ -1,4 +1,4 @@
-/* style.css - core layout, UI, pixel-ish look */
+/* style.css - core visual style and layout */
 
 body {
     margin: 0;
@@ -10,6 +10,7 @@ body {
     letter-spacing: 1px;
 }
 
+/* Static is now handled in effects.css, but keep base black bg */
 #game {
     width: 800px;
     height: 600px;
@@ -19,6 +20,7 @@ body {
     box-sizing: border-box;
     position: relative;
     background: black;
+    overflow: hidden;
 }
 
 .center {
@@ -47,10 +49,6 @@ body {
     color: #ffff00;
 }
 
-.menu-large {
-    font-size: 22px;
-}
-
 .button-box {
     border: 2px solid white;
     padding: 6px 18px;
@@ -64,13 +62,14 @@ body {
     color: #ffff00;
 }
 
+/* Battle layout */
+
 .bottom-menu {
     position: absolute;
     bottom: 12px;
     left: 0;
     width: 100%;
     text-align: center;
-    font-size: 14px;
 }
 
 .battle-box {
@@ -85,8 +84,13 @@ body {
 .battle-text {
     padding: 8px;
     height: 80px;
-    font-size: 14px;
 }
+
+.battle-info {
+    margin-top: 8px;
+}
+
+/* HP bar with yellow (current) and red (lost) */
 
 .hp-bar {
     display: inline-block;
@@ -98,10 +102,23 @@ body {
     background: black;
 }
 
-.hp-fill {
+.hp-fill-yellow {
+    position: absolute;
+    left: 0;
+    top: 0;
     height: 100%;
-    width: 100%;
+    background: #ffff00;
 }
+
+.hp-fill-red {
+    position: absolute;
+    right: 0;
+    top: 0;
+    height: 100%;
+    background: #ff0000;
+}
+
+/* File select */
 
 .file-container {
     width: 70%;
@@ -122,8 +139,9 @@ body {
 .file-row {
     display: flex;
     justify-content: space-between;
-    font-size: 14px;
 }
+
+/* Name entry */
 
 .name-grid {
     display: inline-block;
@@ -136,10 +154,9 @@ body {
 }
 
 .name-cell {
-    width: 32px;
+    width: 28px;
     text-align: center;
-    padding: 4px;
-    font-size: 16px;
+    padding: 2px;
 }
 
 .name-cell.selected {
@@ -148,20 +165,22 @@ body {
 
 .name-display {
     margin-top: 12px;
-    font-size: 20px;
 }
+
+/* Stats */
 
 .stats-box {
     width: 80%;
     margin: 0 auto;
     text-align: left;
-    font-size: 14px;
 }
 
 .flex-between {
     display: flex;
     justify-content: space-between;
 }
+
+/* Fight bar */
 
 .fight-bar {
     width: 320px;
@@ -189,6 +208,8 @@ body {
     background: #ffffff;
 }
 
+/* Soul box */
+
 .soul-box {
     border: 4px solid white;
     width: 260px;
@@ -199,12 +220,13 @@ body {
     background: black;
 }
 
+/* More pixel-y heart */
+
 .soul {
     width: 12px;
-    height: 12px;
+    height: 10px;
     position: absolute;
-    transform: rotate(45deg);
-    background: #ff0000;
+    background: transparent;
 }
 
 .soul::before,
@@ -212,20 +234,16 @@ body {
     content: "";
     position: absolute;
     width: 12px;
-    height: 12px;
-    border-radius: 50%;
+    height: 10px;
     background: #ff0000;
-    top: -6px;
-    left: 0;
-}
-
-.soul::after {
-    left: -6px;
-    top: 0;
-}
-
-.soul.blue {
-    background: #00a0ff;
+    clip-path: polygon(
+        50% 0%,
+        100% 30%,
+        100% 70%,
+        50% 100%,
+        0% 70%,
+        0% 30%
+    );
 }
 
 .soul.blue::before,
@@ -233,12 +251,16 @@ body {
     background: #00a0ff;
 }
 
+/* Bullets (generic) */
+
 .bullet {
     width: 8px;
     height: 8px;
     background: #ffffff;
     position: absolute;
 }
+
+/* Enemy area */
 
 .enemy-area {
     width: 100%;
@@ -257,12 +279,33 @@ body {
     background: black;
 }
 
-.enemy-dummy { border-color: #aaaaaa; }
-.enemy-mad-dummy { border-color: #ff0000; }
-.enemy-toriel { border-color: #ffffff; }
-.enemy-papyrus { border-color: #00ffff; }
-.enemy-p-sans { border-color: #ffff00; }
-.enemy-us-sans { border-color: #ff00ff; }
+/* Placeholder sprite borders */
+
+.enemy-dummy {
+    border-color: #aaaaaa;
+}
+
+.enemy-mad-dummy {
+    border-color: #ff0000;
+}
+
+.enemy-toriel {
+    border-color: #ffffff;
+}
+
+.enemy-papyrus {
+    border-color: #00ffff;
+}
+
+.enemy-p-sans {
+    border-color: #ffff00;
+}
+
+.enemy-us-sans {
+    border-color: #ff00ff;
+}
+
+/* Sub-box (ACT, ITEM, MERCY inner menus) */
 
 .sub-box {
     border: 4px solid white;
@@ -271,7 +314,6 @@ body {
     padding: 8px;
     text-align: left;
     background: #000;
-    font-size: 14px;
 }
 
 .sub-option {
@@ -283,16 +325,19 @@ body {
     margin-right: 6px;
 }
 
+/* Monster list */
+
 .monster-list {
     width: 60%;
     margin: 0 auto;
     text-align: left;
-    font-size: 16px;
 }
 
 .small-text {
     font-size: 12px;
 }
+
+/* Game over */
 
 .game-over-screen {
     margin-top: 150px;
@@ -308,25 +353,51 @@ body {
     white-space: pre-line;
 }
 
-.wingdings-layer {
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    overflow: hidden;
-    z-index: -1;
+/* ITEM menu big box (USE / INFO / DROP / EQUIP) */
+
+.item-main-box {
+    border: 4px solid white;
+    padding: 12px;
+    display: inline-block;
+    background: black;
 }
 
-.wingding {
+.item-list {
+    text-align: left;
+    margin-bottom: 8px;
+}
+
+.item-entry {
+    margin: 2px 0;
+}
+
+.item-entry.selected {
+    color: #ffff00;
+}
+
+.item-actions {
+    margin-top: 8px;
+}
+
+.item-action {
+    display: inline-block;
+    margin: 0 8px;
+}
+
+.item-action.selected {
+    color: #ffff00;
+}
+
+/* Monster dialogue box (right side of sprite) */
+
+.monster-dialogue-box {
     position: absolute;
-    font-size: 80px;
-    color: rgba(255,255,255,0.12);
-    animation-name: wingdingsFloat;
-    animation-iteration-count: infinite;
-    animation-direction: alternate;
-}
-
-@keyframes wingdingsFloat {
-    0% { transform: translate(-40px, 0); opacity: 0.1; }
-    50% { transform: translate(20px, -40px); opacity: 0.4; }
-    100% { transform: translate(60px, 40px); opacity: 0.15; }
+    right: -10px;
+    top: 10px;
+    border: 4px solid white;
+    padding: 8px;
+    background: black;
+    max-width: 220px;
+    text-align: left;
+    font-size: 12px;
 }

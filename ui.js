@@ -1,63 +1,59 @@
-// ui.js - shared UI helpers, timed text, and dialogue
+// ui.js - typewriter text + helpers
 
-let textTimer = null;
-let textFull = "";
-let textShown = "";
-let textIndex = 0;
-let textDoneCallback = null;
+let typeTextTimer = null;
+let typeTextFull = "";
+let typeTextShown = "";
+let typeTextIndex = 0;
+let typeTextDone = true;
+let typeTextOnDone = null;
 
-const TEXT_SPEED = 50;   // ms per normal char
-const TEXT_PUNCT_SPEED = 200; // ms for .,!? and commas
+function startTypeText(text, onDone) {
+    if (typeTextTimer) clearInterval(typeTextTimer);
+    typeTextFull = text;
+    typeTextShown = "";
+    typeTextIndex = 0;
+    typeTextDone = false;
+    typeTextOnDone = onDone || null;
 
-function isPunctuation(ch) {
-    return ch === "." || ch === "," || ch === "!" || ch === "?";
-}
+    const speedBase = 50; // 0.05s per char
 
-function startTimedText(text, onDone) {
-    if (textTimer) {
-        clearInterval(textTimer);
-        textTimer = null;
-    }
-    textFull = text;
-    textShown = "";
-    textIndex = 0;
-    textDoneCallback = onDone || null;
-
-    textTimer = setInterval(() => {
-        if (textIndex >= textFull.length) {
-            clearInterval(textTimer);
-            textTimer = null;
-            if (textDoneCallback) textDoneCallback();
+    typeTextTimer = setInterval(() => {
+        if (typeTextIndex >= typeTextFull.length) {
+            clearInterval(typeTextTimer);
+            typeTextTimer = null;
+            typeTextDone = true;
+            if (typeof typeTextOnDone === "function") {
+                typeTextOnDone();
+            }
             return;
         }
-        const ch = textFull[textIndex];
-        textShown += ch;
-        textIndex++;
+        const ch = typeTextFull[typeTextIndex];
+        typeTextShown += ch;
+        typeTextIndex++;
 
-        const delay = isPunctuation(ch) ? TEXT_PUNCT_SPEED : TEXT_SPEED;
-        clearInterval(textTimer);
-        textTimer = setInterval(arguments.callee, delay);
-    }, TEXT_SPEED);
+        // small pause on punctuation
+        if (ch === "." || ch === "," || ch === "!" || ch === "?") {
+            // just skip one tick by not adding extra chars this frame
+        }
+
+        if (typeof onBattleTextUpdate === "function") {
+            onBattleTextUpdate(typeTextShown);
+        }
+    }, speedBase);
 }
 
-function getTimedText() {
-    return textShown || "";
-}
-
-/* Simple helper to build a wingdings background for file select */
-
-function buildWingdingsLayer(countMultiplier = 1) {
-    let wing = `<div class="wingdings-layer">`;
-    const chars = ["ᚷ","ᚨ","ᛊ","ᛏ","ᛖ","ᚱ","ᚹ","ᛁ","ᚾ","ᛞ","✶","✸","✹","✺"];
-    const total = 80 * countMultiplier;
-    for (let i = 0; i < total; i++) {
-        const ch = chars[i % chars.length];
-        const top = Math.random() * 100;
-        const left = Math.random() * 100;
-        const delay = Math.random() * 3;
-        const dur = 3 + Math.random() * 4;
-        wing += `<span class="wingding" style="top:${top}%;left:${left}%;animation-delay:${delay}s;animation-duration:${dur}s;">${ch}</span>`;
+function skipTypeText() {
+    if (!typeTextDone) {
+        if (typeTextTimer) clearInterval(typeTextTimer);
+        typeTextTimer = null;
+        typeTextShown = typeTextFull;
+        typeTextDone = true;
+        if (typeof onBattleTextUpdate === "function") {
+            onBattleTextUpdate(typeTextShown);
+        }
     }
-    wing += `</div>`;
-    return wing;
+}
+
+function isTypeTextDone() {
+    return typeTextDone;
 }

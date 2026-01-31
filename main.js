@@ -62,6 +62,14 @@ function handleKeyDown(e) {
         return;
     }
 
+    if (gameState === "gameOver") {
+        if (key === "z") {
+            gameState = "title";
+            render();
+        }
+        return;
+    }
+
     if (gameState === "mainMenu") {
         const max = 5;
         if (key === "w") {
@@ -123,7 +131,11 @@ function handleKeyDown(e) {
     }
 
     if (gameState === "item") {
-        handleItemMenuKey(key);
+        if (key === "z" || key === "x") {
+            gameState = "mainMenu";
+            currentMenuIndex = 2;
+            render();
+        }
         return;
     }
 
@@ -167,7 +179,7 @@ function render() {
     if (gameState === "title") {
         g.innerHTML = `
             <div class="center" style="margin-top:160px;">
-                <h1>UNDERTALE: Fallen Timelines</h1>
+                <h1 style="font-size:32px;">UNDERTALE: Fallen Timelines</h1>
                 <p class="small-text">Press Z</p>
             </div>
         `;
@@ -178,13 +190,12 @@ function render() {
         document.body.classList.add("file-select-bg-active");
         let wing = `<div class="wingdings-layer">`;
         const chars = ["ᚷ","ᚨ","ᛊ","ᛏ","ᛖ","ᚱ","ᚹ","ᛁ","ᚾ","ᛞ"];
-        // MANY MORE WINGDINGS
-        for (let i = 0; i < 200; i++) {
+        for (let i = 0; i < 40; i++) {
             const ch = chars[i % chars.length];
             const top = Math.random() * 100;
             const left = Math.random() * 100;
-            const delay = Math.random() * 1.5;
-            const dur = 1 + Math.random() * 2;
+            const delay = Math.random() * 4;
+            const dur = 4 + Math.random() * 4;
             wing += `<span class="wingding" style="top:${top}%;left:${left}%;animation-delay:${delay}s;animation-duration:${dur}s;">${ch}</span>`;
         }
         wing += `</div>`;
@@ -260,7 +271,17 @@ function render() {
     }
 
     if (gameState === "item") {
-        renderItemMenu();
+        let html = `<div class="center" style="margin-top:80px;">
+            <div class="undertale-box"><p>ITEM</p>`;
+        if (currentPlayer.inventory.length === 0) {
+            html += `<p>(empty)</p>`;
+        } else {
+            currentPlayer.inventory.forEach(i => {
+                html += `<p>${i.name}</p>`;
+            });
+        }
+        html += `</div></div>`;
+        g.innerHTML = html;
         return;
     }
 
@@ -323,14 +344,7 @@ function render() {
         renderBattle();
         return;
     }
-
-    if (gameState === "gameOver") {
-        renderGameOver();
-        return;
-    }
 }
-
-/* NAME ENTRY */
 
 function startNameEntry() {
     gameState = "nameEntry";
@@ -385,7 +399,7 @@ function handleNameEntryKey(key) {
             chosenName = chosenName.slice(0, -1);
         } else if (val === "END") {
             if (chosenName.length > 0) {
-                pendingName = chosenName.slice(0, 6); // max 6 letters
+                pendingName = chosenName;
                 nameConfirmIndex = 0;
                 nameEntryMessage = "";
                 gameState = "nameConfirm";
@@ -405,121 +419,23 @@ function handleNameEntryKey(key) {
     }
 }
 
-/* SECRET NAMES */
-
-function handleSpecialName(name) {
-    const n = name.toLowerCase();
-    if (n === "gaster") {
-        nameEntryMessage = "* ........";
-        return "refresh";
-    }
-    if (n === "sans") {
-        nameEntryMessage = "* nope.";
-        return "lock";
-    }
-    if (n === "toriel") {
-        nameEntryMessage = "* I think you should choose your own name, my child.";
-        return "lock";
-    }
-    if (n === "asgore") {
-        nameEntryMessage = "* You cannot.";
-        return "lock";
-    }
-    if (n === "asriel") {
-        nameEntryMessage = "* ...";
-        return "lock";
-    }
-    if (n === "alphys") {
-        nameEntryMessage = "* D-don't do that.";
-        return "lock";
-    }
-    if (n === "undyne") {
-        nameEntryMessage = "* Get your OWN name!";
-        return "lock";
-    }
-    if (n === "flowey") {
-        nameEntryMessage = "* I already CHOSE that name.";
-        return "lock";
-    }
-    if (n === "frisk") {
-        nameEntryMessage = "* Warning: This name will make your life hell. Proceed anyway?";
-        return "ok";
-    }
-    if (n === "chara") {
-        nameEntryMessage = "* The true name.";
-        return "ok";
-    }
-    if (n === "papyrus") {
-        nameEntryMessage = "* I, THE GREAT PAPYRUS, APPROVE!";
-        return "ok";
-    }
-    if (n === "bratty") {
-        nameEntryMessage = "* Like, OK I guess.";
-        return "ok";
-    }
-    if (n === "catty") {
-        nameEntryMessage = "* Bratty! Bratty! That's MY name!!";
-        return "ok";
-    }
-    if (n === "temmie") {
-        nameEntryMessage = "* hOI!";
-        return "ok";
-    }
-    if (n === "gerson") {
-        nameEntryMessage = "* Whaaaat's your name?";
-        return "ok";
-    }
-    if (n === "mettaton" || n === "mettat") {
-        nameEntryMessage = "* OOOOOOOOH!!! ARE YOU PROMOTING MY BRAND?";
-        return "ok";
-    }
-    if (n === "napsta" || n === "napstablook") {
-        nameEntryMessage = "* ...";
-        return "ok";
-    }
-    if (n === "bpants") {
-        nameEntryMessage = "* You're gonna have a BAD time.";
-        return "ok";
-    }
-    if (n === "murder") {
-        nameEntryMessage = "* That's a little on-the-nose, isn't it...? ";
-        return "ok";
-    }
-    if (n === "mercy") {
-        nameEntryMessage = "* The true name.";
-        return "ok";
-    }
-    if (n === "shyren") {
-        nameEntryMessage = "* ...";
-        return "ok";
-    }
-    if (n === "aaaaaa") {
-        nameEntryMessage = "* Not very creative...";
-        return "ok";
-    }
-    if (n === "orange") {
-        nameEntryMessage = "* NOT a true name.";
-        return "ok";
-    }
-    nameEntryMessage = "";
-    return "ok";
-}
-
 function handleNameConfirmKey(key) {
     if (key === "a" || key === "d") {
-        const special = handleSpecialName(pendingName);
-        if (special !== "lock") {
+        const meta = getNameMeta(pendingName);
+        if (meta.behavior !== "lock") {
             nameConfirmIndex = 1 - nameConfirmIndex;
         }
+        nameEntryMessage = meta.message || "";
         renderNameConfirm();
     } else if (key === "z") {
-        const special = handleSpecialName(pendingName);
-        if (nameConfirmIndex === 0 && special !== "lock") {
-            if (special === "refresh") {
+        const meta = getNameMeta(pendingName);
+        nameEntryMessage = meta.message || "";
+        if (nameConfirmIndex === 0 && meta.behavior !== "lock") {
+            if (meta.behavior === "refresh") {
                 location.reload();
                 return;
             }
-            createNewSave(currentSlot, pendingName);
+            createNewSave(currentSlot, pendingName, meta.hardMode);
             useSave(currentSlot);
             gameState = "mainMenu";
             currentMenuIndex = 0;
@@ -538,6 +454,9 @@ function renderNameEntry() {
     const g = document.getElementById("game");
     let html = `<div class="center" style="margin-top:60px;">
         <p>Name the fallen human.</p>
+        <div class="name-display">
+            <p>${chosenName}</p>
+        </div>
         <div class="name-grid undertale-box">
     `;
     for (let r = 0; r < nameGrid.length; r++) {
@@ -554,19 +473,16 @@ function renderNameEntry() {
         html += `</div>`;
     }
     html += `</div>
-        <div class="name-display">
-            <p>${chosenName}</p>
-        </div>
     </div>`;
     g.innerHTML = html;
 }
 
 function renderNameConfirm() {
     const g = document.getElementById("game");
-    const special = handleSpecialName(pendingName);
+    const meta = getNameMeta(pendingName);
     const yesSel = nameConfirmIndex === 0 ? "selected" : "";
     const noSel = nameConfirmIndex === 1 ? "selected" : "";
-    const yesLocked = special === "lock";
+    const yesLocked = meta.behavior === "lock";
     g.innerHTML = `
         <div class="center" style="margin-top:80px;">
             <div class="undertale-box">
@@ -577,13 +493,11 @@ function renderNameConfirm() {
                     /
                     <span class="${noSel}">NO</span>
                 </p>
-                ${nameEntryMessage ? `<p>${nameEntryMessage}</p>` : ""}
+                ${meta.message ? `<p>${meta.message.replace(/\n/g,"<br>")}</p>` : ""}
             </div>
         </div>
     `;
 }
-
-/* SHOP */
 
 function handleShopKey(key) {
     const sections = ["weapon", "armor", "heal"];
@@ -616,36 +530,21 @@ function handleShopKey(key) {
 
 function buyShopItem(section, item) {
     if (currentPlayer.G < item.cost) return;
-    if (section === "heal" && currentPlayer.inventory.length >= ITEM_LIMIT) return;
-    if ((section === "weapon" || section === "armor") && currentPlayer.inventory.length >= ITEM_LIMIT) {
-        // still allow equip via stats later, but here we require space to store old gear
-        // simple: if no space, do nothing
-        return;
-    }
-
     currentPlayer.G -= item.cost;
     if (section === "weapon") {
-        // add to inventory as weapon item
-        currentPlayer.inventory.push({
-            name: item.name,
-            type: "weapon",
-            at: item.at,
-            info: item.info
-        });
+        currentPlayer.weapon = item.name;
+        currentPlayer.weaponBonus = item.at;
+        if (!currentPlayer.inventory.find(i => i.name === item.name)) {
+            currentPlayer.inventory.push({ name: item.name, type: "weapon" });
+        }
     } else if (section === "armor") {
-        currentPlayer.inventory.push({
-            name: item.name,
-            type: "armor",
-            df: item.df,
-            info: item.info
-        });
+        currentPlayer.armor = item.name;
+        currentPlayer.armorBonus = item.df;
+        if (!currentPlayer.inventory.find(i => i.name === item.name)) {
+            currentPlayer.inventory.push({ name: item.name, type: "armor" });
+        }
     } else if (section === "heal") {
-        currentPlayer.inventory.push({
-            name: item.name,
-            type: "heal",
-            heal: item.heal,
-            info: item.info
-        });
+        currentPlayer.inventory.push({ name: item.name, type: "heal" });
     }
     saves[currentSlot] = currentPlayer;
     saveSlot(currentSlot);
@@ -673,138 +572,6 @@ function renderShop() {
         html += `<p class="${sel}">${it.name} - ${it.cost}G</p>`;
     });
 
-    html += `</div></div>`;
-    g.innerHTML = html;
-}
-
-/* ITEM MENU (OVERWORLD) */
-
-let itemMenuIndex = 0;
-let itemSubIndex = 0; // 0=USE,1=INFO,2=DROP
-let itemSubActive = false;
-
-function handleItemMenuKey(key) {
-    if (!itemSubActive) {
-        if (key === "w") {
-            if (currentPlayer.inventory.length > 0) {
-                itemMenuIndex = (itemMenuIndex + currentPlayer.inventory.length - 1) % currentPlayer.inventory.length;
-            }
-            renderItemMenu();
-        } else if (key === "s") {
-            if (currentPlayer.inventory.length > 0) {
-                itemMenuIndex = (itemMenuIndex + 1) % currentPlayer.inventory.length;
-            }
-            renderItemMenu();
-        } else if (key === "z") {
-            if (currentPlayer.inventory.length > 0) {
-                itemSubActive = true;
-                itemSubIndex = 0;
-                renderItemMenu();
-            }
-        } else if (key === "x") {
-            gameState = "mainMenu";
-            currentMenuIndex = 2;
-            render();
-        }
-    } else {
-        // inside USE / INFO / DROP
-        if (key === "w" || key === "s") {
-            itemSubIndex = (itemSubIndex + 2) % 3;
-            renderItemMenu();
-        } else if (key === "z") {
-            performItemSubAction();
-            renderItemMenu();
-        } else if (key === "x") {
-            itemSubActive = false;
-            renderItemMenu();
-        }
-    }
-}
-
-function performItemSubAction() {
-    const item = currentPlayer.inventory[itemMenuIndex];
-    if (!item) {
-        itemSubActive = false;
-        return;
-    }
-    if (itemSubIndex === 0) {
-        // USE
-        if (item.type === "heal") {
-            const healAmount = item.heal || 10;
-            currentPlayer.HP = Math.min(currentPlayer.maxHP, currentPlayer.HP + healAmount);
-            currentPlayer.inventory.splice(itemMenuIndex, 1);
-        } else if (item.type === "weapon") {
-            // equip
-            if (currentPlayer.weapon && currentPlayer.inventory.length < ITEM_LIMIT) {
-                currentPlayer.inventory.push({
-                    name: currentPlayer.weapon,
-                    type: "weapon",
-                    at: currentPlayer.weaponBonus,
-                    info: ""
-                });
-            }
-            currentPlayer.weapon = item.name;
-            currentPlayer.weaponBonus = item.at || 0;
-            currentPlayer.inventory.splice(itemMenuIndex, 1);
-        } else if (item.type === "armor") {
-            if (currentPlayer.armor && currentPlayer.inventory.length < ITEM_LIMIT) {
-                currentPlayer.inventory.push({
-                    name: currentPlayer.armor,
-                    type: "armor",
-                    df: currentPlayer.armorBonus,
-                    info: ""
-                });
-            }
-            currentPlayer.armor = item.name;
-            currentPlayer.armorBonus = item.df || 0;
-            currentPlayer.inventory.splice(itemMenuIndex, 1);
-        }
-    } else if (itemSubIndex === 1) {
-        // INFO (no change, just show text in box)
-        // handled by renderItemMenu
-    } else if (itemSubIndex === 2) {
-        // DROP
-        currentPlayer.inventory.splice(itemMenuIndex, 1);
-        if (itemMenuIndex >= currentPlayer.inventory.length) {
-            itemMenuIndex = Math.max(0, currentPlayer.inventory.length - 1);
-        }
-    }
-    saves[currentSlot] = currentPlayer;
-    saveSlot(currentSlot);
-    itemSubActive = false;
-}
-
-function renderItemMenu() {
-    const g = document.getElementById("game");
-    let html = `<div class="center" style="margin-top:80px;">
-        <div class="item-main-box">
-            <div class="item-list">
-                <p>ITEM</p>
-    `;
-    if (currentPlayer.inventory.length === 0) {
-        html += `<p>(empty)</p>`;
-    } else {
-        currentPlayer.inventory.forEach((it, i) => {
-            const sel = (i === itemMenuIndex) ? "selected" : "";
-            html += `<p class="${sel}">${it.name}</p>`;
-        });
-    }
-    html += `</div>`;
-
-    // right side: USE / INFO / DROP
-    let sub = `<div class="item-sub-box">
-        <p>${itemSubIndex === 0 && itemSubActive ? '<span class="heart">♥</span>' : '&nbsp;&nbsp;'}USE</p>
-        <p>${itemSubIndex === 1 && itemSubActive ? '<span class="heart">♥</span>' : '&nbsp;&nbsp;'}INFO</p>
-        <p>${itemSubIndex === 2 && itemSubActive ? '<span class="heart">♥</span>' : '&nbsp;&nbsp;'}DROP</p>
-    `;
-
-    const item = currentPlayer.inventory[itemMenuIndex];
-    if (item && itemSubIndex === 1 && itemSubActive) {
-        sub += `<p style="margin-top:8px;">${item.info || ""}</p>`;
-    }
-
-    sub += `</div>`;
-    html += sub;
     html += `</div></div>`;
     g.innerHTML = html;
 }

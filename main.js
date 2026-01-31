@@ -18,6 +18,9 @@ let nameEntryMessage = "";
 let shopSectionIndex = 0;
 let shopItemIndex = 0;
 
+let itemMenuIndex = 0; // overworld ITEM: which item
+let itemActionIndex = 0; // USE / INFO / DROP
+
 function handleKeyDown(e) {
     const key = e.key.toLowerCase();
 
@@ -89,7 +92,8 @@ function handleKeyDown(e) {
                 render();
             } else if (currentMenuIndex === 2) {
                 gameState = "item";
-                currentMenuIndex = 0;
+                itemMenuIndex = 0;
+                itemActionIndex = 0;
                 render();
             } else if (currentMenuIndex === 3) {
                 gameState = "stats";
@@ -131,11 +135,7 @@ function handleKeyDown(e) {
     }
 
     if (gameState === "item") {
-        if (key === "z" || key === "x") {
-            gameState = "mainMenu";
-            currentMenuIndex = 2;
-            render();
-        }
+        handleOverworldItemKey(key);
         return;
     }
 
@@ -174,7 +174,18 @@ function handleKeyDown(e) {
 
 function render() {
     const g = document.getElementById("game");
-    document.body.classList.remove("file-select-bg-active");
+    document.body.classList.remove("file-select-bg-active", "static-bg-active", "battle-bg-active");
+
+    const staticStates = ["title", "fileSelect", "nameEntry", "nameConfirm", "mainMenu", "shop", "item", "stats", "settings", "credits", "gameOver"];
+    if (staticStates.includes(gameState)) {
+        document.body.classList.add("static-bg-active");
+    }
+    if (gameState === "fileSelect") {
+        document.body.classList.add("file-select-bg-active");
+    }
+    if (gameState === "battle") {
+        document.body.classList.add("battle-bg-active");
+    }
 
     if (gameState === "title") {
         g.innerHTML = `
@@ -189,9 +200,9 @@ function render() {
     if (gameState === "fileSelect") {
         document.body.classList.add("file-select-bg-active");
         let wing = `<div class="wingdings-layer">`;
-        const chars = ["ᚷ","ᚨ","ᛊ","ᛏ","ᛖ","ᚱ","ᚹ","ᛁ","ᚾ","ᛞ","✶","✹","✺","✦","✧"];
+        const chars = ["ᚷ","ᚨ","ᛊ","ᛏ","ᛖ","ᚱ","ᚹ","ᛁ","ᚾ","ᛞ"];
         for (let i = 0; i < 200; i++) {
-            const ch = chars[Math.floor(Math.random() * chars.length)];
+            const ch = chars[i % chars.length];
             const top = Math.random() * 100;
             const left = Math.random() * 100;
             const delay = Math.random() * 2;
@@ -271,17 +282,7 @@ function render() {
     }
 
     if (gameState === "item") {
-        let html = `<div class="center" style="margin-top:80px;">
-            <div class="undertale-box"><p>ITEM</p>`;
-        if (currentPlayer.inventory.length === 0) {
-            html += `<p>(empty)</p>`;
-        } else {
-            currentPlayer.inventory.forEach(i => {
-                html += `<p>${i.name}</p>`;
-            });
-        }
-        html += `</div></div>`;
-        g.innerHTML = html;
+        renderOverworldItem();
         return;
     }
 
@@ -530,18 +531,17 @@ function handleShopKey(key) {
 
 function buyShopItem(section, item) {
     if (currentPlayer.G < item.cost) return;
-    if (section === "heal" && currentPlayer.inventory.length >= INVENTORY_LIMIT) return;
-    if ((section === "weapon" || section === "armor") && currentPlayer.inventory.length >= INVENTORY_LIMIT) {
-        // still allow equip via stats later, but not stack more
+    if (currentPlayer.inventory.length >= 8 && section === "heal") return;
+    if (section === "weapon" || section === "armor") {
+        if (currentPlayer.inventory.length >= 8) return;
     }
     currentPlayer.G -= item.cost;
     if (section === "weapon") {
-        // goes to inventory, must equip
-        if (!currentPlayer.inventory.find(i => i.name === item.name) && currentPlayer.inventory.length < INVENTORY_LIMIT) {
+        if (!currentPlayer.inventory.find(i => i.name === item.name)) {
             currentPlayer.inventory.push({ name: item.name, type: "weapon" });
         }
     } else if (section === "armor") {
-        if (!currentPlayer.inventory.find(i => i.name === item.name) && currentPlayer.inventory.length < INVENTORY_LIMIT) {
+        if (!currentPlayer.inventory.find(i => i.name === item.name)) {
             currentPlayer.inventory.push({ name: item.name, type: "armor" });
         }
     } else if (section === "heal") {
@@ -574,5 +574,142 @@ function renderShop() {
     });
 
     html += `</div></div>`;
+    g.innerHTML = html;
+}
+
+function handleOverworldItemKey(key) {
+    const inv = currentPlayer.inventory;
+    if (inv.length === 0) {
+        if (key === "z" || key === "x") {
+            gameState = "mainMenu";
+            currentMenuIndex = 2;
+            render();
+        }
+        return;
+    }
+
+    if (key === "w") {
+        itemMenuIndex = (itemMenuIndex + inv.length - 1) % inv.length;
+        renderOverworldItem();
+    } else if (key === "s") {
+        itemMenuIndex = (itemMenuIndex + 1) % inv.length;
+        renderOverworldItem();
+    } else if (key === "a") {
+        itemActionIndex = (itemActionIndex + 2) % 3;
+        renderOverworldItem();
+    } else if (key === "d") {
+        itemActionIndex = (itemActionIndex + 1) % 3;
+        renderOverworldItem();
+    } else if (key === "z") {
+        const item = inv[itemMenuIndex];
+        if (!item) return;
+        if (itemActionIndex === 0) {
+            useOverworldItem(itemMenuIndex);
+        } else if (itemActionIndex === 1) {
+            showOverworldItemInfo(item);
+        } else if (itemActionIndex === 2) {
+            dropOverworldItem(itemMenuIndex);
+        }
+        renderOverworldItem();
+    } else if (key === "x") {
+        gameState = "mainMenu";
+        currentMenuIndex = 2;
+        render();
+    }
+}
+
+function useOverworldItem(index) {
+    const item = currentPlayer.inventory[index];
+    if (!item) return;
+    if (item.type === "heal") {
+        if (item.name === "MONSTER CANDY") {
+            currentPlayer.HP = Math.min(currentPlayer.maxHP, currentPlayer.HP + 10);
+        } else if (item.name === "SPIDER DONUT") {
+            currentPlayer.HP = Math.min(currentPlayer.maxHP, currentPlayer.HP + 12);
+        } else if (item.name === "BUTTERSCOTCH PIE") {
+            currentPlayer.HP = currentPlayer.maxHP;
+        } else {
+            currentPlayer.HP = Math.min(currentPlayer.maxHP, currentPlayer.HP + 10);
+        }
+        currentPlayer.inventory.splice(index, 1);
+    } else if (item.type === "weapon") {
+        const weaponData = shopData.weapon.find(w => w.name === item.name) || { at: 0 };
+        const oldWeaponName = currentPlayer.weapon;
+        const oldWeaponBonus = currentPlayer.weaponBonus;
+        currentPlayer.weapon = item.name;
+        currentPlayer.weaponBonus = weaponData.at;
+        currentPlayer.inventory.splice(index, 1);
+        if (oldWeaponName && oldWeaponName !== item.name && currentPlayer.inventory.length < 8) {
+            currentPlayer.inventory.push({ name: oldWeaponName, type: "weapon" });
+        }
+    } else if (item.type === "armor") {
+        const armorData = shopData.armor.find(a => a.name === item.name) || { df: 0 };
+        const oldArmorName = currentPlayer.armor;
+        const oldArmorBonus = currentPlayer.armorBonus;
+        currentPlayer.armor = item.name;
+        currentPlayer.armorBonus = armorData.df;
+        currentPlayer.inventory.splice(index, 1);
+        if (oldArmorName && oldArmorName !== item.name && currentPlayer.inventory.length < 8) {
+            currentPlayer.inventory.push({ name: oldArmorName, type: "armor" });
+        }
+    }
+    saves[currentSlot] = currentPlayer;
+    saveSlot(currentSlot);
+}
+
+function showOverworldItemInfo(item) {
+    let info = "";
+    if (item.type === "heal") {
+        if (item.name === "MONSTER CANDY") info = "* Heals 10 HP.\n* Has a distinct, non-licorice flavor.";
+        else if (item.name === "SPIDER DONUT") info = "* Heals 12 HP.\n* Made with Spider Cider in the batter.";
+        else if (item.name === "BUTTERSCOTCH PIE") info = "* Heals all HP.\n* Butterscotch-cinnamon pie, one slice.";
+        else info = "* Heals some HP.";
+    } else if (item.type === "weapon") {
+        const w = shopData.weapon.find(w => w.name === item.name);
+        const at = w ? w.at : 0;
+        info = `* Weapon ATK ${at}.`;
+    } else if (item.type === "armor") {
+        const a = shopData.armor.find(a => a.name === item.name);
+        const df = a ? a.df : 0;
+        info = `* Armor DEF ${df}.`;
+    }
+    const g = document.getElementById("game");
+    const infoHTML = `<div class="undertale-box" style="margin-top:8px;"><p>${info.replace(/\n/g,"<br>")}</p></div>`;
+    g.innerHTML += infoHTML;
+}
+
+function dropOverworldItem(index) {
+    currentPlayer.inventory.splice(index, 1);
+    if (itemMenuIndex >= currentPlayer.inventory.length) {
+        itemMenuIndex = Math.max(0, currentPlayer.inventory.length - 1);
+    }
+    saves[currentSlot] = currentPlayer;
+    saveSlot(currentSlot);
+}
+
+function renderOverworldItem() {
+    const g = document.getElementById("game");
+    let html = `<div class="center" style="margin-top:80px;">
+        <div class="undertale-box" style="display:inline-block;">
+            <p>ITEM</p>`;
+    if (currentPlayer.inventory.length === 0) {
+        html += `<p>(empty)</p>`;
+    } else {
+        currentPlayer.inventory.forEach((it, i) => {
+            const sel = i === itemMenuIndex ? "selected" : "";
+            html += `<p class="${sel}">${it.name}</p>`;
+        });
+    }
+    html += `</div>`;
+
+    if (currentPlayer.inventory.length > 0) {
+        const actions = ["USE", "INFO", "DROP"];
+        let actionHTML = `<div class="undertale-box" style="display:inline-block; margin-left:24px;">
+            <p>${actions.map((a, i) => `<span class="${i === itemActionIndex ? "selected" : ""}">${a}</span>`).join(" / ")}</p>
+        </div>`;
+        html += actionHTML;
+    }
+
+    html += `</div>`;
     g.innerHTML = html;
 }

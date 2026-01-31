@@ -1,4 +1,4 @@
-/* style.css - core visual style and layout */
+/* style.css - visual style and layout */
 
 body {
     margin: 0;
@@ -10,7 +10,35 @@ body {
     letter-spacing: 1px;
 }
 
-/* Static is now handled in effects.css, but keep base black bg */
+/* BIGGER, MORE VISIBLE STATIC */
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background:
+        radial-gradient(circle at 10% 20%, rgba(255,255,255,0.12) 0, transparent 40%),
+        radial-gradient(circle at 80% 30%, rgba(255,255,255,0.10) 0, transparent 45%),
+        radial-gradient(circle at 30% 80%, rgba(255,255,255,0.08) 0, transparent 50%),
+        repeating-linear-gradient(0deg, rgba(255,255,255,0.08) 0, rgba(255,255,255,0.08) 2px, transparent 2px, transparent 5px),
+        repeating-linear-gradient(90deg, rgba(255,255,255,0.05) 0, rgba(255,255,255,0.05) 2px, transparent 2px, transparent 5px);
+    mix-blend-mode: screen;
+    opacity: 0.35;
+    pointer-events: none;
+    animation: staticMove 0.35s steps(4) infinite;
+}
+
+body.file-select-bg-active::before {
+    opacity: 0.7;
+}
+
+@keyframes staticMove {
+    0% { transform: translate(0,0); }
+    25% { transform: translate(4px,-4px); }
+    50% { transform: translate(-4px,2px); }
+    75% { transform: translate(2px,4px); }
+    100% { transform: translate(0,0); }
+}
+
 #game {
     width: 800px;
     height: 600px;
@@ -20,7 +48,6 @@ body {
     box-sizing: border-box;
     position: relative;
     background: black;
-    overflow: hidden;
 }
 
 .center {
@@ -62,8 +89,6 @@ body {
     color: #ffff00;
 }
 
-/* Battle layout */
-
 .bottom-menu {
     position: absolute;
     bottom: 12px;
@@ -72,6 +97,8 @@ body {
     text-align: center;
 }
 
+/* BATTLE LAYOUT */
+
 .battle-box {
     border: 4px solid white;
     width: 520px;
@@ -79,18 +106,41 @@ body {
     margin: 40px auto 0;
     position: relative;
     background: black;
+    overflow: hidden;
+}
+
+/* subtle moving squares in battle box */
+.battle-box::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        repeating-linear-gradient(0deg, rgba(255,255,255,0.05) 0, rgba(255,255,255,0.05) 4px, transparent 4px, transparent 12px),
+        repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0, rgba(255,255,255,0.03) 4px, transparent 4px, transparent 12px);
+    mix-blend-mode: screen;
+    opacity: 0.25;
+    animation: battleSquares 1.2s linear infinite;
+    pointer-events: none;
+}
+
+@keyframes battleSquares {
+    0% { transform: translate(0,0); }
+    50% { transform: translate(4px,-4px); }
+    100% { transform: translate(0,0); }
 }
 
 .battle-text {
     padding: 8px;
     height: 80px;
+    position: relative;
+    z-index: 2;
 }
 
 .battle-info {
     margin-top: 8px;
 }
 
-/* HP bar with yellow (current) and red (lost) */
+/* HP BAR: yellow = remaining, red = lost */
 
 .hp-bar {
     display: inline-block;
@@ -100,6 +150,7 @@ body {
     margin-left: 8px;
     position: relative;
     background: black;
+    overflow: hidden;
 }
 
 .hp-fill-yellow {
@@ -118,7 +169,7 @@ body {
     background: #ff0000;
 }
 
-/* File select */
+/* FILE SELECT */
 
 .file-container {
     width: 70%;
@@ -141,7 +192,7 @@ body {
     justify-content: space-between;
 }
 
-/* Name entry */
+/* NAME ENTRY */
 
 .name-grid {
     display: inline-block;
@@ -167,8 +218,6 @@ body {
     margin-top: 12px;
 }
 
-/* Stats */
-
 .stats-box {
     width: 80%;
     margin: 0 auto;
@@ -180,7 +229,7 @@ body {
     justify-content: space-between;
 }
 
-/* Fight bar */
+/* FIGHT BAR */
 
 .fight-bar {
     width: 320px;
@@ -208,7 +257,7 @@ body {
     background: #ffffff;
 }
 
-/* Soul box */
+/* SOUL BOX */
 
 .soul-box {
     border: 4px solid white;
@@ -220,13 +269,15 @@ body {
     background: black;
 }
 
-/* More pixel-y heart */
+/* pixel heart style */
 
 .soul {
     width: 12px;
-    height: 10px;
+    height: 12px;
     position: absolute;
-    background: transparent;
+    transform: rotate(45deg);
+    background: #ff0000;
+    box-shadow: 0 0 0 2px #ff0000;
 }
 
 .soul::before,
@@ -234,24 +285,27 @@ body {
     content: "";
     position: absolute;
     width: 12px;
-    height: 10px;
+    height: 12px;
+    border-radius: 50%;
     background: #ff0000;
-    clip-path: polygon(
-        50% 0%,
-        100% 30%,
-        100% 70%,
-        50% 100%,
-        0% 70%,
-        0% 30%
-    );
+    top: -6px;
+    left: 0;
+}
+
+.soul::after {
+    left: -6px;
+    top: 0;
+}
+
+.soul.blue {
+    background: #00a0ff;
+    box-shadow: 0 0 0 2px #00a0ff;
 }
 
 .soul.blue::before,
 .soul.blue::after {
     background: #00a0ff;
 }
-
-/* Bullets (generic) */
 
 .bullet {
     width: 8px;
@@ -260,7 +314,28 @@ body {
     position: absolute;
 }
 
-/* Enemy area */
+/* BONES & FIRE (simple CSS shapes, sprites will override via background-image) */
+
+.bone {
+    position: absolute;
+    width: 8px;
+    height: 32px;
+    background: #ffffff;
+}
+
+.bone.blue {
+    background: #00a0ff;
+}
+
+.fire {
+    position: absolute;
+    width: 10px;
+    height: 14px;
+    background: #ffffff;
+    border-radius: 50% 50% 50% 50%;
+}
+
+/* ENEMY AREA + SPRITES */
 
 .enemy-area {
     width: 100%;
@@ -268,6 +343,7 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
+    position: relative;
 }
 
 .enemy-sprite {
@@ -277,9 +353,14 @@ body {
     border-radius: 4px;
     position: relative;
     background: black;
+    image-rendering: pixelated;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
 }
 
-/* Placeholder sprite borders */
+/* These will be replaced by base64 pixel-art backgrounds (option B).
+   For now, keep border colors distinct. */
 
 .enemy-dummy {
     border-color: #aaaaaa;
@@ -305,7 +386,20 @@ body {
     border-color: #ff00ff;
 }
 
-/* Sub-box (ACT, ITEM, MERCY inner menus) */
+/* MONSTER DIALOGUE BOX (right side) */
+
+.monster-dialogue {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    border: 3px solid white;
+    padding: 6px 10px;
+    background: black;
+    max-width: 220px;
+    font-size: 12px;
+}
+
+/* SUB BOX (ACT, ITEM, MERCY, etc.) */
 
 .sub-box {
     border: 4px solid white;
@@ -325,8 +419,6 @@ body {
     margin-right: 6px;
 }
 
-/* Monster list */
-
 .monster-list {
     width: 60%;
     margin: 0 auto;
@@ -336,8 +428,6 @@ body {
 .small-text {
     font-size: 12px;
 }
-
-/* Game over */
 
 .game-over-screen {
     margin-top: 150px;
@@ -353,7 +443,32 @@ body {
     white-space: pre-line;
 }
 
-/* ITEM menu big box (USE / INFO / DROP / EQUIP) */
+/* WINGDINGS BACKGROUND - MUCH BIGGER, MANY MORE */
+
+.wingdings-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: -1;
+}
+
+.wingding {
+    position: absolute;
+    font-size: 120px; /* ~10x+ bigger */
+    color: rgba(255,255,255,0.18);
+    animation-name: wingdingsFloat;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+}
+
+@keyframes wingdingsFloat {
+    0% { transform: translate(-40px, 0); opacity: 0.15; }
+    50% { transform: translate(20px, -40px); opacity: 0.4; }
+    100% { transform: translate(60px, 40px); opacity: 0.2; }
+}
+
+/* ITEM MENU BIG BOX */
 
 .item-main-box {
     border: 4px solid white;
@@ -364,40 +479,25 @@ body {
 
 .item-list {
     text-align: left;
-    margin-bottom: 8px;
+    min-width: 220px;
 }
 
-.item-entry {
+.item-list p {
     margin: 2px 0;
 }
 
-.item-entry.selected {
-    color: #ffff00;
-}
-
-.item-actions {
-    margin-top: 8px;
-}
-
-.item-action {
-    display: inline-block;
-    margin: 0 8px;
-}
-
-.item-action.selected {
-    color: #ffff00;
-}
-
-/* Monster dialogue box (right side of sprite) */
-
-.monster-dialogue-box {
-    position: absolute;
-    right: -10px;
-    top: 10px;
+.item-sub-box {
     border: 4px solid white;
     padding: 8px;
-    background: black;
-    max-width: 220px;
-    text-align: left;
-    font-size: 12px;
+    margin-left: 24px;
+    display: inline-block;
+    vertical-align: top;
+    min-width: 140px;
+}
+
+/* GAME OVER WINGDINGS FLASH (we’ll reuse wingdings-layer, just more intense) */
+
+body.game-over-bg::before {
+    opacity: 0.9;
+    animation-duration: 0.18s;
 }

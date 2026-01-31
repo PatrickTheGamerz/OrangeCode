@@ -73,11 +73,26 @@ body {
     font-size: 14px;
 }
 
+.top-battle-info {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 14px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.hp-label {
+    margin-left: 8px;
+}
+
 .battle-box {
     border: 4px solid white;
     width: 520px;
     height: 260px;
-    margin: 40px auto 0;
+    margin: 80px auto 0;
     position: relative;
     background: black;
 }
@@ -93,14 +108,33 @@ body {
     width: 200px;
     height: 10px;
     border: 2px solid white;
-    margin-left: 8px;
+    margin-left: 4px;
     position: relative;
     background: black;
+    overflow: hidden;
 }
 
 .hp-fill {
     height: 100%;
-    width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.hp-fill-current {
+    background: #ffff00;
+    z-index: 2;
+}
+
+.hp-fill-lost {
+    background: #ff0000;
+    z-index: 1;
+    right: 0;
+    left: auto;
+}
+
+.hp-numbers {
+    margin-left: 6px;
 }
 
 .file-container {
@@ -200,8 +234,8 @@ body {
 }
 
 .soul {
-    width: 12px;
-    height: 12px;
+    width: 10px;
+    height: 10px;
     position: absolute;
     transform: rotate(45deg);
     background: #ff0000;
@@ -211,16 +245,16 @@ body {
 .soul::after {
     content: "";
     position: absolute;
-    width: 12px;
-    height: 12px;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
     background: #ff0000;
-    top: -6px;
+    top: -5px;
     left: 0;
 }
 
 .soul::after {
-    left: -6px;
+    left: -5px;
     top: 0;
 }
 

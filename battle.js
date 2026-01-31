@@ -1,21 +1,20 @@
 // battle.js - battle system and combat rendering
 
 let battleMenuIndex = 0;
-let battleSubState = "menu"; // menu, attackBar, actMenu, itemMenu, itemAction, mercyMenu, text, enemyTurn
+let battleSubState = "menu";
 let battleText = "";
-let fullBattleText = "";
-let shownBattleText = "";
-let textTimer = null;
-let textIndex = 0;
-let textDone = true;
+let battleFullText = "";
+let battleShownText = "";
+let battleTextIndex = 0;
+let battleTextTimer = null;
+let battleTextDone = true;
 
 let actIndex = 0;
 let itemIndex = 0;
-let itemActionIndex = 0; // 0 USE, 1 INFO, 2 DROP
-let mercyIndex = 0; // 0 SPARE, 1 FLEE
 let talksDone = 0;
 let canSpare = false;
-let lastSpared = false;
+
+let mercyIndex = 0;
 
 let fightMarkerPos = 0;
 let fightMarkerDir = 1;
@@ -37,38 +36,79 @@ let gameOverIndex = 0;
 let gameOverTimer = null;
 
 function setBattleText(text) {
-    fullBattleText = text;
-    shownBattleText = "";
-    textIndex = 0;
-    textDone = false;
-    if (textTimer) clearInterval(textTimer);
-    textTimer = setInterval(() => {
-        if (textIndex >= fullBattleText.length) {
-            clearInterval(textTimer);
-            textTimer = null;
-            textDone = true;
+    if (battleTextTimer) clearInterval(battleTextTimer);
+    battleFullText = text;
+    battleShownText = "";
+    battleTextIndex = 0;
+    battleTextDone = false;
+    battleTextTimer = setInterval(() => {
+        if (battleTextIndex >= battleFullText.length) {
+            clearInterval(battleTextTimer);
+            battleTextTimer = null;
+            battleTextDone = true;
             renderBattle();
             return;
         }
-        const ch = fullBattleText[textIndex];
-        shownBattleText += ch;
-        textIndex++;
+        const ch = battleFullText[battleTextIndex];
+        battleShownText += ch;
+        battleTextIndex++;
+        let delay = 50;
+        if (ch === "." || ch === "," || ch === "!" || ch === "?") {
+            delay = 200;
+        }
+        clearInterval(battleTextTimer);
+        battleTextTimer = setInterval(() => {
+            clearInterval(battleTextTimer);
+            battleTextTimer = null;
+            setBattleTextContinue();
+        }, delay);
         renderBattle();
-    }, 40);
+    }, 0);
+}
+
+function setBattleTextContinue() {
+    if (battleTextIndex >= battleFullText.length) {
+        battleTextDone = true;
+        renderBattle();
+        return;
+    }
+    const ch = battleFullText[battleTextIndex];
+    battleShownText += ch;
+    battleTextIndex++;
+    let delay = 50;
+    if (ch === "." || ch === "," || ch === "!" || ch === "?") {
+        delay = 200;
+    }
+    battleTextTimer = setInterval(() => {
+        clearInterval(battleTextTimer);
+        battleTextTimer = null;
+        setBattleTextContinue();
+    }, delay);
+    renderBattle();
+}
+
+function instantFinishBattleText() {
+    if (!battleFullText) return;
+    if (battleTextTimer) clearInterval(battleTextTimer);
+    battleShownText = battleFullText;
+    battleTextIndex = battleFullText.length;
+    battleTextDone = true;
+    battleTextTimer = null;
+    renderBattle();
 }
 
 function startBattle(enemyId) {
     currentEnemy = JSON.parse(JSON.stringify(enemies.find(e => e.id === enemyId)));
     currentEnemy.HP = currentEnemy.maxHP;
+    currentEnemy.turnIndex = 0;
     battleMenuIndex = 0;
     battleSubState = "menu";
     talksDone = 0;
     canSpare = false;
-    lastSpared = false;
+    mercyIndex = 0;
     gameState = "battle";
-    const intro = currentEnemy.introText || `* ${currentEnemy.name} blocks the way!`;
-    battleText = intro;
-    setBattleText(intro);
+    battleText = currentEnemy.openingText || `* ${currentEnemy.name} blocks the way!`;
+    setBattleText(battleText);
     render();
 }
 
@@ -96,8 +136,12 @@ function battleKeyDown(e) {
     }
 
     if (battleSubState === "actMenu") {
-        if (key === "w" || key === "s") {
-            actIndex = (actIndex + 1) % 2;
+        const opts = currentEnemy.actOptions || ["CHECK", "TALK"];
+        if (key === "w") {
+            actIndex = (actIndex + opts.length - 1) % opts.length;
+            renderBattle();
+        } else if (key === "s") {
+            actIndex = (actIndex + 1) % opts.length;
             renderBattle();
         } else if (key === "z") {
             handleActConfirm();
@@ -123,24 +167,9 @@ function battleKeyDown(e) {
             itemIndex = (itemIndex + 1) % currentPlayer.inventory.length;
             renderBattle();
         } else if (key === "z") {
-            battleSubState = "itemAction";
-            itemActionIndex = 0;
-            renderBattle();
+            useBattleItem();
         } else if (key === "x") {
             battleSubState = "menu";
-            renderBattle();
-        }
-        return;
-    }
-
-    if (battleSubState === "itemAction") {
-        if (key === "w" || key === "s") {
-            itemActionIndex = (itemActionIndex + 2) % 3;
-            renderBattle();
-        } else if (key === "z") {
-            handleItemAction();
-        } else if (key === "x") {
-            battleSubState = "itemMenu";
             renderBattle();
         }
         return;
@@ -151,7 +180,7 @@ function battleKeyDown(e) {
             mercyIndex = 1 - mercyIndex;
             renderBattle();
         } else if (key === "z") {
-            handleMercyAction();
+            handleMercyConfirm();
         } else if (key === "x") {
             battleSubState = "menu";
             renderBattle();
@@ -160,15 +189,11 @@ function battleKeyDown(e) {
     }
 
     if (battleSubState === "text") {
-        if (!textDone) {
-            // skip to end of text
-            if (textTimer) clearInterval(textTimer);
-            shownBattleText = fullBattleText;
-            textDone = true;
-            renderBattle();
-            return;
-        }
         if (key === "z") {
+            if (!battleTextDone) {
+                instantFinishBattleText();
+                return;
+            }
             if (currentEnemy.HP <= 0) {
                 endBattleWin();
             } else if (currentPlayer.HP <= 0) {
@@ -213,6 +238,33 @@ function handleBattleMenuConfirm() {
     }
 }
 
+function handleMercyConfirm() {
+    if (mercyIndex === 0) {
+        if (canSpare) {
+            battleText = "* You spared the enemy.";
+            setBattleText(battleText);
+            endBattleMercy();
+        } else {
+            battleSubState = "text";
+            battleText = "* The enemy is not ready to be spared.";
+            setBattleText(battleText);
+            renderBattle();
+        }
+    } else {
+        battleSubState = "text";
+        battleText = "* You fled the battle...";
+        setBattleText(battleText);
+        renderBattle();
+        setTimeout(() => {
+            if (enemyInterval) clearInterval(enemyInterval);
+            if (fightInterval) clearInterval(fightInterval);
+            document.onkeydown = handleKeyDown;
+            gameState = "mainMenu";
+            render();
+        }, 600);
+    }
+}
+
 function startAttackBar() {
     battleSubState = "attackBar";
     fightMarkerPos = 0;
@@ -239,188 +291,77 @@ function finishAttackBar() {
     const dist = Math.abs(fightMarkerPos - center);
     const multiplier = Math.max(0.2, 1 - dist / 160);
     const base = totalAT(currentPlayer) + 3;
-    const raw = base - currentEnemy.DF * 0.5;
-    const damage = Math.max(1, Math.round(raw * multiplier));
+    let raw = Math.max(1, Math.round(base * multiplier));
+    raw = Math.max(1, raw - (currentEnemy.DF || 0));
+    const damage = raw;
     currentEnemy.HP = Math.max(0, currentEnemy.HP - damage);
     battleSubState = "text";
-    const txt = `* You hit ${currentEnemy.name} for ${damage} damage!`;
-    battleText = txt;
-    setBattleText(txt);
+    battleText = `* You hit ${currentEnemy.name} for ${damage} damage!`;
+    setBattleText(battleText);
     renderBattle();
 }
 
 function handleActConfirm() {
-    if (actIndex === 0) {
-        battleSubState = "text";
-        const txt = currentEnemy.checkText || `* ${currentEnemy.name} - ATK ${currentEnemy.AT} DEF ${currentEnemy.DF}`;
-        battleText = txt;
-        setBattleText(txt);
-    } else {
-        talksDone++;
-        let txt = "";
-        if (currentEnemy.id === "dummy" || currentEnemy.id === "mad_dummy") {
-            txt = "* You talk to the DUMMY.\n* ...\n* It doesn't seem much for conversation.";
-        } else if (currentEnemy.id === "toriel") {
-            txt = "* You couldn't think of any conversation topics.";
-        } else if (currentEnemy.id === "papyrus") {
-            txt = "* You flirt with Papyrus.\n* He becomes very flustered.";
-        } else {
-            txt = "* You talk to the enemy.\n* It doesn't seem much for conversation.";
-        }
+    const opts = currentEnemy.actOptions || ["CHECK", "TALK"];
+    const choice = opts[actIndex] || "CHECK";
 
+    if (choice === "CHECK") {
+        battleSubState = "text";
+        const at = currentEnemy.checkAT != null ? currentEnemy.checkAT : currentEnemy.AT;
+        const df = currentEnemy.checkDF != null ? currentEnemy.checkDF : currentEnemy.DF;
+        const desc = currentEnemy.checkDesc || "";
+        battleText = `* ${currentEnemy.name} - ${at} ATK ${df} DEF\n${desc}`;
+        setBattleText(battleText);
+    } else if (choice === "TALK") {
+        talksDone++;
         if (talksDone >= currentEnemy.spareTalks) {
             canSpare = true;
         }
-
+        const t = (currentEnemy.talkTexts && currentEnemy.talkTexts[0]) ||
+            "* You talk to the enemy.\n* It doesn't seem much for conversation.";
         battleSubState = "text";
-        battleText = txt;
-        setBattleText(txt);
-    }
-    renderBattle();
-}
-
-function handleItemAction() {
-    const item = currentPlayer.inventory[itemIndex];
-    if (!item) return;
-    const meta = getItemMeta(item.name);
-
-    if (itemActionIndex === 0) {
-        // USE
-        if (item.type === "heal") {
-            useBattleItem();
-        } else if (item.type === "weapon") {
-            equipWeapon(meta);
-        } else if (item.type === "armor") {
-            equipArmor(meta);
-        } else {
-            const txt = `* You can't use that here.`;
-            battleSubState = "text";
-            battleText = txt;
-            setBattleText(txt);
-            renderBattle();
-        }
-    } else if (itemActionIndex === 1) {
-        // INFO
-        const txt = `* ${meta.desc}`;
+        battleText = t;
+        setBattleText(battleText);
+    } else if (choice === "FLIRT") {
+        const t = (currentEnemy.talkTexts && currentEnemy.talkTexts[0]) ||
+            "* You flirt.\n* Nothing happens.";
         battleSubState = "text";
-        battleText = txt;
-        setBattleText(txt);
-        renderBattle();
-    } else if (itemActionIndex === 2) {
-        // DROP
-        currentPlayer.inventory.splice(itemIndex, 1);
-        const txt = `* You threw away the ${item.name}.`;
+        battleText = t;
+        setBattleText(battleText);
+    } else if (choice === "INSULT") {
+        const t = (currentEnemy.talkTexts && currentEnemy.talkTexts[1]) ||
+            "* You insult the enemy.\n* It doesn't seem to care.";
         battleSubState = "text";
-        battleText = txt;
-        setBattleText(txt);
-        renderBattle();
+        battleText = t;
+        setBattleText(battleText);
     }
-}
-
-function equipWeapon(meta) {
-    const old = currentPlayer.weapon;
-    const oldBonus = currentPlayer.weaponBonus;
-    currentPlayer.weapon = meta.name;
-    currentPlayer.weaponBonus = meta.at || 0;
-    // remove from inventory
-    const idx = currentPlayer.inventory.findIndex(i => i.name === meta.name && i.type === "weapon");
-    if (idx !== -1) currentPlayer.inventory.splice(idx, 1);
-    // add old weapon back if not default and space
-    if (old && old !== meta.name && currentPlayer.inventory.length < INVENTORY_LIMIT) {
-        currentPlayer.inventory.push({ name: old, type: "weapon" });
-    }
-    const txt = `* You equipped the ${meta.name}.`;
-    battleSubState = "text";
-    battleText = txt;
-    setBattleText(txt);
-    renderBattle();
-}
-
-function equipArmor(meta) {
-    const old = currentPlayer.armor;
-    const oldBonus = currentPlayer.armorBonus;
-    currentPlayer.armor = meta.name;
-    currentPlayer.armorBonus = meta.df || 0;
-    const idx = currentPlayer.inventory.findIndex(i => i.name === meta.name && i.type === "armor");
-    if (idx !== -1) currentPlayer.inventory.splice(idx, 1);
-    if (old && old !== meta.name && currentPlayer.inventory.length < INVENTORY_LIMIT) {
-        currentPlayer.inventory.push({ name: old, type: "armor" });
-    }
-    const txt = `* You equipped the ${meta.name}.`;
-    battleSubState = "text";
-    battleText = txt;
-    setBattleText(txt);
     renderBattle();
 }
 
 function useBattleItem() {
     const item = currentPlayer.inventory[itemIndex];
     if (!item) return;
-    const meta = getItemMeta(item.name);
     if (item.type === "heal") {
-        let heal = meta.heal || 10;
-        if (item.name === "BUTTERSCOTCH PIE") heal = currentPlayer.maxHP;
-        const before = currentPlayer.HP;
-        currentPlayer.HP = Math.min(currentPlayer.maxHP, currentPlayer.HP + heal);
-        const gained = currentPlayer.HP - before;
-        let txt = "";
         if (item.name === "MONSTER CANDY") {
-            txt = "* You ate the MONSTER CANDY.\n* You recovered 10 HP.";
+            currentPlayer.HP = Math.min(currentPlayer.maxHP, currentPlayer.HP + 10);
+            battleText = "* You ate the MONSTER CANDY.\n* You recovered 10 HP.";
         } else if (item.name === "SPIDER DONUT") {
-            txt = "* You ate the SPIDER DONUT.\n* You recovered 12 HP.";
+            currentPlayer.HP = Math.min(currentPlayer.maxHP, currentPlayer.HP + 12);
+            battleText = "* You ate the SPIDER DONUT.\n* You recovered 12 HP.";
         } else if (item.name === "BUTTERSCOTCH PIE") {
-            txt = "* You ate the BUTTERSCOTCH PIE.\n* Your HP was maxed out.";
+            currentPlayer.HP = currentPlayer.maxHP;
+            battleText = "* You ate the BUTTERSCOTCH PIE.\n* Your HP was maxed out.";
         } else {
-            txt = `* You used ${item.name}.\n* You recovered ${gained} HP.`;
+            currentPlayer.HP = Math.min(currentPlayer.maxHP, currentPlayer.HP + 10);
+            battleText = `* You used ${item.name}.`;
         }
         currentPlayer.inventory.splice(itemIndex, 1);
-        battleSubState = "text";
-        battleText = txt;
-        setBattleText(txt);
     } else {
-        const txt = `* You can't use that here.`;
-        battleSubState = "text";
-        battleText = txt;
-        setBattleText(txt);
+        battleText = `* You can't use that here.`;
     }
+    battleSubState = "text";
+    setBattleText(battleText);
     renderBattle();
-}
-
-function handleMercyAction() {
-    if (mercyIndex === 0) {
-        // SPARE
-        if (canSpare) {
-            lastSpared = true;
-            const txt = "* You spared the enemy.";
-            battleSubState = "text";
-            battleText = txt;
-            setBattleText(txt);
-            endBattleMercy();
-        } else {
-            const txt = "* The enemy is not ready to be spared.";
-            battleSubState = "text";
-            battleText = txt;
-            setBattleText(txt);
-            renderBattle();
-        }
-    } else {
-        // FLEE
-        lastSpared = false;
-        if (enemyInterval) clearInterval(enemyInterval);
-        if (fightInterval) clearInterval(fightInterval);
-        const txt = "* You ran away...";
-        battleSubState = "text";
-        battleText = txt;
-        setBattleText(txt);
-        document.onkeydown = (e) => {
-            if (e.key.toLowerCase() === "z") {
-                document.onkeydown = handleKeyDown;
-                gameState = "mainMenu";
-                render();
-            }
-        };
-        renderBattle();
-    }
 }
 
 function startEnemyTurn() {
@@ -436,11 +377,20 @@ function startEnemyTurn() {
 
     const patterns = currentEnemy.patterns && currentEnemy.patterns.length ? currentEnemy.patterns : [currentEnemy.pattern];
     let chosen = patterns[Math.floor(Math.random() * patterns.length)];
+
     if (currentEnemy.id === "mad_dummy") {
         const hpRatio = currentEnemy.HP / currentEnemy.maxHP;
         if (hpRatio < 0.33) chosen = "dummyAimBurst";
         else if (hpRatio < 0.66) chosen = "dummyAim";
     }
+
+    if (currentEnemy.id === "papyrus") {
+        const idx = currentEnemy.turnIndex || 0;
+        const seq = ["bonesHorizontal", "bonesHorizontalReverse", "bonesHorizontalHigh", "blueAttackPhase", "sideBones"];
+        chosen = seq[Math.min(idx, seq.length - 1)];
+        currentEnemy.turnIndex = idx + 1;
+    }
+
     spawnPattern(chosen, bullets, soulX, soulY);
 
     if (enemyInterval) clearInterval(enemyInterval);
@@ -455,9 +405,12 @@ function startEnemyTurn() {
                 endBattleLose();
             } else {
                 battleSubState = "menu";
-                const txt = "* The enemy is watching you.";
-                battleText = txt;
-                setBattleText(txt);
+                if (currentEnemy.id === "papyrus" && currentEnemy.turnIndex === 4) {
+                    battleText = "* You're blue now.";
+                } else {
+                    battleText = "* The enemy is watching you.";
+                }
+                setBattleText(battleText);
                 renderBattle();
             }
         } else {
@@ -468,7 +421,7 @@ function startEnemyTurn() {
 }
 
 function updateSoul() {
-    const speed = currentEnemy.soulType === "red" ? 3.5 : 3.2;
+    const speed = currentEnemy.soulType === "red" ? 4 : 3.5;
     if (currentEnemy.soulType === "red") {
         if (keyState["w"]) soulY -= speed;
         if (keyState["s"]) soulY += speed;
@@ -509,30 +462,57 @@ function checkBulletCollisions() {
         const dx = soulX - b.x;
         const dy = soulY - b.y;
         if (Math.abs(dx) < 10 && Math.abs(dy) < 10 && !b.remove) {
-            let dmg = Math.max(1, (currentEnemy.AT || 1) - totalDF(currentPlayer));
-            if (currentEnemy.id === "toriel" && currentPlayer.HP <= 10) {
-                dmg = 1; // she pulls back
+            if (currentEnemy.id === "papyrus") {
+                if (b.color === "blue") {
+                    if (keyState["w"] || keyState["a"] || keyState["s"] || keyState["d"]) {
+                        applyEnemyDamage(b);
+                    }
+                } else {
+                    applyEnemyDamage(b);
+                }
+            } else {
+                applyEnemyDamage(b);
             }
-            currentPlayer.HP = Math.max(0, currentPlayer.HP - dmg);
             b.remove = true;
         }
     });
     bullets = bullets.filter(b => !b.remove);
 }
 
+function applyEnemyDamage(b) {
+    let base = currentEnemy.AT || 1;
+    let dmg = Math.max(1, Math.round(base * 0.7) - totalDF(currentPlayer));
+    if (currentEnemy.id === "toriel" && currentPlayer.HP <= 10) {
+        dmg = Math.max(1, Math.floor(dmg * 0.3));
+    }
+    if (currentEnemy.id === "papyrus") {
+        if (currentPlayer.HP - dmg <= 0) {
+            dmg = Math.max(0, currentPlayer.HP - 1);
+        }
+    }
+    currentPlayer.HP = Math.max(0, currentPlayer.HP - dmg);
+}
+
 function endBattleWin() {
     if (enemyInterval) clearInterval(enemyInterval);
     if (fightInterval) clearInterval(fightInterval);
     battleSubState = "text";
-    lastSpared = false;
-    const g = currentEnemy.gold || 0;
-    const e = currentEnemy.exp || 0;
-    const txt = `* You won!\n* You earned ${g}G and ${e} EXP. (Z)`;
-    battleText = txt;
-    setBattleText(txt);
-    currentPlayer.G += g;
-    currentPlayer.EXP += e;
+
+    let gainedGold = currentEnemy.gold || 0;
+    let gainedEXP = currentEnemy.exp || 0;
+
+    if (currentEnemy.id === "toriel" && canSpare && currentEnemy.HP <= 0) {
+        gainedGold = Math.floor(gainedGold * 0.7);
+        gainedEXP = Math.floor(gainedEXP * 0.7);
+    }
+
+    battleText = `* You won!\n* You earned ${gainedGold}G and ${gainedEXP} EXP. (Z)`;
+    setBattleText(battleText);
+
+    currentPlayer.G += gainedGold;
+    currentPlayer.EXP += gainedEXP;
     currentPlayer.kills += 1;
+
     if (currentPlayer.EXP >= currentPlayer.NEXT) {
         currentPlayer.LV += 1;
         currentPlayer.EXP = 0;
@@ -578,22 +558,35 @@ function startGameOver() {
 }
 
 function endBattleLose() {
-    startGameOver();
+    if (currentEnemy.id === "papyrus") {
+        if (enemyInterval) clearInterval(enemyInterval);
+        if (fightInterval) clearInterval(fightInterval);
+        battleSubState = "text";
+        battleText = "* Papyrus captured you...";
+        setBattleText(battleText);
+        renderBattle();
+        setTimeout(() => {
+            currentPlayer.HP = currentPlayer.maxHP;
+            saves[currentSlot] = currentPlayer;
+            saveSlot(currentSlot);
+            document.onkeydown = handleKeyDown;
+            gameState = "mainMenu";
+            render();
+        }, 1200);
+    } else {
+        startGameOver();
+    }
 }
 
 function endBattleMercy() {
     if (enemyInterval) clearInterval(enemyInterval);
     if (fightInterval) clearInterval(fightInterval);
-    const baseG = currentEnemy.gold || 0;
-    const bonus = currentEnemy.spareBonusGold || 0;
-    const totalG = baseG + bonus;
-    currentPlayer.G += totalG;
-    // no EXP on spare if flagged
-    if (!currentEnemy.noExpOnSpare) {
-        currentPlayer.EXP += currentEnemy.exp || 0;
-    }
+
+    const goldGain = currentEnemy.goldMercy != null ? currentEnemy.goldMercy : currentEnemy.gold || 0;
+    currentPlayer.G += goldGain;
     saves[currentSlot] = currentPlayer;
     saveSlot(currentSlot);
+
     renderBattle();
     document.onkeydown = (e) => {
         if (e.key.toLowerCase() === "z") {
@@ -622,6 +615,8 @@ function renderBattle() {
     const hpPercent = currentPlayer && currentPlayer.maxHP ? (currentPlayer.HP / currentPlayer.maxHP) * 100 : 0;
     const lostPercent = 100 - hpPercent;
 
+    let hpColor = "#ffff00";
+
     let subBoxHTML = "";
 
     if (battleSubState === "attackBar") {
@@ -632,36 +627,32 @@ function renderBattle() {
             </div>
         `;
     } else if (battleSubState === "actMenu") {
+        const opts = currentEnemy.actOptions || ["CHECK", "TALK"];
+        let rows = "";
+        opts.forEach((opt, i) => {
+            rows += `<div class="sub-option">${i === actIndex ? '<span class="heart">♥</span>' : '&nbsp;&nbsp;'}${opt}</div>`;
+        });
         subBoxHTML = `
             <div class="sub-box">
-                <div class="sub-option">${actIndex === 0 ? '<span class="heart">♥</span>' : '&nbsp;&nbsp;'}CHECK</div>
-                <div class="sub-option">${actIndex === 1 ? '<span class="heart">♥</span>' : '&nbsp;&nbsp;'}TALK</div>
+                ${rows}
             </div>
         `;
     } else if (battleSubState === "itemMenu") {
         if (currentPlayer.inventory.length === 0) {
             subBoxHTML = `<div class="sub-box"><p>* You have no items.</p></div>`;
         } else {
-            let itemsHTML = `<div class="sub-box"><p>* ITEM</p>`;
+            let itemsHTML = `<div class="sub-box"><p>* ITEMS</p>`;
             currentPlayer.inventory.forEach((it, i) => {
                 itemsHTML += `<div class="sub-option">${i === itemIndex ? '<span class="heart">♥</span>' : '&nbsp;&nbsp;'}${it.name}</div>`;
             });
             itemsHTML += `</div>`;
             subBoxHTML = itemsHTML;
         }
-    } else if (battleSubState === "itemAction") {
-        subBoxHTML = `
-            <div class="sub-box">
-                <div class="sub-option">${itemActionIndex === 0 ? '<span class="heart">♥</span>' : '&nbsp;&nbsp;'}USE</div>
-                <div class="sub-option">${itemActionIndex === 1 ? '<span class="heart">♥</span>' : '&nbsp;&nbsp;'}INFO</div>
-                <div class="sub-option">${itemActionIndex === 2 ? '<span class="heart">♥</span>' : '&nbsp;&nbsp;'}DROP</div>
-            </div>
-        `;
     } else if (battleSubState === "mercyMenu") {
         subBoxHTML = `
             <div class="sub-box">
-                <div class="sub-option">${mercyIndex === 0 ? '<span class="heart">♥</span>' : '&nbsp;&nbsp;'}SPARE</div>
-                <div class="sub-option">${mercyIndex === 1 ? '<span class="heart">♥</span>' : '&nbsp;&nbsp;'}FLEE</div>
+                <div class="sub-option">${mercyIndex === 0 ? '<span class="heart">♥</span>' : '&nbsp;&nbsp;'}Spare</div>
+                <div class="sub-option">${mercyIndex === 1 ? '<span class="heart">♥</span>' : '&nbsp;&nbsp;'}Flee</div>
             </div>
         `;
     }
@@ -671,7 +662,8 @@ function renderBattle() {
         const soulClass = currentEnemy.soulType === "blue" ? "soul blue" : "soul";
         let bulletsHTML = "";
         bullets.forEach(b => {
-            bulletsHTML += `<div class="bullet" style="left:${b.x}px; top:${b.y}px;"></div>`;
+            const colorClass = b.color === "blue" ? "bullet-blue" : "";
+            bulletsHTML += `<div class="bullet ${colorClass}" style="left:${b.x}px; top:${b.y}px;"></div>`;
         });
         soulBoxHTML = `
             <div class="soul-box">
@@ -681,13 +673,14 @@ function renderBattle() {
         `;
     }
 
-    const textToShow = shownBattleText || battleText;
+    const textToShow = battleShownText || battleText || "";
 
     g.innerHTML = `
         <div class="center">
             <div class="battle-box">
                 <div class="enemy-area">
                     <div class="enemy-sprite ${enemySpriteClass()}"></div>
+                    <div class="enemy-dialogue-box"></div>
                 </div>
                 <div class="battle-text">
                     <p>${textToShow.replace(/\n/g,"<br>")}</p>
@@ -695,18 +688,17 @@ function renderBattle() {
                 ${soulBoxHTML}
                 ${subBoxHTML}
             </div>
-            <div class="top-battle-info">
-                <span>${currentPlayer.name || "HUMAN"}</span>
-                <span>LV ${currentPlayer.LV}</span>
-                <span class="hp-label">HP</span>
-                <span class="hp-bar">
-                    <span class="hp-fill hp-fill-current" style="width:${hpPercent}%;"></span>
-                    <span class="hp-fill hp-fill-lost" style="width:${lostPercent}%;"></span>
-                </span>
-                <span class="hp-numbers">${currentPlayer.HP}/${currentPlayer.maxHP}</span>
-            </div>
             <div class="bottom-menu">
-                <div>
+                <div class="battle-status-line">
+                    <span>${currentPlayer.name || "HUMAN"}</span>
+                    <span>LV ${currentPlayer.LV}</span>
+                    <span>HP ${currentPlayer.HP}/${currentPlayer.maxHP}</span>
+                    <span class="hp-bar">
+                        <span class="hp-fill hp-fill-yellow" style="width:${hpPercent}%;"></span>
+                        <span class="hp-fill hp-fill-red" style="width:${lostPercent}%;"></span>
+                    </span>
+                </div>
+                <div class="battle-buttons-line">
                     <span class="button-box ${battleMenuIndex === 0 ? "selected" : ""}">FIGHT</span>
                     <span class="button-box ${battleMenuIndex === 1 ? "selected" : ""}">ACT</span>
                     <span class="button-box ${battleMenuIndex === 2 ? "selected" : ""}">ITEM</span>

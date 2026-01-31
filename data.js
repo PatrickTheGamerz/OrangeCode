@@ -188,9 +188,10 @@ function saveSlot(index) {
     localStorage.setItem("fallen_save_" + index, JSON.stringify(saves[index]));
 }
 
-function createNewSave(index, name) {
+function createNewSave(index, name, hardModeFlag) {
     const p = defaultPlayer();
     p.name = name;
+    p.hardMode = !!hardModeFlag;
     saves[index] = p;
     saveSlot(index);
 }

@@ -3,31 +3,14 @@
 const SAVE_SLOTS = 4;
 
 const defaultPlayer = () => ({
-    name: "",
-    LV: 1,
-    G: 0,
-    HP: 20,
-    maxHP: 20,
-    baseAT: 5,
-    baseDF: 0,
-    weaponBonus: 0,
-    armorBonus: 0,
-    EXP: 0,
-    NEXT: 10,
-    weapon: "STICK",
-    armor: "BANDAGE",
-    kills: 0,
-    hardMode: false,
+    name: "", LV: 1, G: 0, HP: 20, maxHP: 20, baseAT: 5, baseDF: 0,
+    weaponBonus: 0, armorBonus: 0, EXP: 0, NEXT: 10,
+    weapon: "STICK", armor: "BANDAGE", kills: 0, hardMode: false,
     inventory: [{ name: "MONSTER CANDY", type: "heal" }]
 });
 
-function totalAT(p) {
-    return (p.baseAT || 0) + (p.weaponBonus || 0);
-}
-
-function totalDF(p) {
-    return (p.baseDF || 0) + (p.armorBonus || 0);
-}
+function totalAT(p) { return (p.baseAT || 0) + (p.weaponBonus || 0); }
+function totalDF(p) { return (p.baseDF || 0) + (p.armorBonus || 0); }
 
 let saves = [];
 let currentSlot = 0;
@@ -35,7 +18,6 @@ let currentPlayer = null;
 let gameState = "title";
 let currentMenuIndex = 0;
 
-// FIXED: Changed } to ] to prevent the crash
 const monsterList = [
     { id: "dummy",       name: "DUMMY",            reqLV: 1 },
     { id: "mad_dummy",   name: "MAD DUMMY",        reqLV: 2 },
@@ -67,134 +49,139 @@ const enemies = [
     {
         id: "dummy",
         name: "DUMMY",
-        maxHP: 30,
-        AT: 1,
-        DF: 1,
-        gold: 3,
-        goldMercy: 5,
-        exp: 2,
-        spareTalks: 2,
+        maxHP: 30, AT: 1, DF: 1, gold: 3, goldMercy: 5, exp: 2,
+        spareTalks: 1, 
         soulType: "red",
-        pattern: "simpleHorizontal",
-        patterns: ["simpleHorizontal"],
-        openingText: "* DUMMY blocks the way!",
-        checkAT: 1,
-        checkDF: 1,
-        checkDesc: "* A cotton heart and a button eye.",
+        pattern: "dummyNone",
+        patterns: ["dummyNone"],
+        openingText: "* You encountered the Dummy.",
+        checkAT: 0, checkDF: 0,
+        checkDesc: "* A cotton heart and a button eye.\n* You are the apple of my eye.",
         actOptions: ["CHECK", "TALK"],
-        talkTexts: [
-            "* You talk to the DUMMY.\n* ...\n* It doesn't seem much for conversation."
-        ]
+        talkTexts: ["* You talk to the DUMMY.\n* ...\n* It doesn't seem much for\n  conversation.\n* DUMMY is happy with you!"],
+        turnDialogues: ["..."]
     },
     {
         id: "mad_dummy",
         name: "MAD DUMMY",
-        maxHP: 60,
-        AT: 5,
-        DF: 2,
-        gold: 15,
-        goldMercy: 20,
-        exp: 10,
-        spareTalks: 3,
+        maxHP: 300, AT: 5, DF: 100, // High DEF so you outlast him
+        gold: 15, goldMercy: 20, exp: 10,
+        spareTalks: 99, 
+        surviveTurns: 6, // Gives up after 6 turns
         soulType: "red",
-        pattern: "multiHorizontal",
-        patterns: ["multiHorizontal", "dummyAim", "dummyAimBurst"],
+        pattern: "dummyAim",
+        patterns: ["dummyAim", "dummyAimBurst", "dummyAimFast"],
         openingText: "* Mad Dummy blocks the way!",
-        checkAT: 30,
-        checkDF: "YES",
-        checkDesc: "* The dummy looks mad.",
-        actOptions: ["CHECK", "TALK"],
-        talkTexts: [
-            "* You talk to the MAD DUMMY.\n* ...\n* It doesn't seem much for conversation."
+        checkAT: 7, checkDF: "YES",
+        checkDesc: "* Because they're a ghost, physical\n  attacks will fail.",
+        actOptions: ["CHECK", "TALK", "STARE"],
+        talkTexts: ["* You talk to the MAD DUMMY.\n* It pretends not to hear you."],
+        turnDialogues: [
+            "FOOLS!\nDUMMIES!\nDUMMIES!\nDUMMIES!",
+            "I'LL DEFEAT\nYOU AND\nTAKE YOUR\nSOUL!",
+            "WHY DO\nPEOPLE\nLIKE YOU\nEXIST?!",
+            "ARGH!!\nJUST DIE\nALREADY!",
+            "ENOUGH!\nMAGIC\nMISSILES!",
+            "N-NO!\nOUT OF\nAMMO?!"
         ]
     },
     {
         id: "toriel",
         name: "TORIEL",
-        maxHP: 440,
-        AT: 10,
-        DF: 4,
-        gold: 40,
-        goldMercy: 50,
-        exp: 30,
-        spareTalks: 3,
+        maxHP: 440, AT: 10, DF: 4, gold: 40, goldMercy: 50, exp: 30,
+        spareTalks: 99, 
+        spareTurnsRequirement: 12, // Needs 12 SPARE actions
         soulType: "red",
-        pattern: "fallingFire",
+        pattern: "torielHandFire",
         patterns: ["fallingFire", "torielSideFire", "torielWaveFire", "torielHandFire"],
-        openingText: "* Toriel is acting aloof.",
-        checkAT: 80,
-        checkDF: 80,
+        openingText: "* Toriel blocks the way!",
+        checkAT: 80, checkDF: 80,
         checkDesc: "* Knows best for you.",
         actOptions: ["CHECK", "TALK"],
-        talkTexts: [
-            "* You couldn't think of any conversation topics."
-        ]
+        talkTexts: ["* You couldn't think of any\n  conversation topics."],
+        turnDialogues: [
+            "...", "...", "...", 
+            "What are\nyou doing?", 
+            "Attack or\nrun away!", 
+            "What are\nyou proving\nthis way?", 
+            "Fight me\nor leave!", 
+            "Stop it.", 
+            "Stop\nlooking at\nme that\nway.", 
+            "Go away!", 
+            "...", "..."
+        ],
+        betrayalText: "* You... at my most vulnerable\n  moment...\n* To think I was worried you\n  wouldn't fit in out there...\n* Ha... ha..."
     },
     {
         id: "papyrus",
         name: "PAPYRUS",
-        maxHP: 680,
-        AT: 8,
-        DF: 2,
-        gold: 50,
-        goldMercy: 60,
-        exp: 40,
-        spareTalks: 4,
+        maxHP: 680, AT: 8, DF: 2, gold: 50, goldMercy: 60, exp: 40,
+        spareTalks: 99,
+        surviveTurns: 14, // Spares you after 14 turns
         soulType: "blue",
         pattern: "bonesHorizontal",
         patterns: ["bonesHorizontal", "boneRain", "sideBones", "blueAttackPhase"],
         openingText: "* Papyrus blocks the way!",
-        checkAT: 8,
-        checkDF: 2,
+        checkAT: 8, checkDF: 2,
         checkDesc: "* He likes to say: 'Nyeh heh heh!'",
         actOptions: ["CHECK", "FLIRT", "INSULT"],
-        talkTexts: [
-            "* You flirt with Papyrus.\n* He becomes flustered.",
-            "* You insult Papyrus.\n* He doesn't seem to understand."
+        talkTexts: [],
+        turnDialogues: [
+            "YOU'RE BLUE\nNOW!", 
+            "NYEH HEH\nHEH!", 
+            "HMM, YOU ARE\nA TOUGH ONE!", 
+            "BUT I AM\nTOUGHER!", 
+            "BEHOLD MY\nMAGNIFICENT\nBONES!", 
+            "WOW, YOU'RE\nSTILL HERE?", 
+            "HAVE YOU\nCONSIDERED\nSPAGHETTI?",
+            "NO? MORE\nBONES THEN!",
+            "MY SPECIAL\nATTACK IS\nSOON!", 
+            "ARE YOU\nREADY?", 
+            "HERE IT\nCOMES!", 
+            "WHAT?!\nWHERE IS MY\nSPECIAL\nATTACK?", 
+            "THAT DOG\nSTOLE IT!", 
+            "WELL, HERE'S\nA NORMAL\nATTACK!"
         ]
     },
     {
         id: "p_sans",
-        name: "PACIFIST SANS",
-        maxHP: 80,
-        AT: 10,
-        DF: 4,
-        gold: 30,
-        goldMercy: 35,
-        exp: 20,
-        spareTalks: 5,
-        soulType: "blue",
-        pattern: "fastBones",
-        patterns: ["fastBones", "sansKarma", "sansSideSpam", "gasterBlaster"],
-        openingText: "* Sans is taking it easy.",
-        checkAT: 10,
-        checkDF: 4,
-        checkDesc: "* Just a friendly shortcut guy.",
+        name: "SANS",
+        maxHP: 1, AT: 1, DF: 1, gold: 0, goldMercy: 0, exp: 0,
+        spareTalks: 0,
+        surviveTurns: 99,
+        soulType: "red",
+        pattern: "dummyNone",
+        patterns: ["dummyNone"],
+        openingText: "* Sans is asleep.",
+        checkAT: 1, checkDF: 1,
+        checkDesc: "* The easiest enemy.\n* Can only deal 1 damage.",
         actOptions: ["CHECK", "TALK"],
-        talkTexts: [
-            "* You try to talk.\n* He shrugs."
-        ]
+        talkTexts: ["* You try to talk.\n* Zzzzz..."],
+        turnDialogues: ["Zzz..."]
     },
     {
         id: "us_sans",
-        name: "UNDERSWAP SANS",
-        maxHP: 90,
-        AT: 11,
-        DF: 5,
-        gold: 35,
-        goldMercy: 40,
-        exp: 25,
-        spareTalks: 5,
+        name: "US SANS",
+        maxHP: 680, AT: 12, DF: 5, gold: 50, goldMercy: 60, exp: 40,
+        spareTalks: 99,
+        surviveTurns: 8,
         soulType: "blue",
-        pattern: "mixedBones",
-        patterns: ["mixedBones", "boneRain", "sansSideSpam"],
-        openingText: "* Sans is ready to swap it up!",
-        checkAT: 11,
-        checkDF: 5,
-        checkDesc: "* Seems excited.",
-        actOptions: ["CHECK", "TALK"],
-        talkTexts: [
-            "* You say hi.\n* He waves enthusiastically."
+        pattern: "fastBones",
+        patterns: ["fastBones", "mixedBones", "boneRain", "sansSideSpam"],
+        openingText: "* MWEH HEH HEH!\n* I, THE MAGNIFICENT SANS,\n  WILL CAPTURE YOU!",
+        checkAT: 12, checkDF: 5,
+        checkDesc: "* Extremely energetic.\n* Loves tacos.",
+        actOptions: ["CHECK", "FLIRT", "CHALLENGE"],
+        talkTexts: [""],
+        turnDialogues: [
+            "MWEH HEH\nHEH!",
+            "BEHOLD MY\nBLUE\nATTACK!",
+            "YOU'RE VERY\nGOOD AT\nJUMPING!",
+            "BUT CAN\nYOU DODGE\nTHIS?!",
+            "TACOS ARE\nTHE BEST\nFOOD!",
+            "I ALMOST\nFEEL BAD\nFOR YOU!",
+            "ALPHY WILL\nBE SO\nPROUD!",
+            "READY FOR\nMY ULTIMATE\nATTACK?!"
         ]
     }
 ];
@@ -209,29 +196,7 @@ function loadSaves() {
             const parsed = JSON.parse(raw);
             const base = defaultPlayer();
             const merged = Object.assign(base, parsed);
-            if (!Array.isArray(merged.inventory)) {
-                merged.inventory = base.inventory.slice();
-            } else {
-                merged.inventory = merged.inventory.map(it => {
-                    if (typeof it === "string") {
-                        const heal = shopData.heal.find(h => h.name === it);
-                        if (heal) return { name: it, type: "heal" };
-                        const w = shopData.weapon.find(w => w.name === it);
-                        if (w) return { name: it, type: "weapon" };
-                        const a = shopData.armor.find(a => a.name === it);
-                        if (a) return { name: it, type: "armor" };
-                        return { name: it, type: "heal" };
-                    }
-                    return it;
-                });
-            }
-            if (typeof merged.weaponBonus !== "number") merged.weaponBonus = 0;
-            if (typeof merged.armorBonus !== "number") merged.armorBonus = 0;
-            if (typeof merged.baseAT !== "number") merged.baseAT = 5;
-            if (typeof merged.baseDF !== "number") merged.baseDF = 0;
-            if (typeof merged.maxHP !== "number") merged.maxHP = 20;
-            if (typeof merged.HP !== "number") merged.HP = merged.maxHP;
-            if (typeof merged.hardMode !== "boolean") merged.hardMode = false;
+            if (!Array.isArray(merged.inventory)) merged.inventory = base.inventory.slice();
             saves.push(merged);
         } else {
             saves.push(null);

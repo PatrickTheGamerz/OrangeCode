@@ -1,382 +1,157 @@
 /* style.css - core layout, UI, pixel-ish look */
 
 body {
-    margin: 0;
-    background: black;
-    color: white;
-    font-family: 'VT323', monospace;
-    font-size: 26px; /* Bigger base font for the pixel style */
-    image-rendering: pixelated;
-    overflow: hidden;
-    letter-spacing: 1px;
+    margin: 0; background: black; color: white;
+    font-family: 'VT323', monospace; font-size: 26px;
+    image-rendering: pixelated; overflow: hidden; letter-spacing: 1px;
 }
 
 #game {
-    width: 800px;
-    height: 600px;
-    margin: 20px auto;
-    border: 4px solid white;
-    padding: 24px;
-    box-sizing: border-box;
-    position: relative;
-    background: black;
+    width: 800px; height: 600px; margin: 20px auto;
+    border: 4px solid white; padding: 24px; box-sizing: border-box;
+    position: relative; background: black;
 }
 
-.center {
-    text-align: center;
-}
+.center { text-align: center; }
 
 .undertale-box {
-    border: 4px solid white;
-    padding: 16px;
-    display: inline-block;
-    margin: 8px auto;
-    background: black;
+    border: 4px solid white; padding: 16px;
+    display: inline-block; margin: 8px auto; background: black;
 }
 
-.menu-option {
-    margin: 10px 0;
-    font-size: 28px;
-}
-
-.menu-option span {
-    padding: 2px 4px;
-}
-
-.selected span,
-.selected {
-    color: #ffff00;
-}
-
-.menu-large {
-    font-size: 32px;
-}
+.menu-option { margin: 10px 0; font-size: 28px; }
+.menu-option span { padding: 2px 4px; }
+.selected span, .selected { color: #ffff00; }
+.menu-large { font-size: 32px; }
 
 .button-box {
-    border: 2px solid #ed7c05; /* UT orange menu color */
-    color: #ed7c05;
-    padding: 6px 18px;
-    display: inline-block;
-    margin: 6px 10px;
-    font-size: 28px;
+    border: 2px solid #ed7c05; color: #ed7c05;
+    padding: 6px 18px; display: inline-block;
+    margin: 6px 10px; font-size: 28px;
 }
-
-.button-box.selected {
-    border-color: #ffff00;
-    color: #ffff00;
-}
+.button-box.selected { border-color: #ffff00; color: #ffff00; }
 
 .bottom-menu {
-    position: absolute;
-    bottom: 12px;
-    left: 0;
-    width: 100%;
-    text-align: center;
-    font-size: 24px;
+    position: absolute; bottom: 12px; left: 0;
+    width: 100%; text-align: center; font-size: 24px;
 }
 
 .battle-status-line {
-    margin-bottom: 8px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 20px;
+    margin-bottom: 8px; display: flex;
+    justify-content: center; align-items: center; gap: 20px;
 }
-
-.battle-buttons-line {
-    margin-top: 4px;
-}
+.battle-buttons-line { margin-top: 4px; }
 
 .battle-box {
-    border: 4px solid white;
-    width: 520px;
-    height: 260px;
-    margin: 40px auto 0;
-    position: relative;
-    background: black;
+    border: 4px solid white; width: 520px; height: 260px;
+    margin: 40px auto 0; position: relative; background: black;
 }
 
 .battle-text {
-    padding: 16px;
-    height: 80px;
-    font-size: 28px;
-    text-align: left;
-    line-height: 1.2;
+    padding: 16px; height: 80px; font-size: 28px;
+    text-align: left; line-height: 1.2;
+}
+
+/* NEW: Font and color utilities */
+.yellow-text { color: #ffff00; }
+.red-text { color: #ff0000; }
+.papyrus-font {
+    font-family: 'Papyrus', 'Comic Sans MS', sans-serif;
+    text-transform: uppercase;
+    font-weight: bold;
+    font-size: 22px;
+    line-height: 1.1;
 }
 
 .hp-bar {
-    display: inline-block;
-    width: 60px; /* Base width, scales dynamically in JS now */
-    height: 24px;
-    background: #ff0000;
-    margin-left: 8px;
-    position: relative;
-    vertical-align: middle;
+    display: inline-block; width: 60px; height: 24px;
+    background: #ff0000; margin-left: 8px;
+    position: relative; vertical-align: middle;
 }
-
 .hp-fill-yellow {
-    height: 100%;
-    background: #ffff00;
-    display: block;
-    transition: width 0.2s ease-out;
+    height: 100%; background: #ffff00;
+    display: block; transition: width 0.2s ease-out;
 }
 
-.file-container {
-    width: 70%;
-    margin: 0 auto;
-}
-
-.file-slot {
-    margin: 6px 0;
-    padding: 6px 10px;
-    border: 2px solid white;
-}
-
-.file-slot.selected {
-    border-color: #ffff00;
-    color: #ffff00;
-}
-
-.file-row {
-    display: flex;
-    justify-content: space-between;
-}
-
-.name-grid {
-    display: inline-block;
-    margin-top: 16px;
-}
-
-.name-row {
-    display: flex;
-    justify-content: center;
-}
-
-.name-cell {
-    width: 32px;
-    text-align: center;
-    padding: 4px;
-    font-size: 26px;
-}
-
-.name-cell.selected {
-    color: #ffff00;
-}
-
-.name-display {
-    margin-top: 12px;
-    font-size: 32px;
-}
-
-.stats-box {
-    width: 80%;
-    margin: 0 auto;
-    text-align: left;
-}
-
-.flex-between {
-    display: flex;
-    justify-content: space-between;
-}
+.file-container { width: 70%; margin: 0 auto; }
+.file-slot { margin: 6px 0; padding: 6px 10px; border: 2px solid white; }
+.file-slot.selected { border-color: #ffff00; color: #ffff00; }
+.file-row { display: flex; justify-content: space-between; }
+.name-grid { display: inline-block; margin-top: 16px; }
+.name-row { display: flex; justify-content: center; }
+.name-cell { width: 32px; text-align: center; padding: 4px; font-size: 26px; }
+.name-cell.selected { color: #ffff00; }
+.name-display { margin-top: 12px; font-size: 32px; }
+.stats-box { width: 80%; margin: 0 auto; text-align: left; }
+.flex-between { display: flex; justify-content: space-between; }
 
 .fight-bar {
-    width: 500px;
-    height: 120px;
-    border: 2px solid white;
-    margin: 12px auto;
-    position: relative;
-    background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/w8AAwAB/AL+f4R4AAAAAElFTkSuQmCC'); /* Dummy background */
-    background: black;
+    width: 500px; height: 120px; border: 2px solid white;
+    margin: 12px auto; position: relative; background: black;
 }
-
 .fight-crit {
-    position: absolute;
-    top: 0;
-    left: 230px;
-    width: 40px;
-    height: 100%;
-    background: #00ff00;
+    position: absolute; top: 0; left: 230px;
+    width: 40px; height: 100%; background: #00ff00;
 }
-
 .fight-marker {
-    position: absolute;
-    top: -4px;
-    width: 8px;
-    height: 128px;
-    background: #ffffff;
-    box-shadow: 0 0 4px #000;
+    position: absolute; top: -4px; width: 8px; height: 128px;
+    background: #ffffff; box-shadow: 0 0 4px #000;
 }
 
 .soul-box {
-    border: 4px solid white;
-    width: 260px;
-    height: 160px;
-    margin: 10px auto 0;
-    position: relative;
-    overflow: hidden;
-    background: black;
+    border: 4px solid white; width: 260px; height: 160px;
+    margin: 10px auto 0; position: relative; overflow: hidden; background: black;
 }
 
 .soul {
-    width: 12px;
-    height: 12px;
-    position: absolute;
-    transform: rotate(45deg);
-    background: #ff0000;
+    width: 12px; height: 12px; position: absolute;
+    transform: rotate(45deg); background: #ff0000;
 }
+.soul::before, .soul::after {
+    content: ""; position: absolute; width: 12px; height: 12px;
+    border-radius: 50%; background: #ff0000; top: -6px; left: 0;
+}
+.soul::after { left: -6px; top: 0; }
+.soul.blue { background: #0022ff; }
+.soul.blue::before, .soul.blue::after { background: #0022ff; }
 
-.soul::before,
-.soul::after {
-    content: "";
-    position: absolute;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: #ff0000;
-    top: -6px;
-    left: 0;
-}
-
-.soul::after {
-    left: -6px;
-    top: 0;
-}
-
-.soul.blue {
-    background: #0022ff;
-}
-
-.soul.blue::before,
-.soul.blue::after {
-    background: #0022ff;
-}
-
-.bullet {
-    width: 8px;
-    height: 8px;
-    background: #ffffff;
-    position: absolute;
-    border-radius: 50%;
-}
-
-.bullet-blue {
-    background: #00ccff;
-}
-
-.bullet-orange {
-    background: #ffaa00;
-}
+.bullet { width: 8px; height: 8px; background: #ffffff; position: absolute; border-radius: 50%; }
+.bullet-blue { background: #00ccff; }
+.bullet-orange { background: #ffaa00; }
 
 .enemy-area {
-    width: 100%;
-    height: 120px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: relative;
+    width: 100%; height: 120px; display: flex;
+    justify-content: center; align-items: center; position: relative;
 }
-
 .enemy-sprite {
-    width: 80px;
-    height: 100px;
-    border: 2px solid white;
-    border-radius: 4px;
-    position: relative;
-    background: black;
+    width: 80px; height: 100px; border: 2px solid white;
+    border-radius: 4px; position: relative; background: black; z-index: 2;
 }
 
-.enemy-dummy { border-color: #aaaaaa; }
-.enemy-mad-dummy { border-color: #ff0000; }
-.enemy-toriel { border-color: #ffffff; }
+/* NEW: Annoying Dog */
+.annoying-dog {
+    position: absolute; width: 40px; height: 30px;
+    background: white; border: 2px solid black; border-radius: 8px;
+    right: 20px; bottom: 10px; z-index: 1;
+}
+
 .enemy-papyrus { border-color: #00ffff; }
+.enemy-toriel { border-color: #ffffff; }
 .enemy-p-sans { border-color: #ffff00; }
-.enemy-us-sans { border-color: #ff00ff; }
 
 .enemy-dialogue-box {
-    position: absolute;
-    right: 40px;
-    top: 10px;
-    width: 160px;
-    min-height: 40px;
-    border: 2px solid white;
-    background: white;
-    color: black;
-    border-radius: 10px;
-    font-size: 20px;
-    padding: 8px;
-    display: none;
+    position: absolute; right: 20px; top: -10px; width: 180px; min-height: 40px;
+    border: 3px solid black; background: white; color: black;
+    border-radius: 10px; font-size: 18px; padding: 12px; display: none; z-index: 5;
 }
 
 .sub-box {
-    border: 4px solid white;
-    width: 512px;
-    margin: 0 auto;
-    padding: 8px;
-    text-align: left;
-    background: #000;
-    box-sizing: border-box;
-    position: absolute;
-    bottom: -4px;
-    left: 0;
-    height: 120px;
+    border: 4px solid white; width: 512px; margin: 0 auto;
+    padding: 8px; text-align: left; background: #000;
+    box-sizing: border-box; position: absolute; bottom: -4px; left: 0; height: 120px;
 }
-
-.sub-option {
-    margin: 4px 0;
-    display: inline-block;
-    width: 48%;
-}
-
-.heart {
-    color: #ff0000;
-    margin-right: 8px;
-    font-size: 20px;
-}
-
-.monster-list {
-    width: 60%;
-    margin: 0 auto;
-    text-align: left;
-}
-
-.small-text {
-    font-size: 18px;
-    color: #888;
-}
-
-.game-over-screen {
-    margin-top: 150px;
-}
-
-.game-over-title {
-    font-size: 64px;
-    margin-bottom: 16px;
-}
-
-.game-over-text {
-    font-size: 28px;
-    white-space: pre-line;
-}
-
-.wingdings-layer {
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    overflow: hidden;
-    z-index: -1;
-}
-
-.wingding {
-    position: absolute;
-    font-size: 80px;
-    color: rgba(255,255,255,0.12);
-    animation-name: wingdingsFloat;
-    animation-iteration-count: infinite;
-    animation-direction: alternate;
-}
-
-@keyframes wingdingsFloat {
-    0% { transform: translate(-40px, 0); opacity: 0.1; }
-    50% { transform: translate(20px, -40px); opacity: 0.4; }
-    100% { transform: translate(60px, 40px); opacity: 0.15; }
-}
+.sub-option { margin: 4px 0; display: inline-block; width: 48%; }
+.heart { color: #ff0000; margin-right: 8px; font-size: 20px; }
+.game-over-screen { margin-top: 150px; }
+.game-over-title { font-size: 64px; margin-bottom: 16px; }
+.game-over-text { font-size: 28px; white-space: pre-line; }

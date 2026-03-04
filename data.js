@@ -35,6 +35,7 @@ let currentPlayer = null;
 let gameState = "title";
 let currentMenuIndex = 0;
 
+// FIXED: Changed } to ] to prevent the crash
 const monsterList = [
     { id: "dummy",       name: "DUMMY",            reqLV: 1 },
     { id: "mad_dummy",   name: "MAD DUMMY",        reqLV: 2 },
@@ -42,7 +43,7 @@ const monsterList = [
     { id: "papyrus",     name: "PAPYRUS",          reqLV: 5 },
     { id: "p_sans",      name: "PACIFIST SANS",    reqLV: 8 },
     { id: "us_sans",     name: "UNDERSWAP SANS",   reqLV: 9 }
-};
+];
 
 const shopData = {
     weapon: [
@@ -164,7 +165,7 @@ const enemies = [
         spareTalks: 5,
         soulType: "blue",
         pattern: "fastBones",
-        patterns: ["fastBones", "sansKarma", "sansSideSpam"],
+        patterns: ["fastBones", "sansKarma", "sansSideSpam", "gasterBlaster"],
         openingText: "* Sans is taking it easy.",
         checkAT: 10,
         checkDF: 4,

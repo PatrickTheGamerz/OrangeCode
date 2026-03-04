@@ -52,9 +52,9 @@ function setBattleText(text) {
         const ch = battleFullText[battleTextIndex];
         battleShownText += ch;
         battleTextIndex++;
-        let delay = 50;
+        let delay = 30; // Sped up text slightly
         if (ch === "." || ch === "," || ch === "!" || ch === "?") {
-            delay = 200;
+            delay = 150;
         }
         clearInterval(battleTextTimer);
         battleTextTimer = setInterval(() => {
@@ -75,9 +75,9 @@ function setBattleTextContinue() {
     const ch = battleFullText[battleTextIndex];
     battleShownText += ch;
     battleTextIndex++;
-    let delay = 50;
+    let delay = 30;
     if (ch === "." || ch === "," || ch === "!" || ch === "?") {
-        delay = 200;
+        delay = 150;
     }
     battleTextTimer = setInterval(() => {
         clearInterval(battleTextTimer);
@@ -116,20 +116,20 @@ function battleKeyDown(e) {
     const key = e.key.toLowerCase();
 
     if (battleSubState === "menu") {
-        if (key === "a") {
+        if (key === "arrowleft" || key === "a") {
             battleMenuIndex = (battleMenuIndex + 3) % 4;
             renderBattle();
-        } else if (key === "d") {
+        } else if (key === "arrowright" || key === "d") {
             battleMenuIndex = (battleMenuIndex + 1) % 4;
             renderBattle();
-        } else if (key === "z") {
+        } else if (key === "z" || key === "enter") {
             handleBattleMenuConfirm();
         }
         return;
     }
 
     if (battleSubState === "attackBar") {
-        if (key === "z") {
+        if (key === "z" || key === "enter") {
             finishAttackBar();
         }
         return;
@@ -137,15 +137,15 @@ function battleKeyDown(e) {
 
     if (battleSubState === "actMenu") {
         const opts = currentEnemy.actOptions || ["CHECK", "TALK"];
-        if (key === "w") {
+        if (key === "arrowup" || key === "w") {
             actIndex = (actIndex + opts.length - 1) % opts.length;
             renderBattle();
-        } else if (key === "s") {
+        } else if (key === "arrowdown" || key === "s") {
             actIndex = (actIndex + 1) % opts.length;
             renderBattle();
-        } else if (key === "z") {
+        } else if (key === "z" || key === "enter") {
             handleActConfirm();
-        } else if (key === "x") {
+        } else if (key === "x" || key === "shift") {
             battleSubState = "menu";
             renderBattle();
         }
@@ -154,21 +154,21 @@ function battleKeyDown(e) {
 
     if (battleSubState === "itemMenu") {
         if (currentPlayer.inventory.length === 0) {
-            if (key === "z" || key === "x") {
+            if (key === "z" || key === "x" || key === "enter" || key === "shift") {
                 battleSubState = "menu";
                 renderBattle();
             }
             return;
         }
-        if (key === "w") {
+        if (key === "arrowup" || key === "w") {
             itemIndex = (itemIndex + currentPlayer.inventory.length - 1) % currentPlayer.inventory.length;
             renderBattle();
-        } else if (key === "s") {
+        } else if (key === "arrowdown" || key === "s") {
             itemIndex = (itemIndex + 1) % currentPlayer.inventory.length;
             renderBattle();
-        } else if (key === "z") {
+        } else if (key === "z" || key === "enter") {
             useBattleItem();
-        } else if (key === "x") {
+        } else if (key === "x" || key === "shift") {
             battleSubState = "menu";
             renderBattle();
         }
@@ -176,12 +176,12 @@ function battleKeyDown(e) {
     }
 
     if (battleSubState === "mercyMenu") {
-        if (key === "w" || key === "s") {
+        if (key === "arrowup" || key === "w" || key === "arrowdown" || key === "s") {
             mercyIndex = 1 - mercyIndex;
             renderBattle();
-        } else if (key === "z") {
+        } else if (key === "z" || key === "enter") {
             handleMercyConfirm();
-        } else if (key === "x") {
+        } else if (key === "x" || key === "shift") {
             battleSubState = "menu";
             renderBattle();
         }
@@ -189,7 +189,7 @@ function battleKeyDown(e) {
     }
 
     if (battleSubState === "text") {
-        if (key === "z") {
+        if (key === "z" || key === "enter") {
             if (!battleTextDone) {
                 instantFinishBattleText();
                 return;
@@ -207,6 +207,11 @@ function battleKeyDown(e) {
 
     if (battleSubState === "enemyTurn") {
         keyState[key] = true;
+        // also map arrows to WASD for accessibility
+        if (key === "arrowup") keyState["w"] = true;
+        if (key === "arrowdown") keyState["s"] = true;
+        if (key === "arrowleft") keyState["a"] = true;
+        if (key === "arrowright") keyState["d"] = true;
         return;
     }
 }
@@ -215,6 +220,10 @@ function battleKeyUp(e) {
     const key = e.key.toLowerCase();
     if (battleSubState === "enemyTurn") {
         keyState[key] = false;
+        if (key === "arrowup") keyState["w"] = false;
+        if (key === "arrowdown") keyState["s"] = false;
+        if (key === "arrowleft") keyState["a"] = false;
+        if (key === "arrowright") keyState["d"] = false;
     }
 }
 
@@ -271,9 +280,9 @@ function startAttackBar() {
     fightMarkerDir = 1;
     if (fightInterval) clearInterval(fightInterval);
     fightInterval = setInterval(() => {
-        fightMarkerPos += fightMarkerDir * 8;
-        if (fightMarkerPos >= 316) {
-            fightMarkerPos = 316;
+        fightMarkerPos += fightMarkerDir * 12; // Sped up attack bar
+        if (fightMarkerPos >= 490) {
+            fightMarkerPos = 490;
             fightMarkerDir = -1;
         }
         if (fightMarkerPos <= 0) {
@@ -281,22 +290,28 @@ function startAttackBar() {
             fightMarkerDir = 1;
         }
         renderBattle();
-    }, 40);
+    }, 20); // smoother interval
     renderBattle();
 }
 
 function finishAttackBar() {
     if (fightInterval) clearInterval(fightInterval);
-    const center = 158;
+    const center = 250;
     const dist = Math.abs(fightMarkerPos - center);
-    const multiplier = Math.max(0.2, 1 - dist / 160);
+    const multiplier = Math.max(0.2, 1 - dist / 200);
     const base = totalAT(currentPlayer) + 3;
     let raw = Math.max(1, Math.round(base * multiplier));
     raw = Math.max(1, raw - (currentEnemy.DF || 0));
     const damage = raw;
     currentEnemy.HP = Math.max(0, currentEnemy.HP - damage);
     battleSubState = "text";
-    battleText = `* You hit ${currentEnemy.name} for ${damage} damage!`;
+    
+    // Check if missed
+    if (multiplier <= 0.2) {
+         battleText = `* MISS!`;
+    } else {
+         battleText = `* You hit ${currentEnemy.name} for ${damage} damage!`;
+    }
     setBattleText(battleText);
     renderBattle();
 }
@@ -399,7 +414,9 @@ function startEnemyTurn() {
         updateSoul();
         updateBullets();
         checkBulletCollisions();
-        if (enemyTurnTicks > 120) {
+        
+        // Turns last a little longer for cooler attacks
+        if (enemyTurnTicks > 150) {
             clearInterval(enemyInterval);
             if (currentPlayer.HP <= 0) {
                 endBattleLose();
@@ -416,12 +433,14 @@ function startEnemyTurn() {
         } else {
             renderBattle();
         }
-    }, 40);
+    }, 30);
     renderBattle();
 }
 
 function updateSoul() {
-    const speed = currentEnemy.soulType === "red" ? 4 : 3.5;
+    // FIXED: Increased soul speed significantly to feel more responsive
+    const speed = currentEnemy.soulType === "red" ? 5 : 4.5;
+    
     if (currentEnemy.soulType === "red") {
         if (keyState["w"]) soulY -= speed;
         if (keyState["s"]) soulY += speed;
@@ -431,7 +450,7 @@ function updateSoul() {
         if (keyState["a"]) soulX -= speed;
         if (keyState["d"]) soulX += speed;
         if (keyState["w"] && onGround) {
-            soulVY = -7.5;
+            soulVY = -8.5; // Better jump arc
             onGround = false;
         }
         soulVY += gravity;
@@ -449,31 +468,48 @@ function updateSoul() {
 
 function updateBullets() {
     bullets.forEach(b => {
+        // ALLOW CUSTOM BULLET LOGIC (Required for Gaster Blasters)
+        if (b.update) b.update();
+        
         b.x += b.vx;
         b.y += b.vy;
         if (b.ay) b.vy += b.ay;
         if (b.ax) b.vx += b.ax;
     });
-    bullets = bullets.filter(b => b.x > -40 && b.x < 300 && b.y > -40 && b.y < 200 && !b.remove);
+    
+    // Increased cull area so big bullets don't despawn too early
+    bullets = bullets.filter(b => b.x > -100 && b.x < 400 && b.y > -100 && b.y < 300 && !b.remove);
 }
 
 function checkBulletCollisions() {
     bullets.forEach(b => {
-        const dx = soulX - b.x;
-        const dy = soulY - b.y;
-        if (Math.abs(dx) < 10 && Math.abs(dy) < 10 && !b.remove) {
-            if (currentEnemy.id === "papyrus") {
-                if (b.color === "blue") {
-                    if (keyState["w"] || keyState["a"] || keyState["s"] || keyState["d"]) {
-                        applyEnemyDamage(b);
-                    }
-                } else {
+        if (b.opacity && b.opacity < 0.8) return; // Don't hit on warnings
+        
+        // Use custom hitboxes if provided, otherwise standard
+        const bw = b.w || 10;
+        const bh = b.h || 10;
+        
+        // Simple AABB collision
+        const inX = soulX + 6 > b.x && soulX - 6 < b.x + bw;
+        const inY = soulY + 6 > b.y && soulY - 6 < b.y + bh;
+        
+        if (inX && inY && !b.remove) {
+            if (b.color === "blue") {
+                if (keyState["w"] || keyState["a"] || keyState["s"] || keyState["d"]) {
+                    applyEnemyDamage(b);
+                }
+            } else if (b.color === "orange") {
+                if (!keyState["w"] && !keyState["a"] && !keyState["s"] && !keyState["d"]) {
                     applyEnemyDamage(b);
                 }
             } else {
                 applyEnemyDamage(b);
             }
-            b.remove = true;
+            
+            // Don't remove piercing objects like lasers
+            if (b.type !== "laser") {
+                b.remove = true;
+            }
         }
     });
     bullets = bullets.filter(b => !b.remove);
@@ -490,6 +526,8 @@ function applyEnemyDamage(b) {
             dmg = Math.max(0, currentPlayer.HP - 1);
         }
     }
+    
+    // Fake invincibility frames by removing HP
     currentPlayer.HP = Math.max(0, currentPlayer.HP - dmg);
 }
 
@@ -526,7 +564,7 @@ function endBattleWin() {
     saveSlot(currentSlot);
     renderBattle();
     document.onkeydown = (e) => {
-        if (e.key.toLowerCase() === "z") {
+        if (e.key.toLowerCase() === "z" || e.key.toLowerCase() === "enter") {
             document.onkeydown = handleKeyDown;
             gameState = "mainMenu";
             render();
@@ -553,7 +591,7 @@ function startGameOver() {
         gameOverShownText += ch;
         gameOverIndex++;
         renderGameOver();
-    }, 50);
+    }, 80); // slow dramatic game over text
     renderGameOver();
 }
 
@@ -589,7 +627,7 @@ function endBattleMercy() {
 
     renderBattle();
     document.onkeydown = (e) => {
-        if (e.key.toLowerCase() === "z") {
+        if (e.key.toLowerCase() === "z" || e.key.toLowerCase() === "enter") {
             document.onkeydown = handleKeyDown;
             gameState = "mainMenu";
             render();
@@ -613,24 +651,26 @@ function enemySpriteClass() {
 function renderBattle() {
     const g = document.getElementById("game");
     const hpPercent = currentPlayer && currentPlayer.maxHP ? (currentPlayer.HP / currentPlayer.maxHP) * 100 : 0;
-    const lostPercent = 100 - hpPercent;
-
-    let hpColor = "#ffff00";
+    
+    // Scale the red background bar based on MAX HP
+    const hpBarWidth = currentPlayer.maxHP * 1.5; 
 
     let subBoxHTML = "";
 
     if (battleSubState === "attackBar") {
         subBoxHTML = `
-            <div class="fight-bar">
-                <div class="fight-crit"></div>
-                <div class="fight-marker" style="left:${fightMarkerPos}px;"></div>
+            <div class="sub-box" style="display:flex; justify-content:center; align-items:center;">
+                <div class="fight-bar">
+                    <div class="fight-crit"></div>
+                    <div class="fight-marker" style="left:${fightMarkerPos}px;"></div>
+                </div>
             </div>
         `;
     } else if (battleSubState === "actMenu") {
         const opts = currentEnemy.actOptions || ["CHECK", "TALK"];
         let rows = "";
         opts.forEach((opt, i) => {
-            rows += `<div class="sub-option">${i === actIndex ? '<span class="heart">♥</span>' : '&nbsp;&nbsp;'}${opt}</div>`;
+            rows += `<div class="sub-option">${i === actIndex ? '<span class="heart">♥</span>' : '&nbsp;&nbsp;&nbsp;&nbsp;'}${opt}</div>`;
         });
         subBoxHTML = `
             <div class="sub-box">
@@ -639,11 +679,11 @@ function renderBattle() {
         `;
     } else if (battleSubState === "itemMenu") {
         if (currentPlayer.inventory.length === 0) {
-            subBoxHTML = `<div class="sub-box"><p>* You have no items.</p></div>`;
+            subBoxHTML = `<div class="sub-box"><p style="margin:8px 16px;">* You have no items.</p></div>`;
         } else {
-            let itemsHTML = `<div class="sub-box"><p>* ITEMS</p>`;
+            let itemsHTML = `<div class="sub-box">`;
             currentPlayer.inventory.forEach((it, i) => {
-                itemsHTML += `<div class="sub-option">${i === itemIndex ? '<span class="heart">♥</span>' : '&nbsp;&nbsp;'}${it.name}</div>`;
+                itemsHTML += `<div class="sub-option">${i === itemIndex ? '<span class="heart">♥</span>' : '&nbsp;&nbsp;&nbsp;&nbsp;'}${it.name}</div>`;
             });
             itemsHTML += `</div>`;
             subBoxHTML = itemsHTML;
@@ -651,8 +691,8 @@ function renderBattle() {
     } else if (battleSubState === "mercyMenu") {
         subBoxHTML = `
             <div class="sub-box">
-                <div class="sub-option">${mercyIndex === 0 ? '<span class="heart">♥</span>' : '&nbsp;&nbsp;'}Spare</div>
-                <div class="sub-option">${mercyIndex === 1 ? '<span class="heart">♥</span>' : '&nbsp;&nbsp;'}Flee</div>
+                <div class="sub-option">${mercyIndex === 0 ? '<span class="heart">♥</span>' : '&nbsp;&nbsp;&nbsp;&nbsp;'}Spare</div>
+                <div class="sub-option">${mercyIndex === 1 ? '<span class="heart">♥</span>' : '&nbsp;&nbsp;&nbsp;&nbsp;'}Flee</div>
             </div>
         `;
     }
@@ -662,8 +702,14 @@ function renderBattle() {
         const soulClass = currentEnemy.soulType === "blue" ? "soul blue" : "soul";
         let bulletsHTML = "";
         bullets.forEach(b => {
-            const colorClass = b.color === "blue" ? "bullet-blue" : "";
-            bulletsHTML += `<div class="bullet ${colorClass}" style="left:${b.x}px; top:${b.y}px;"></div>`;
+            const colorClass = b.color === "blue" ? "bullet-blue" : (b.color === "orange" ? "bullet-orange" : "");
+            
+            // Custom styles for things like lasers
+            const wStyle = b.w ? `width:${b.w}px; border-radius: 0;` : "";
+            const hStyle = b.h ? `height:${b.h}px;` : "";
+            const oStyle = b.opacity !== undefined ? `opacity:${b.opacity};` : "";
+            
+            bulletsHTML += `<div class="bullet ${colorClass}" style="left:${b.x}px; top:${b.y}px; ${wStyle} ${hStyle} ${oStyle}"></div>`;
         });
         soulBoxHTML = `
             <div class="soul-box">
@@ -682,21 +728,23 @@ function renderBattle() {
                     <div class="enemy-sprite ${enemySpriteClass()}"></div>
                     <div class="enemy-dialogue-box"></div>
                 </div>
+                ${soulBoxHTML ? '' : `
                 <div class="battle-text">
-                    <p>${textToShow.replace(/\n/g,"<br>")}</p>
+                    ${textToShow.replace(/\n/g,"<br>")}
                 </div>
+                `}
                 ${soulBoxHTML}
                 ${subBoxHTML}
             </div>
             <div class="bottom-menu">
                 <div class="battle-status-line">
-                    <span>${currentPlayer.name || "HUMAN"}</span>
+                    <span>${currentPlayer.name || "CHARA"}</span>
                     <span>LV ${currentPlayer.LV}</span>
-                    <span>HP ${currentPlayer.HP}/${currentPlayer.maxHP}</span>
-                    <span class="hp-bar">
-                        <span class="hp-fill hp-fill-yellow" style="width:${hpPercent}%;"></span>
-                        <span class="hp-fill hp-fill-red" style="width:${lostPercent}%;"></span>
+                    <span>HP</span>
+                    <span class="hp-bar" style="width: ${hpBarWidth}px;">
+                        <span class="hp-fill-yellow" style="width:${hpPercent}%;"></span>
                     </span>
+                    <span>${currentPlayer.HP} / ${currentPlayer.maxHP}</span>
                 </div>
                 <div class="battle-buttons-line">
                     <span class="button-box ${battleMenuIndex === 0 ? "selected" : ""}">FIGHT</span>
@@ -711,12 +759,12 @@ function renderBattle() {
 
 function renderGameOver() {
     const g = document.getElementById("game");
-    const lines = gameOverShownText.split("\n").map(l => l.replace(/ /g, "&nbsp;")).join("<br>");
+    const lines = gameOverShownText.split("\n").join("<br>");
     g.innerHTML = `
         <div class="center game-over-screen">
             <p class="game-over-title">GAME OVER</p>
             <p class="game-over-text">${lines}</p>
-            <p class="small-text">(Press Z)</p>
+            <p class="small-text" style="margin-top: 40px;">(Press Z)</p>
         </div>
     `;
 }

@@ -12,6 +12,7 @@ let battleTextDone = true;
 let actIndex = 0;
 let itemIndex = 0;
 let talksDone = 0;
+let spareCount = 0; // Added for Toriel
 let canSpare = false;
 
 let mercyIndex = 0;
@@ -52,10 +53,8 @@ function setBattleText(text) {
         const ch = battleFullText[battleTextIndex];
         battleShownText += ch;
         battleTextIndex++;
-        let delay = 30; // Sped up text slightly
-        if (ch === "." || ch === "," || ch === "!" || ch === "?") {
-            delay = 150;
-        }
+        let delay = 30; 
+        if (ch === "." || ch === "," || ch === "!" || ch === "?") delay = 150;
         clearInterval(battleTextTimer);
         battleTextTimer = setInterval(() => {
             clearInterval(battleTextTimer);
@@ -76,9 +75,7 @@ function setBattleTextContinue() {
     battleShownText += ch;
     battleTextIndex++;
     let delay = 30;
-    if (ch === "." || ch === "," || ch === "!" || ch === "?") {
-        delay = 150;
-    }
+    if (ch === "." || ch === "," || ch === "!" || ch === "?") delay = 150;
     battleTextTimer = setInterval(() => {
         clearInterval(battleTextTimer);
         battleTextTimer = null;
@@ -104,7 +101,11 @@ function startBattle(enemyId) {
     battleMenuIndex = 0;
     battleSubState = "menu";
     talksDone = 0;
+    spareCount = 0;
     canSpare = false;
+    
+    if (currentEnemy.id === "p_sans") canSpare = true; // Sleepy Sans
+
     mercyIndex = 0;
     gameState = "battle";
     battleText = currentEnemy.openingText || `* ${currentEnemy.name} blocks the way!`;
@@ -129,9 +130,7 @@ function battleKeyDown(e) {
     }
 
     if (battleSubState === "attackBar") {
-        if (key === "z" || key === "enter") {
-            finishAttackBar();
-        }
+        if (key === "z" || key === "enter") finishAttackBar();
         return;
     }
 
@@ -207,7 +206,6 @@ function battleKeyDown(e) {
 
     if (battleSubState === "enemyTurn") {
         keyState[key] = true;
-        // also map arrows to WASD for accessibility
         if (key === "arrowup") keyState["w"] = true;
         if (key === "arrowdown") keyState["s"] = true;
         if (key === "arrowleft") keyState["a"] = true;
@@ -248,18 +246,33 @@ function handleBattleMenuConfirm() {
 }
 
 function handleMercyConfirm() {
-    if (mercyIndex === 0) {
+    if (mercyIndex === 0) { // SPARE
+        spareCount++;
+        
+        if (currentEnemy.id === "toriel") {
+            if (spareCount >= currentEnemy.spareTurnsRequirement) {
+                canSpare = true;
+                currentEnemy.DF = -9999; // Toriel betrayal kill threshold
+            }
+        }
+
         if (canSpare) {
             battleText = "* You spared the enemy.";
             setBattleText(battleText);
             endBattleMercy();
         } else {
             battleSubState = "text";
-            battleText = "* The enemy is not ready to be spared.";
+            if (currentEnemy.id === "toriel") {
+                 battleText = "* Toriel looks through you.";
+            } else if (currentEnemy.id === "papyrus") {
+                 battleText = "* Papyrus refuses your mercy.";
+            } else {
+                 battleText = "* The enemy is not ready to be spared.";
+            }
             setBattleText(battleText);
             renderBattle();
         }
-    } else {
+    } else { // FLEE
         battleSubState = "text";
         battleText = "* You fled the battle...";
         setBattleText(battleText);
@@ -280,7 +293,7 @@ function startAttackBar() {
     fightMarkerDir = 1;
     if (fightInterval) clearInterval(fightInterval);
     fightInterval = setInterval(() => {
-        fightMarkerPos += fightMarkerDir * 12; // Sped up attack bar
+        fightMarkerPos += fightMarkerDir * 12; 
         if (fightMarkerPos >= 490) {
             fightMarkerPos = 490;
             fightMarkerDir = -1;
@@ -290,7 +303,7 @@ function startAttackBar() {
             fightMarkerDir = 1;
         }
         renderBattle();
-    }, 20); // smoother interval
+    }, 20); 
     renderBattle();
 }
 
@@ -302,16 +315,32 @@ function finishAttackBar() {
     const base = totalAT(currentPlayer) + 3;
     let raw = Math.max(1, Math.round(base * multiplier));
     raw = Math.max(1, raw - (currentEnemy.DF || 0));
-    const damage = raw;
+    let damage = raw;
+    
+    // Betrayal / Dodge Logic
+    let isBetrayal = false;
+    if (currentEnemy.id === "toriel" && canSpare) {
+        damage = 9999;
+        isBetrayal = true;
+    } else if (currentEnemy.id === "p_sans") {
+        damage = 0; // Sans dodges
+    }
+
     currentEnemy.HP = Math.max(0, currentEnemy.HP - damage);
     battleSubState = "text";
     
-    // Check if missed
-    if (multiplier <= 0.2) {
-         battleText = `* MISS!`;
+    if (isBetrayal && currentEnemy.HP <= 0) {
+        battleText = currentEnemy.betrayalText || `* You dealt ${damage} damage!`;
+    } else if (currentEnemy.id === "p_sans") {
+        battleText = "* Sans dodged the attack.";
     } else {
-         battleText = `* You hit ${currentEnemy.name} for ${damage} damage!`;
+        if (multiplier <= 0.2) {
+             battleText = `* MISS!`;
+        } else {
+             battleText = `* You hit ${currentEnemy.name} for ${damage} damage!`;
+        }
     }
+    
     setBattleText(battleText);
     renderBattle();
 }
@@ -329,25 +358,41 @@ function handleActConfirm() {
         setBattleText(battleText);
     } else if (choice === "TALK") {
         talksDone++;
-        if (talksDone >= currentEnemy.spareTalks) {
+        if (currentEnemy.id === "dummy" && talksDone >= currentEnemy.spareTalks) {
             canSpare = true;
         }
-        const t = (currentEnemy.talkTexts && currentEnemy.talkTexts[0]) ||
-            "* You talk to the enemy.\n* It doesn't seem much for conversation.";
         battleSubState = "text";
-        battleText = t;
+        if (currentEnemy.id === "toriel") {
+             battleText = "* You couldn't think of any\n  conversation topics.";
+        } else if (currentEnemy.id === "mad_dummy") {
+             battleText = "* You talk to the MAD DUMMY.\n* It pretends not to hear you.";
+        } else {
+             battleText = (currentEnemy.talkTexts && currentEnemy.talkTexts[0]) || "* You try to talk.\n* It doesn't seem much for\n  conversation.";
+        }
         setBattleText(battleText);
     } else if (choice === "FLIRT") {
-        const t = (currentEnemy.talkTexts && currentEnemy.talkTexts[0]) ||
-            "* You flirt.\n* Nothing happens.";
         battleSubState = "text";
-        battleText = t;
+        if (currentEnemy.id === "papyrus") {
+             battleText = "* You flirt with Papyrus.\n* He becomes flustered!\n* 'WOWIE! A DATE?!'";
+        } else {
+             battleText = "* You flirt.\n* Nothing happens.";
+        }
         setBattleText(battleText);
     } else if (choice === "INSULT") {
-        const t = (currentEnemy.talkTexts && currentEnemy.talkTexts[1]) ||
-            "* You insult the enemy.\n* It doesn't seem to care.";
         battleSubState = "text";
-        battleText = t;
+        if (currentEnemy.id === "papyrus") {
+             battleText = "* You insult Papyrus.\n* He doesn't seem to understand.";
+        } else {
+             battleText = "* You insult the enemy.\n* It doesn't seem to care.";
+        }
+        setBattleText(battleText);
+    } else if (choice === "CHALLENGE") {
+        battleSubState = "text";
+        battleText = "* You challenge Sans to a\n  jumping contest.\n* He accepts!";
+        setBattleText(battleText);
+    } else if (choice === "STARE") {
+        battleSubState = "text";
+        battleText = "* You stare at the Mad Dummy.\n* It glares back.";
         setBattleText(battleText);
     }
     renderBattle();
@@ -360,14 +405,11 @@ function useBattleItem() {
         if (item.name === "MONSTER CANDY") {
             currentPlayer.HP = Math.min(currentPlayer.maxHP, currentPlayer.HP + 10);
             battleText = "* You ate the MONSTER CANDY.\n* You recovered 10 HP.";
-        } else if (item.name === "SPIDER DONUT") {
-            currentPlayer.HP = Math.min(currentPlayer.maxHP, currentPlayer.HP + 12);
-            battleText = "* You ate the SPIDER DONUT.\n* You recovered 12 HP.";
         } else if (item.name === "BUTTERSCOTCH PIE") {
             currentPlayer.HP = currentPlayer.maxHP;
             battleText = "* You ate the BUTTERSCOTCH PIE.\n* Your HP was maxed out.";
         } else {
-            currentPlayer.HP = Math.min(currentPlayer.maxHP, currentPlayer.HP + 10);
+            currentPlayer.HP = Math.min(currentPlayer.maxHP, currentPlayer.HP + 12);
             battleText = `* You used ${item.name}.`;
         }
         currentPlayer.inventory.splice(itemIndex, 1);
@@ -380,6 +422,26 @@ function useBattleItem() {
 }
 
 function startEnemyTurn() {
+    const turn = currentEnemy.turnIndex || 0;
+
+    // Check endurance SPARES before starting attack
+    if ((currentEnemy.id === "papyrus" || currentEnemy.id === "us_sans") && turn >= currentEnemy.surviveTurns) {
+        canSpare = true;
+        battleSubState = "text";
+        battleText = `* ${currentEnemy.name} is sparing you.`;
+        setBattleText(battleText);
+        renderBattle();
+        return;
+    }
+    if (currentEnemy.id === "mad_dummy" && turn >= currentEnemy.surviveTurns) {
+        canSpare = true;
+        battleSubState = "text";
+        battleText = "* Mad Dummy ran out of magic.";
+        setBattleText(battleText);
+        renderBattle();
+        return;
+    }
+
     battleSubState = "enemyTurn";
     soulX = 120;
     soulY = 100;
@@ -390,23 +452,31 @@ function startEnemyTurn() {
     gravity = currentEnemy.soulType === "blue" ? 0.5 : 0;
     onGround = false;
 
-    const patterns = currentEnemy.patterns && currentEnemy.patterns.length ? currentEnemy.patterns : [currentEnemy.pattern];
-    let chosen = patterns[Math.floor(Math.random() * patterns.length)];
+    let chosen = currentEnemy.patterns[0];
 
-    if (currentEnemy.id === "mad_dummy") {
-        const hpRatio = currentEnemy.HP / currentEnemy.maxHP;
-        if (hpRatio < 0.33) chosen = "dummyAimBurst";
-        else if (hpRatio < 0.66) chosen = "dummyAim";
-    }
-
+    // Character-specific attack logic
     if (currentEnemy.id === "papyrus") {
-        const idx = currentEnemy.turnIndex || 0;
-        const seq = ["bonesHorizontal", "bonesHorizontalReverse", "bonesHorizontalHigh", "blueAttackPhase", "sideBones"];
-        chosen = seq[Math.min(idx, seq.length - 1)];
-        currentEnemy.turnIndex = idx + 1;
+        const seq = [
+            "blueAttackPhase", "bonesHorizontal", "bonesHorizontalReverse", 
+            "fastBones", "bonesHorizontalHigh", "sideBones", 
+            "mixedBones", "boneRain", "mixedBones", "fastBones",
+            "sideBones", "bonesHorizontal", "dummyNone", "papyrusFinal"
+        ];
+        chosen = seq[Math.min(turn, seq.length - 1)];
+    } else if (currentEnemy.id === "us_sans") {
+        const seq = ["fastBones", "mixedBones", "boneRain", "sansSideSpam", "fastBones", "mixedBones", "papyrusFinal"];
+        chosen = seq[Math.min(turn, seq.length - 1)];
+    } else if (currentEnemy.id === "toriel") {
+        if (canSpare) chosen = "torielAvoid"; // She stops hitting you
+        else chosen = currentEnemy.patterns[Math.floor(Math.random() * currentEnemy.patterns.length)];
+    } else {
+        chosen = currentEnemy.patterns[Math.floor(Math.random() * currentEnemy.patterns.length)];
     }
 
     spawnPattern(chosen, bullets, soulX, soulY);
+
+    let turnDuration = 150;
+    if (chosen === "papyrusFinal" || chosen === "gasterBlaster") turnDuration = 240; 
 
     if (enemyInterval) clearInterval(enemyInterval);
     enemyInterval = setInterval(() => {
@@ -415,14 +485,14 @@ function startEnemyTurn() {
         updateBullets();
         checkBulletCollisions();
         
-        // Turns last a little longer for cooler attacks
-        if (enemyTurnTicks > 150) {
+        if (enemyTurnTicks > turnDuration) {
             clearInterval(enemyInterval);
             if (currentPlayer.HP <= 0) {
                 endBattleLose();
             } else {
+                currentEnemy.turnIndex++;
                 battleSubState = "menu";
-                if (currentEnemy.id === "papyrus" && currentEnemy.turnIndex === 4) {
+                if (currentEnemy.id === "papyrus" && currentEnemy.turnIndex === 1) {
                     battleText = "* You're blue now.";
                 } else {
                     battleText = "* The enemy is watching you.";
@@ -438,7 +508,6 @@ function startEnemyTurn() {
 }
 
 function updateSoul() {
-    // FIXED: Increased soul speed significantly to feel more responsive
     const speed = currentEnemy.soulType === "red" ? 5 : 4.5;
     
     if (currentEnemy.soulType === "red") {
@@ -450,7 +519,7 @@ function updateSoul() {
         if (keyState["a"]) soulX -= speed;
         if (keyState["d"]) soulX += speed;
         if (keyState["w"] && onGround) {
-            soulVY = -8.5; // Better jump arc
+            soulVY = -10; // High jump for Papyrus' final attack
             onGround = false;
         }
         soulVY += gravity;
@@ -461,35 +530,27 @@ function updateSoul() {
             onGround = true;
         }
     }
-
     soulX = Math.max(10, Math.min(240, soulX));
     soulY = Math.max(10, Math.min(140, soulY));
 }
 
 function updateBullets() {
     bullets.forEach(b => {
-        // ALLOW CUSTOM BULLET LOGIC (Required for Gaster Blasters)
         if (b.update) b.update();
-        
         b.x += b.vx;
         b.y += b.vy;
         if (b.ay) b.vy += b.ay;
         if (b.ax) b.vx += b.ax;
     });
-    
-    // Increased cull area so big bullets don't despawn too early
-    bullets = bullets.filter(b => b.x > -100 && b.x < 400 && b.y > -100 && b.y < 300 && !b.remove);
+    bullets = bullets.filter(b => b.x > -300 && b.x < 800 && b.y > -200 && b.y < 300 && !b.remove);
 }
 
 function checkBulletCollisions() {
     bullets.forEach(b => {
-        if (b.opacity && b.opacity < 0.8) return; // Don't hit on warnings
-        
-        // Use custom hitboxes if provided, otherwise standard
+        if (b.opacity && b.opacity < 0.8) return; 
         const bw = b.w || 10;
         const bh = b.h || 10;
         
-        // Simple AABB collision
         const inX = soulX + 6 > b.x && soulX - 6 < b.x + bw;
         const inY = soulY + 6 > b.y && soulY - 6 < b.y + bh;
         
@@ -505,11 +566,7 @@ function checkBulletCollisions() {
             } else {
                 applyEnemyDamage(b);
             }
-            
-            // Don't remove piercing objects like lasers
-            if (b.type !== "laser") {
-                b.remove = true;
-            }
+            if (b.type !== "laser") b.remove = true;
         }
     });
     bullets = bullets.filter(b => !b.remove);
@@ -518,16 +575,10 @@ function checkBulletCollisions() {
 function applyEnemyDamage(b) {
     let base = currentEnemy.AT || 1;
     let dmg = Math.max(1, Math.round(base * 0.7) - totalDF(currentPlayer));
-    if (currentEnemy.id === "toriel" && currentPlayer.HP <= 10) {
-        dmg = Math.max(1, Math.floor(dmg * 0.3));
-    }
+    if (currentEnemy.id === "toriel" && currentPlayer.HP <= 10) dmg = Math.max(1, Math.floor(dmg * 0.3));
     if (currentEnemy.id === "papyrus") {
-        if (currentPlayer.HP - dmg <= 0) {
-            dmg = Math.max(0, currentPlayer.HP - 1);
-        }
+        if (currentPlayer.HP - dmg <= 0) dmg = Math.max(0, currentPlayer.HP - 1); // Papyrus never kills
     }
-    
-    // Fake invincibility frames by removing HP
     currentPlayer.HP = Math.max(0, currentPlayer.HP - dmg);
 }
 
@@ -587,11 +638,10 @@ function startGameOver() {
             gameOverTimer = null;
             return;
         }
-        const ch = gameOverText[gameOverIndex];
-        gameOverShownText += ch;
+        gameOverShownText += gameOverText[gameOverIndex];
         gameOverIndex++;
         renderGameOver();
-    }, 80); // slow dramatic game over text
+    }, 80);
     renderGameOver();
 }
 
@@ -651,8 +701,6 @@ function enemySpriteClass() {
 function renderBattle() {
     const g = document.getElementById("game");
     const hpPercent = currentPlayer && currentPlayer.maxHP ? (currentPlayer.HP / currentPlayer.maxHP) * 100 : 0;
-    
-    // Scale the red background bar based on MAX HP
     const hpBarWidth = currentPlayer.maxHP * 1.5; 
 
     let subBoxHTML = "";
@@ -672,11 +720,7 @@ function renderBattle() {
         opts.forEach((opt, i) => {
             rows += `<div class="sub-option">${i === actIndex ? '<span class="heart">♥</span>' : '&nbsp;&nbsp;&nbsp;&nbsp;'}${opt}</div>`;
         });
-        subBoxHTML = `
-            <div class="sub-box">
-                ${rows}
-            </div>
-        `;
+        subBoxHTML = `<div class="sub-box">${rows}</div>`;
     } else if (battleSubState === "itemMenu") {
         if (currentPlayer.inventory.length === 0) {
             subBoxHTML = `<div class="sub-box"><p style="margin:8px 16px;">* You have no items.</p></div>`;
@@ -703,12 +747,9 @@ function renderBattle() {
         let bulletsHTML = "";
         bullets.forEach(b => {
             const colorClass = b.color === "blue" ? "bullet-blue" : (b.color === "orange" ? "bullet-orange" : "");
-            
-            // Custom styles for things like lasers
             const wStyle = b.w ? `width:${b.w}px; border-radius: 0;` : "";
             const hStyle = b.h ? `height:${b.h}px;` : "";
             const oStyle = b.opacity !== undefined ? `opacity:${b.opacity};` : "";
-            
             bulletsHTML += `<div class="bullet ${colorClass}" style="left:${b.x}px; top:${b.y}px; ${wStyle} ${hStyle} ${oStyle}"></div>`;
         });
         soulBoxHTML = `
@@ -719,6 +760,30 @@ function renderBattle() {
         `;
     }
 
+    // Accurate dialogue box rendering
+    let enemyDialogueHTML = "";
+    if (battleSubState === "enemyTurn" && currentEnemy) {
+        let dIndex = currentEnemy.turnIndex || 0;
+        if (currentEnemy.id === "toriel") dIndex = spareCount;
+        
+        let dText = "";
+        if (currentEnemy.turnDialogues && currentEnemy.turnDialogues[dIndex]) {
+            dText = currentEnemy.turnDialogues[dIndex];
+        } else if (currentEnemy.id === "toriel" && canSpare) {
+            dText = "...";
+        } else if (currentEnemy.id === "p_sans") {
+            dText = "Zzz...";
+        }
+        
+        if (dText) {
+            enemyDialogueHTML = `<div class="enemy-dialogue-box" style="display:block;">${dText.replace(/\n/g,"<br>")}</div>`;
+        } else {
+            enemyDialogueHTML = `<div class="enemy-dialogue-box"></div>`;
+        }
+    } else {
+        enemyDialogueHTML = `<div class="enemy-dialogue-box"></div>`;
+    }
+
     const textToShow = battleShownText || battleText || "";
 
     g.innerHTML = `
@@ -726,7 +791,7 @@ function renderBattle() {
             <div class="battle-box">
                 <div class="enemy-area">
                     <div class="enemy-sprite ${enemySpriteClass()}"></div>
-                    <div class="enemy-dialogue-box"></div>
+                    ${enemyDialogueHTML}
                 </div>
                 ${soulBoxHTML ? '' : `
                 <div class="battle-text">

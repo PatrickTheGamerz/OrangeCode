@@ -4,7 +4,8 @@ body {
     margin: 0;
     background: black;
     color: white;
-    font-family: "Courier New", monospace;
+    font-family: 'VT323', monospace;
+    font-size: 26px; /* Bigger base font for the pixel style */
     image-rendering: pixelated;
     overflow: hidden;
     letter-spacing: 1px;
@@ -35,7 +36,7 @@ body {
 
 .menu-option {
     margin: 10px 0;
-    font-size: 18px;
+    font-size: 28px;
 }
 
 .menu-option span {
@@ -48,15 +49,16 @@ body {
 }
 
 .menu-large {
-    font-size: 22px;
+    font-size: 32px;
 }
 
 .button-box {
-    border: 2px solid white;
+    border: 2px solid #ed7c05; /* UT orange menu color */
+    color: #ed7c05;
     padding: 6px 18px;
     display: inline-block;
     margin: 6px 10px;
-    font-size: 18px;
+    font-size: 28px;
 }
 
 .button-box.selected {
@@ -70,11 +72,15 @@ body {
     left: 0;
     width: 100%;
     text-align: center;
-    font-size: 14px;
+    font-size: 24px;
 }
 
 .battle-status-line {
-    margin-bottom: 4px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
 }
 
 .battle-buttons-line {
@@ -91,33 +97,28 @@ body {
 }
 
 .battle-text {
-    padding: 8px;
+    padding: 16px;
     height: 80px;
-    font-size: 14px;
+    font-size: 28px;
+    text-align: left;
+    line-height: 1.2;
 }
 
 .hp-bar {
     display: inline-block;
-    width: 200px;
-    height: 10px;
-    border: 2px solid white;
+    width: 60px; /* Base width, scales dynamically in JS now */
+    height: 24px;
+    background: #ff0000;
     margin-left: 8px;
     position: relative;
-    background: black;
-    overflow: hidden;
-}
-
-.hp-fill {
-    height: 100%;
-    display: inline-block;
+    vertical-align: middle;
 }
 
 .hp-fill-yellow {
+    height: 100%;
     background: #ffff00;
-}
-
-.hp-fill-red {
-    background: #ff0000;
+    display: block;
+    transition: width 0.2s ease-out;
 }
 
 .file-container {
@@ -139,7 +140,6 @@ body {
 .file-row {
     display: flex;
     justify-content: space-between;
-    font-size: 14px;
 }
 
 .name-grid {
@@ -156,7 +156,7 @@ body {
     width: 32px;
     text-align: center;
     padding: 4px;
-    font-size: 16px;
+    font-size: 26px;
 }
 
 .name-cell.selected {
@@ -165,14 +165,13 @@ body {
 
 .name-display {
     margin-top: 12px;
-    font-size: 20px;
+    font-size: 32px;
 }
 
 .stats-box {
     width: 80%;
     margin: 0 auto;
     text-align: left;
-    font-size: 14px;
 }
 
 .flex-between {
@@ -181,29 +180,31 @@ body {
 }
 
 .fight-bar {
-    width: 320px;
-    height: 14px;
+    width: 500px;
+    height: 120px;
     border: 2px solid white;
     margin: 12px auto;
     position: relative;
-    background: linear-gradient(90deg, #ff8000 0%, #ffb000 50%, #ff8000 100%);
+    background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/w8AAwAB/AL+f4R4AAAAAElFTkSuQmCC'); /* Dummy background */
+    background: black;
 }
 
 .fight-crit {
     position: absolute;
     top: 0;
-    left: 140px;
+    left: 230px;
     width: 40px;
     height: 100%;
-    background: rgba(255, 255, 255, 0.2);
+    background: #00ff00;
 }
 
 .fight-marker {
     position: absolute;
     top: -4px;
-    width: 4px;
-    height: 22px;
+    width: 8px;
+    height: 128px;
     background: #ffffff;
+    box-shadow: 0 0 4px #000;
 }
 
 .soul-box {
@@ -217,8 +218,8 @@ body {
 }
 
 .soul {
-    width: 10px;
-    height: 10px;
+    width: 12px;
+    height: 12px;
     position: absolute;
     transform: rotate(45deg);
     background: #ff0000;
@@ -228,26 +229,26 @@ body {
 .soul::after {
     content: "";
     position: absolute;
-    width: 10px;
-    height: 10px;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
     background: #ff0000;
-    top: -5px;
+    top: -6px;
     left: 0;
 }
 
 .soul::after {
-    left: -5px;
+    left: -6px;
     top: 0;
 }
 
 .soul.blue {
-    background: #00a0ff;
+    background: #0022ff;
 }
 
 .soul.blue::before,
 .soul.blue::after {
-    background: #00a0ff;
+    background: #0022ff;
 }
 
 .bullet {
@@ -255,10 +256,15 @@ body {
     height: 8px;
     background: #ffffff;
     position: absolute;
+    border-radius: 50%;
 }
 
 .bullet-blue {
-    background: #00a0ff;
+    background: #00ccff;
+}
+
+.bullet-orange {
+    background: #ffaa00;
 }
 
 .enemy-area {
@@ -271,8 +277,8 @@ body {
 }
 
 .enemy-sprite {
-    width: 60px;
-    height: 80px;
+    width: 80px;
+    height: 100px;
     border: 2px solid white;
     border-radius: 4px;
     position: relative;
@@ -293,41 +299,49 @@ body {
     width: 160px;
     min-height: 40px;
     border: 2px solid white;
-    background: black;
-    color: white;
-    font-size: 12px;
-    padding: 4px;
+    background: white;
+    color: black;
+    border-radius: 10px;
+    font-size: 20px;
+    padding: 8px;
     display: none;
 }
 
 .sub-box {
     border: 4px solid white;
-    width: 260px;
-    margin: 8px auto 0;
+    width: 512px;
+    margin: 0 auto;
     padding: 8px;
     text-align: left;
     background: #000;
-    font-size: 14px;
+    box-sizing: border-box;
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    height: 120px;
 }
 
 .sub-option {
-    margin: 2px 0;
+    margin: 4px 0;
+    display: inline-block;
+    width: 48%;
 }
 
 .heart {
     color: #ff0000;
-    margin-right: 6px;
+    margin-right: 8px;
+    font-size: 20px;
 }
 
 .monster-list {
     width: 60%;
     margin: 0 auto;
     text-align: left;
-    font-size: 16px;
 }
 
 .small-text {
-    font-size: 12px;
+    font-size: 18px;
+    color: #888;
 }
 
 .game-over-screen {
@@ -335,12 +349,12 @@ body {
 }
 
 .game-over-title {
-    font-size: 32px;
+    font-size: 64px;
     margin-bottom: 16px;
 }
 
 .game-over-text {
-    font-size: 16px;
+    font-size: 28px;
     white-space: pre-line;
 }
 

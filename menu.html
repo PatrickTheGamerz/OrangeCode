@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Undertale | Main Menu</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: 'Courier Prime', monospace;
+            margin: 0;
+            overflow: hidden;
+            user-select: none;
+        }
+        .retro-container {
+            width: 640px;
+            height: 480px;
+            margin: 0 auto;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        .title {
+            font-size: 48px;
+            letter-spacing: 8px;
+            margin-bottom: 60px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 2px 2px 0 #888;
+        }
+        .save-box {
+            border: 2px solid #fff;
+            padding: 20px 40px;
+            width: 80%;
+            margin-bottom: 30px;
+        }
+        .menu-options {
+            display: flex;
+            gap: 40px;
+            font-size: 24px;
+        }
+        .option {
+            cursor: pointer;
+            position: relative;
+            transition: color 0.2s;
+            padding: 5px 10px;
+        }
+        .option:hover {
+            color: #ffeb3b;
+        }
+        .heart-cursor {
+            color: red;
+            position: absolute;
+            left: -15px;
+            top: 7px;
+            display: none;
+            font-size: 18px;
+        }
+        .option:hover .heart-cursor {
+            display: block;
+        }
+        .instruction {
+            position: absolute;
+            bottom: 20px;
+            color: #666;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        /* Custom Modal Styles */
+        #custom-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: #000;
+            border: 2px solid #fff;
+            padding: 30px;
+            max-width: 450px;
+            text-align: center;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="retro-container">
+        <div class="title">UNDERTALE</div>
+
+        <div class="save-box flex flex-col gap-4">
+            <div class="flex justify-between text-2xl font-bold">
+                <span>CHARA</span>
+                <span>LV 19</span>
+                <span>99:99</span>
+            </div>
+            <div class="text-xl mt-4 text-gray-400">
+                Last Corridor
+            </div>
+            <div class="text-sm text-red-500 mt-2">
+                Casualties: <span id="death-count">0</span>
+            </div>
+        </div>
+
+        <div class="menu-options">
+            <div class="option" onclick="startGame()">
+                <span class="heart-cursor">❤</span>
+                Continue
+            </div>
+            <div class="option" onclick="resetStats()">
+                <span class="heart-cursor">❤</span>
+                Reset
+            </div>
+        </div>
+
+        <div class="instruction">
+            Use mouse to select. Press F11 for Fullscreen.
+        </div>
+    </div>
+
+    <!-- Custom Modal for Alerts/Confirms -->
+    <div id="custom-modal">
+        <div class="modal-content">
+            <p id="modal-message" class="text-lg mb-8"></p>
+            <div id="modal-buttons" class="flex gap-8 justify-center">
+                <!-- Buttons injected dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Load stats from localStorage
+        const deaths = localStorage.getItem('ut_deaths') || 0;
+        document.getElementById('death-count').innerText = deaths;
+
+        // Custom Modal Logic to avoid browser alerts/confirms
+        function showModal(message, buttons) {
+            document.getElementById('modal-message').innerHTML = message;
+            const btnContainer = document.getElementById('modal-buttons');
+            btnContainer.innerHTML = '';
+            
+            buttons.forEach(btn => {
+                const b = document.createElement('div');
+                b.className = 'option text-xl';
+                b.innerHTML = `<span class="heart-cursor">❤</span>${btn.text}`;
+                b.onclick = () => {
+                    if(btn.onClick) btn.onClick();
+                    hideModal();
+                };
+                btnContainer.appendChild(b);
+            });
+            
+            document.getElementById('custom-modal').style.display = 'flex';
+        }
+
+        function hideModal() {
+            document.getElementById('custom-modal').style.display = 'none';
+        }
+
+        function startGame() {
+            // Transfer player to the actual fight
+            // In iframe sandboxes, window.location.href to a relative path fails as an invalid URL.
+            // Inform the user to switch files instead.
+            showModal(
+                "Sandbox Environment Notice:<br><br>Direct navigation is disabled here. Please open the <b>sans_genocide.html</b> file from your file sidebar to enter the encounter.", 
+                [{ text: "Understood" }]
+            );
+        }
+
+        function resetStats() {
+            showModal(
+                "Reset all timelines?<br>This cannot be undone.", 
+                [
+                    { 
+                        text: "Yes", 
+                        onClick: () => {
+                            localStorage.setItem('ut_deaths', 0);
+                            document.getElementById('death-count').innerText = 0;
+                        } 
+                    },
+                    { text: "No" }
+                ]
+            );
+        }
+    </script>
+</body>
+</html>
